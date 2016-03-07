@@ -1,0 +1,43 @@
+[
+    {
+        "caption": "-"
+    },
+    {
+        "command": "start_atlas_",
+        "args": {},
+        "caption": "Start Atlas"
+    },
+    {
+        "command": "show_in_atlas_",
+        "args": {},
+        "caption": "Show in Atlas"
+    },
+    {
+        "command": "update_database_",
+        "args": {},
+        "caption": "Update Database"
+    },
+    {
+        "caption": "-"
+    },
+    {
+        "command": "find_callers_",
+        "args": {},
+        "caption": "Find Callers"
+    },
+    {
+        "command": "find_callees_",
+        "args": {},
+        "caption": "Find Callees"
+    },
+    {
+        "command": "find_members_",
+        "args": {},
+        "caption": "Find Members"
+    },
+    {
+        "command": "find_bases_",
+        "args": {},
+        "caption": "Find Bases"
+    },
+]

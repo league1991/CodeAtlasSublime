@@ -1,0 +1,12 @@
+[
+{
+    "id": "tools",
+    "children": [
+        {
+            "caption": "Test",
+            "id": "test",
+            "command": "test"
+        },
+    ]
+}
+]

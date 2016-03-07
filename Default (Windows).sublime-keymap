@@ -1,0 +1,68 @@
+[
+    {
+        "keys": [
+            "alt+g"
+        ],
+        "command": "show_in_atlas_"
+    },
+    {
+        "keys": [
+            "alt+c"
+        ],
+        "command": "find_callers_"
+    },
+    {
+        "keys": [
+            "alt+v"
+        ],
+        "command": "find_callees_"
+    },
+    {
+        "keys": [
+            "alt+m"
+        ],
+        "command": "find_members_"
+    },
+    {
+        "keys": [
+            "alt+u"
+        ],
+        "command": "find_uses_"
+    },
+    {
+        "keys": [
+            "alt+b"
+        ],
+        "command": "find_bases_"
+    },
+    {
+        "keys": [
+            "alt+left"
+        ],
+        "command": "go_to_left_"
+    },
+    {
+        "keys": [
+            "alt+right"
+        ],
+        "command": "go_to_right_"
+    },
+    {
+        "keys": [
+            "alt+up"
+        ],
+        "command": "go_to_up_"
+    },
+    {
+        "keys": [
+            "alt+down"
+        ],
+        "command": "go_to_down_"
+    },
+    {
+        "keys": [
+            "alt+delete"
+        ],
+        "command": "delete_selected_items_"
+    },
+]

@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>256</width>
+    <height>553</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="animated">
+   <bool>false</bool>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>0</height>
+    </size>
+   </property>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>256</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionOpen"/>
+    <addaction name="actionAnalyze"/>
+    <addaction name="actionTest"/>
+   </widget>
+   <widget class="QMenu" name="menuItem">
+    <property name="title">
+     <string>Item</string>
+    </property>
+    <addaction name="actionFindCallers"/>
+    <addaction name="actionFindCallees"/>
+    <addaction name="actionFindMembers"/>
+    <addaction name="actionFindBases"/>
+    <addaction name="actionFindUses"/>
+    <addaction name="separator"/>
+    <addaction name="actionGoToEditor"/>
+   </widget>
+   <widget class="QMenu" name="menuLayout">
+    <property name="title">
+     <string>Graph</string>
+    </property>
+    <addaction name="actionUpdatePosition"/>
+    <addaction name="actionDeleteOldItems"/>
+    <addaction name="actionDeleteSelectedItems"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuItem"/>
+   <addaction name="menuLayout"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QDockWidget" name="searchDock">
+   <property name="windowTitle">
+    <string>Search</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="SearchWindow" name="searchWidget"/>
+  </widget>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionOpen"/>
+   <addaction name="actionTest"/>
+   <addaction name="actionUpdatePosition"/>
+   <addaction name="actionDeleteOldItems"/>
+   <addaction name="actionDeleteSelectedItems"/>
+  </widget>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open DB</string>
+   </property>
+  </action>
+  <action name="actionTest">
+   <property name="text">
+    <string>Open Default</string>
+   </property>
+   <property name="toolTip">
+    <string>Open Default</string>
+   </property>
+  </action>
+  <action name="actionFindCallers">
+   <property name="text">
+    <string>Find Callers</string>
+   </property>
+  </action>
+  <action name="actionFindCallees">
+   <property name="text">
+    <string>Find Callees</string>
+   </property>
+  </action>
+  <action name="actionUpdatePosition">
+   <property name="text">
+    <string>Update Graph</string>
+   </property>
+   <property name="toolTip">
+    <string>Update Graph</string>
+   </property>
+  </action>
+  <action name="actionDeleteOldItems">
+   <property name="text">
+    <string>Delete Old Items</string>
+   </property>
+  </action>
+  <action name="actionFindMembers">
+   <property name="text">
+    <string>Find Members</string>
+   </property>
+  </action>
+  <action name="actionFindBases">
+   <property name="text">
+    <string>Find Bases</string>
+   </property>
+  </action>
+  <action name="actionDeleteSelectedItems">
+   <property name="text">
+    <string>Delete Selected Items</string>
+   </property>
+   <property name="shortcut">
+    <string>Del</string>
+   </property>
+  </action>
+  <action name="actionAnalyze">
+   <property name="text">
+    <string>Update DB</string>
+   </property>
+  </action>
+  <action name="actionFindUses">
+   <property name="text">
+    <string>Find Uses</string>
+   </property>
+  </action>
+  <action name="actionGoToEditor">
+   <property name="text">
+    <string>Go to Editor</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>SearchWindow</class>
+   <extends>QWidget</extends>
+   <header>searchwindow.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

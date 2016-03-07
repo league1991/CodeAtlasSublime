@@ -1,0 +1,7 @@
+/CodeViewPy/.idea
+/CodeViewPy/__pycache__/*.pyc
+/*.udb
+/CodeViewPy/udb/*.udb
+/CodeViewPy/db/__pycache__
+/CodeViewPy/ui/__pycache__
+/CodeViewPy/*.pyc
