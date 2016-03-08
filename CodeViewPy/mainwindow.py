@@ -30,6 +30,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.actionFindBases.triggered.connect(self.onFindBases)
 		self.actionFindUses.triggered.connect(self.onFindUses)
 		self.actionGoToEditor.triggered.connect(self.goToEditor)
+		self.actionDeleteOldestItem.triggered.connect(self.onClearOldestItem)
 
 		self.actionUpdatePosition.triggered.connect(self.onUpdatePosition)
 		self.actionDeleteOldItems.triggered.connect(self.onDeleteOldItems)
@@ -100,6 +101,14 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		scene = UIManager.instance().getScene()
 		if scene:
 			scene.clearUnusedItems()
+
+	def onClearOldestItem(self):
+		from UIManager import UIManager
+		from db.DBManager import DBManager
+
+		scene = UIManager.instance().getScene()
+		if scene:
+			scene.clearOldItem()
 
 	def getSearchWindow(self):
 		return self.searchWidget

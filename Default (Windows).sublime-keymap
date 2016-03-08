@@ -65,4 +65,10 @@
         ],
         "command": "delete_selected_items_"
     },
+    {
+        "keys": [
+            "alt+o"
+        ],
+        "command": "delete_oldest_items_"
+    },
 ]

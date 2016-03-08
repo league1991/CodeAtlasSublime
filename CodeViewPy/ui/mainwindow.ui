@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>256</width>
-    <height>553</height>
+    <width>288</width>
+    <height>644</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -41,7 +41,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>256</width>
+     <width>288</width>
      <height>22</height>
     </rect>
    </property>
@@ -72,6 +72,7 @@
     <addaction name="actionUpdatePosition"/>
     <addaction name="actionDeleteOldItems"/>
     <addaction name="actionDeleteSelectedItems"/>
+    <addaction name="actionDeleteOldestItem"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuItem"/>
@@ -99,9 +100,9 @@
    </attribute>
    <addaction name="actionOpen"/>
    <addaction name="actionTest"/>
-   <addaction name="actionUpdatePosition"/>
    <addaction name="actionDeleteOldItems"/>
    <addaction name="actionDeleteSelectedItems"/>
+   <addaction name="actionDeleteOldestItem"/>
   </widget>
   <action name="actionOpen">
    <property name="text">
@@ -170,6 +171,11 @@
   <action name="actionGoToEditor">
    <property name="text">
     <string>Go to Editor</string>
+   </property>
+  </action>
+  <action name="actionDeleteOldestItem">
+   <property name="text">
+    <string>Delete Oldest Item</string>
    </property>
   </action>
  </widget>

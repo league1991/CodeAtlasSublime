@@ -145,6 +145,10 @@ class CodeScene(QtGui.QGraphicsScene):
 				del self.itemLruQueue[idx]
 
 			self.itemLruQueue.insert(0, itemKey)
+		print('------------- update lru -------------')
+		for i, key in enumerate(self.itemLruQueue):
+			print(i, self.itemDict[key].name)
+		print('--------------------------------------')
 		return []#deleteKeyList
 
 	def removeItemLRU(self):
@@ -255,6 +259,31 @@ class CodeScene(QtGui.QGraphicsScene):
 			self._doDeleteCodeItem(deleteName)
 
 		self.deleteLRU(deleteList)
+
+		self.itemLruQueue
+		self.lock.release()
+
+	def clearOldItem(self):
+		if len(self.itemLruQueue) <= 0:
+			return
+
+		self.lock.acquire()
+
+		# deleteList = []
+		# for itemKey, item in self.itemDict.items():
+		# 	item.displayScore -= 1
+		# 	if item.displayScore <= 0:
+		# 		deleteList.append(itemKey)
+
+		# print('delete list', deleteList)
+		# for deleteName in deleteList:
+		# 	self._doDeleteCodeItem(deleteName)
+		# self.deleteLRU(deleteList)
+
+		lastItem = self.itemLruQueue[-1]
+		self._doDeleteCodeItem(lastItem)
+		self.deleteLRU([lastItem])
+
 		self.lock.release()
 
 	def deleteSelectedItems(self):

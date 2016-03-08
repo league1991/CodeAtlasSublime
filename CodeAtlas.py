@@ -122,6 +122,11 @@ class Delete_selected_items_Command(TextCommand):
 		socket = DataManager.instance().getSocket()
 		socket.remoteCall('onDeleteSelectedItems', None)
 
+class Delete_oldest_items_Command(TextCommand):
+	def run(self, edit):
+		socket = DataManager.instance().getSocket()
+		socket.remoteCall('onClearOldestItem', None)
+
 class Test_Command(TextCommand):
 	def run(self, edit):
 		print('test')
