@@ -15,6 +15,8 @@ class SceneUpdateThread(threading.Thread):
 		self.lock = lock
 		self.isActive = True
 
+		self.itemSet = set()
+
 	def setActive(self, isActive):
 		self.lock.acquire()
 		self.isActive = isActive
@@ -24,7 +26,10 @@ class SceneUpdateThread(threading.Thread):
 		while True:
 			if self.isActive:
 				self.lock.acquire()
-				self.updatePos()
+				#self.updatePos()
+				if self.itemSet != set(self.scene.itemDict.keys()):
+					self.updateLayeredLayout()
+				self.moveItems()
 				self.lock.release()
 
 				self.scene.invalidate()
@@ -90,12 +95,63 @@ class SceneUpdateThread(threading.Thread):
 		# 	if kindList[i] == CodeUIItem.ITEM_FUNCTION and not isSourceItem[i]:
 		# 		posList[i] = posList[i] + QtCore.QPointF(1,0)
 
+		# i=0
+		# for itemName, item in self.scene.itemDict.items():
+		# 	#if not isSourceItem[i]:
+		# 	item.setPos(posList[i])
+		# 	#print(posList[i])
+		# 	i += 1
+
 		i=0
 		for itemName, item in self.scene.itemDict.items():
-			#if not isSourceItem[i]:
-			item.setPos(posList[i])
-			#print(posList[i])
-			i += 1
+			item.setTargetPos(posList[i])
+			i+=1
+
+	def updateLayeredLayout(self):
+		#print('update layered layout')
+		from grandalf.graphs import Vertex, Edge, Graph
+
+		class VtxView(object):
+			def __init__(self, w, h):
+				self.w = w
+				self.h = h
+
+		self.itemSet = set()
+		V = []
+		vid = {}
+		for name, item in self.scene.itemDict.items():
+			r = item.getRadius()
+			vtx = Vertex(item.getUniqueName())
+			vtx.view = VtxView(r*2.0, r*2.0)
+			vid[name] = len(V)
+			V.append(vtx)
+			self.itemSet.add(name)
+
+		E = []
+		for edgeKey, edge in self.scene.edgeDict.items():
+			vi = vid.get(edgeKey[0], None)
+			vj = vid.get(edgeKey[1], None)
+			if vi is None or vj is None:
+				continue
+			E.append(Edge(V[vi], V[vj]))
+
+		g = Graph(V,E)
+		if len(g.C) <= 0:
+			return
+
+		from grandalf.layouts import SugiyamaLayout
+		sug = SugiyamaLayout(g.C[0])
+		sug.init_all()
+		sug.draw(5)
+
+		for v in g.C[0].sV:
+			item = self.scene.itemDict.get(v.data)
+			if item:
+				item.setTargetPos(QtCore.QPointF(v.view.xy[1], v.view.xy[0]))
+
+	def moveItems(self):
+		for name, item in self.scene.itemDict.items():
+			item.moveToTarget(0.05)
 
 class CodeScene(QtGui.QGraphicsScene):
 	def __init__(self, *args):
@@ -103,7 +159,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.itemDict = {}
 		self.edgeDict = {}
 		self.itemLruQueue = []
-		self.lruMaxLength = 15
+		self.lruMaxLength = 50
 
 		self.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex)
 		self.lock = threading.RLock()
@@ -267,8 +323,9 @@ class CodeScene(QtGui.QGraphicsScene):
 		if len(self.itemLruQueue) <= 0:
 			return
 
+		print('clear old item ------ begin')
 		self.lock.acquire()
-
+		print('lock ------------------')
 		# deleteList = []
 		# for itemKey, item in self.itemDict.items():
 		# 	item.displayScore -= 1
@@ -281,10 +338,16 @@ class CodeScene(QtGui.QGraphicsScene):
 		# self.deleteLRU(deleteList)
 
 		lastItem = self.itemLruQueue[-1]
+		lastPos = self.itemDict[lastItem].pos()
 		self._doDeleteCodeItem(lastItem)
+		print('delte code item end')
 		self.deleteLRU([lastItem])
-
+		print('delete lru end ')
 		self.lock.release()
+		print('clear old item end ----------')
+
+		if lastPos:
+			self.selectNearestItem(lastPos)
 
 	def deleteSelectedItems(self):
 		self.lock.acquire()
@@ -302,8 +365,8 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.removeItemLRU()
 		self.lock.release()
 
-		if lastPos:
-			self.selectNearestItem(lastPos)
+		# if lastPos:
+		# 	self.selectNearestItem(lastPos)
 
 	def getNode(self, uniqueName):
 		node = self.itemDict.get(uniqueName, None)

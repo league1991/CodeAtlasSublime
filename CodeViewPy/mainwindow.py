@@ -103,11 +103,16 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 			scene.clearUnusedItems()
 
 	def onClearOldestItem(self):
+		print('on clear oldest item')
 		from UIManager import UIManager
+		print('import ui manager', UIManager)
 		from db.DBManager import DBManager
+		print('import db manager', DBManager)
 
 		scene = UIManager.instance().getScene()
+		print('scene', scene)
 		if scene:
+			print('clear old item')
 			scene.clearOldItem()
 
 	def getSearchWindow(self):

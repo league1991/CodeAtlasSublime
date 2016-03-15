@@ -48,6 +48,14 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.fontSize = fontMetrics.size(QtCore.Qt.TextSingleLine, self.name)
 		self.displayScore = 0
 
+		self.targetPos = self.pos()	# 用于动画目标
+
+	def setTargetPos(self, pos):
+		self.targetPos = pos
+
+	def moveToTarget(self, ratio):
+		self.setPos(self.pos()* (1.0-ratio) + self.targetPos * ratio)
+
 	def getKind(self):
 		return self.kind
 
@@ -131,3 +139,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		scene = UIManager.instance().getScene()
 		if scene:
 			scene.showInEditor()
+
+	def mouseMoveEvent(self, event):
+		super(CodeUIItem, self).mouseMoveEvent(event)
+		self.targetPos = QtCore.QPointF(self.pos().x(), self.pos().y())

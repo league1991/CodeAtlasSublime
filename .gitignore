@@ -5,3 +5,4 @@
 /CodeViewPy/db/__pycache__
 /CodeViewPy/ui/__pycache__
 /CodeViewPy/*.pyc
+*.pyc
