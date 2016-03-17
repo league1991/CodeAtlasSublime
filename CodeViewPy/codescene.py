@@ -3,7 +3,7 @@ import sys
 from PyQt4 import QtCore, QtGui, uic
 import math
 import random
-
+import sys
 import traceback
 import threading
 import time
@@ -28,7 +28,7 @@ class SceneUpdateThread(threading.Thread):
 				self.lock.acquire()
 				#self.updatePos()
 				if self.itemSet != set(self.scene.itemDict.keys()):
-					self.updateLayeredLayout()
+					self.updateLayeredLayoutWithComp()
 				self.moveItems()
 				self.lock.release()
 
@@ -107,6 +107,129 @@ class SceneUpdateThread(threading.Thread):
 			item.setTargetPos(posList[i])
 			i+=1
 
+	def updateLayeredLayoutWithComp(self):
+		class Vtx(object):
+			def __init__(self, name, idx, radius = 1):
+				self.inNodes = set()
+				self.outNodes = set()
+				self.name = name
+				self.idx = idx
+				self.comp = None
+				self.compIdx = None
+				self.pos = None
+				self.radius = radius
+
+		vtxName2Id = {}
+		vtxList = []
+		edgeList = []
+		for name, item in self.scene.itemDict.items():
+			ithVtx = len(vtxList)
+			vtxList.append(Vtx(name, ithVtx, item.getRadius()))
+			vtxName2Id[name] = ithVtx
+
+		for edgeKey, edge in self.scene.edgeDict.items():
+			v1 = vtxName2Id[edgeKey[0]]
+			v2 = vtxName2Id[edgeKey[1]]
+			vtxList[v1].outNodes.add(v2)
+			vtxList[v2].inNodes.add(v1)
+			edgeList.append((v1,v2))
+
+		print('vtx list', vtxList)
+		print('edge list', edgeList)
+
+		remainSet = set([i for i in range(len(vtxList))])
+		compList = []   # [[idx1,idx2,...],[...]]
+		while len(remainSet) > 0:
+			# 找出剩余一个顶点并加入队列
+			ids = [list(remainSet)[0]]
+			ithComp = len(compList)
+			vtxList[ids[0]].comp = ithComp
+			compMap = []
+			# 遍历一个连通分量
+			while len(ids) > 0:
+				newIds = []
+				for id in ids:
+					# 把一个顶点加入连通分量
+					vtx = vtxList[id]
+					vtx.compIdx = len(compMap)
+					compMap.append(id)
+					# 把周围未遍历顶点加入队列
+					for inId in vtx.inNodes:
+						inVtx = vtxList[inId]
+						if inVtx.comp is None:
+							inVtx.comp = ithComp
+							newIds.append(inId)
+					for outId in vtx.outNodes:
+						outVtx = vtxList[outId]
+						if outVtx.comp is None:
+							outVtx.comp = ithComp
+							newIds.append(outId)
+					remainSet.discard(id)
+				ids = newIds
+			# 增加一个完整的连通分量
+			compList.append(compMap)
+
+		print('comp list', compList)
+		from grandalf.graphs import Vertex, Edge, Graph
+		class VtxView(object):
+			def __init__(self, w, h):
+				self.w = w
+				self.h = h
+
+		# 构造每个连通分量的图结构
+		offset = (0,0)
+		for ithComp, compMap in enumerate(compList):
+			minPnt = [1e6,1e6]
+			maxPnt = [-1e6,-1e6]
+
+			# 构造图数据并布局
+			V = []
+			for oldId in compMap:
+				r = vtxList[oldId].radius
+				vtx = Vertex(oldId)
+				height = len(vtxList[oldId].name) * 0.5 + 2
+				vtx.view = VtxView(r*2.0, max(r*2.0,height))
+				V.append(vtx)
+
+			E = []
+			for edgeKey in edgeList:
+				if vtxList[edgeKey[0]].comp == ithComp:
+					E.append(Edge(V[vtxList[edgeKey[0]].compIdx], V[vtxList[edgeKey[1]].compIdx]))
+
+			print('V', len(V))
+			print('E', E)
+
+			g = Graph(V,E)
+			from grandalf.layouts import SugiyamaLayout
+			sug = SugiyamaLayout(g.C[0])
+			sug.xspace = 4
+			sug.yspace = 4
+			sug.order_iter = 16
+			sug.init_all()
+			sug.draw(5)
+
+			# 统计包围盒
+			for v in g.C[0].sV:
+				oldV = vtxList[v.data]
+				x= v.view.xy[1]
+				y= v.view.xy[0]
+				oldV.pos = (x,y)
+				minPnt[0] = min(minPnt[0],x)
+				minPnt[1] = min(minPnt[1],y-oldV.radius)
+				maxPnt[0] = max(maxPnt[0],x)
+				maxPnt[1] = max(maxPnt[1],y+oldV.radius)
+
+			print('bbox', minPnt, maxPnt)
+			for v in g.C[0].sV:
+				oldV = vtxList[v.data]
+				newPos = (oldV.pos[0]-minPnt[0]+offset[0], oldV.pos[1]-minPnt[1]+offset[1])
+				self.scene.itemDict[oldV.name].setTargetPos(QtCore.QPointF(newPos[0], newPos[1]))
+
+			offset = (offset[0], offset[1]+maxPnt[1]-minPnt[1])
+			print('offset', offset)
+
+		self.itemSet = set(self.scene.itemDict.keys())
+
 	def updateLayeredLayout(self):
 		#print('update layered layout')
 		from grandalf.graphs import Vertex, Edge, Graph
@@ -150,8 +273,18 @@ class SceneUpdateThread(threading.Thread):
 				item.setTargetPos(QtCore.QPointF(v.view.xy[1], v.view.xy[0]))
 
 	def moveItems(self):
+		pos = QtCore.QPointF(0,0)
+		nSelected = 0
 		for name, item in self.scene.itemDict.items():
 			item.moveToTarget(0.05)
+			if item.isSelected():
+				pos += item.pos()
+				nSelected+=1
+
+		if nSelected:
+			pos /= float(nSelected)
+			for view in self.scene.views():
+				view.centerOn(pos)
 
 class CodeScene(QtGui.QGraphicsScene):
 	def __init__(self, *args):
@@ -365,8 +498,8 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.removeItemLRU()
 		self.lock.release()
 
-		# if lastPos:
-		# 	self.selectNearestItem(lastPos)
+		if lastPos:
+			self.selectNearestItem(QtCore.QPointF(lastPos.x(), lastPos.y()))
 
 	def getNode(self, uniqueName):
 		node = self.itemDict.get(uniqueName, None)

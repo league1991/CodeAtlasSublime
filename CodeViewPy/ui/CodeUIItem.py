@@ -43,7 +43,8 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			self.kind = ITEM_UNKNOWN
 			self.color = QtGui.QColor(195,195,195)
 
-		self.titleFont = QtGui.QFont('arial', int(self.getRadius() * 0.2) + 8)
+		#self.titleFont = QtGui.QFont('arial', int(self.getRadius() * 0.3) + 8)
+		self.titleFont = QtGui.QFont('arial', 9)
 		fontMetrics = QtGui.QFontMetricsF(self.titleFont)
 		self.fontSize = fontMetrics.size(QtCore.Qt.TextSingleLine, self.name)
 		self.displayScore = 0
@@ -97,11 +98,12 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			painter.setBrush(clr)
 			painter.drawEllipse(-r,-r,r*2,r*2)
 
-		if r * lod > 5:
+		if r * lod > 5 or self.isSelected():
 			painter.scale(1.0/lod, 1.0/lod)
 			painter.setPen(QtGui.QPen())
 			painter.setFont(self.titleFont)
-			rect = QtCore.QRectF(self.fontSize.width() * -0.5, self.fontSize.height() * -0.5, self.fontSize.width(), self.fontSize.height())
+			#rect = QtCore.QRectF(self.fontSize.width() * -0.5, self.fontSize.height() * -0.5, self.fontSize.width(), self.fontSize.height())
+			rect = QtCore.QRectF(0, self.fontSize.height() * -0.5, self.fontSize.width(), self.fontSize.height())
 
 			# dx = 1.1
 			# painter.setPen(QtGui.QPen(QtGui.QColor(255,255,255)))
@@ -115,7 +117,10 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			# painter.drawText(rect0, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter, self.name)
 
 			painter.setPen(QtGui.QPen(QtGui.QColor(0,0,0)))
+			angle = -20
+			#painter.rotate(angle)
 			painter.drawText(rect, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter, self.name)
+			#painter.rotate(-1.0 * angle)
 
 	def contextMenuEvent(self, event):
 		#print ('context menu')
