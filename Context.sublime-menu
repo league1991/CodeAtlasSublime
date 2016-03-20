@@ -13,9 +13,9 @@
         "caption": "Show in Atlas"
     },
     {
-        "command": "update_database_",
+        "command": "analyze_database_",
         "args": {},
-        "caption": "Update Database"
+        "caption": "Analyze Database"
     },
     {
         "caption": "-"

@@ -4,10 +4,13 @@ import time
 import inspect
 import ctypes
 from json import *
+from PyQt4 import QtCore
 
-class SocketThread(threading.Thread):
+class SocketThread(QtCore.QThread):
+#class SocketThread(threading.Thread):
 	def __init__(self, myAddress, remoteAddress):
-		threading.Thread.__init__(self)
+		# threading.Thread.__init__(self)
+		super(SocketThread, self).__init__()
 		self.myAddress = myAddress
 		self.remoteAddress = remoteAddress
 		self.socketObj = None
@@ -17,7 +20,7 @@ class SocketThread(threading.Thread):
 
 	def run(self):
 		from UIManager import UIManager
-		print('run', self.name)
+		#print('run', self.name)
 		address = self.myAddress
 		self.socketObj = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.socketObj.bind(address)
@@ -33,16 +36,18 @@ class SocketThread(threading.Thread):
 			funName = dataObj.get('f')
 			paramDict = dataObj.get('p', None)
 			print('----------receive:', funName, paramDict)
-			#funObj = self.registerCb.get(funName, None)
 			mainUI = UIManager.instance().getMainUI()
+			scene = UIManager.instance().getScene()
 			print('main ui:', mainUI)
 			funObj = getattr(mainUI, funName)
 			print('fun obj:', funObj)
 			if funObj:
+				scene.acquireLock()
 				if paramDict is None:
 					funObj()
 				else:
 					funObj(paramDict)
+				scene.releaseLock()
 
 		print ('close socket')
 		self.socketObj.close()

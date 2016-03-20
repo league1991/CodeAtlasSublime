@@ -18,10 +18,35 @@ class CodeView(QtGui.QGraphicsView):
 		self.setMouseTracking(True)
 		self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
 		self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+		self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+		self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
 		self.mousePressPnt = None
 		self.mouseCurPnt = None
 		self.isFrameSelectMode = False
+
+		self.updateTimer = QtCore.QTimer()
+		self.updateTimer.setInterval(50)
+		#print('connect')
+		self.connect(self.updateTimer, QtCore.SIGNAL('timeout()'), self, QtCore.SLOT('updateView()'))
+		#print('connect end')
+		self.updateTimer.start()
+		self.centerPnt = QtCore.QPointF()
+
+	@QtCore.pyqtSlot()
+	def updateView(self):
+		scene = self.scene()
+		if scene:
+			#print('update view')
+			scene.acquireLock()
+
+			pos = scene.getSelectedCenter()
+			self.centerPnt = self.centerPnt * 0.95 + pos * 0.05
+			self.centerOn(self.centerPnt)
+
+			self.invalidateScene()
+			self.update()
+			scene.releaseLock()
 
 	def mousePressEvent(self, event):
 		self.mouseCurPnt = self.mousePressPnt = event.pos()

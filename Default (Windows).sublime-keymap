@@ -71,4 +71,10 @@
         ],
         "command": "delete_oldest_items_"
     },
+    {
+        "keys": [
+            "alt+a"
+        ],
+        "command": "analyze_database_"
+    },
 ]

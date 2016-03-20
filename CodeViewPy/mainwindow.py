@@ -54,7 +54,15 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 
 	def onAnalyze(self):
 		dbmgr = DBManager.DBManager.instance()
-		dbmgr.getDB().analyze()
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		if scene:
+			scene.acquireLock()
+			dbmgr.getDB().analyze()
+			#dbmgr.getDB().open(r'C:\Users\me\AppData\Roaming\Sublime Text 3\Packages\CodeAtlas\CodeAtlasSublime.udb')
+			print('before release')
+			scene.releaseLock()
+			print('after release')
 
 	def onOpen(self):
 		dialog = QtGui.QFileDialog()
@@ -121,12 +129,17 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 	def showInAtlas(self, param):
 		name = param.get('n','')
 		kind = param.get('k','')
-		file = param.get('f','')
+		fileName = param.get('f','')
+		line = param.get('l',-1)
 		#print('show in atlas', param)
 		sw = self.getSearchWindow()
 		sw.inputEdit.setText(name)
 		sw.kindEdit.setText(kind)
+		sw.fileEdit.setText(fileName)
+		sw.lineBox.setValue(line)
+		print('search')
 		sw.onSearch()
+		print('add to scene')
 		sw.onAddToScene()
 
 	def goToEditor(self):

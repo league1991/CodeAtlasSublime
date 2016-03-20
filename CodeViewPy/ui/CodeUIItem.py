@@ -12,6 +12,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.setFlag(QtGui.QGraphicsItem.ItemIsMovable)
 		self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable)
 		self.setFlag(QtGui.QGraphicsItem.ItemIsFocusable)
+		self.setAcceptHoverEvents(True)
 		self.uniqueName = uniqueName
 		from db.DBManager import DBManager
 		entity = DBManager.instance().getDB().searchFromUniqueName(self.uniqueName)
@@ -50,6 +51,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.displayScore = 0
 
 		self.targetPos = self.pos()	# 用于动画目标
+		self.isHover = False
 
 	def setTargetPos(self, pos):
 		self.targetPos = pos
@@ -90,15 +92,17 @@ class CodeUIItem(QtGui.QGraphicsItem):
 
 		trans = painter.worldTransform()
 		lod = QtGui.QStyleOptionGraphicsItem().levelOfDetailFromTransform(trans)
+
+		selectedOrHover = self.isSelected() or self.isHover
 		if r * lod > 2:
 			painter.setPen(QtCore.Qt.NoPen)
 			clr = self.color
-			if self.isSelected():
+			if selectedOrHover:
 				clr = clr.dark(150)
 			painter.setBrush(clr)
 			painter.drawEllipse(-r,-r,r*2,r*2)
 
-		if r * lod > 5 or self.isSelected():
+		if r * lod > 5 or selectedOrHover:
 			painter.scale(1.0/lod, 1.0/lod)
 			painter.setPen(QtGui.QPen())
 			painter.setFont(self.titleFont)
@@ -148,3 +152,11 @@ class CodeUIItem(QtGui.QGraphicsItem):
 	def mouseMoveEvent(self, event):
 		super(CodeUIItem, self).mouseMoveEvent(event)
 		self.targetPos = QtCore.QPointF(self.pos().x(), self.pos().y())
+
+	def hoverLeaveEvent(self, QGraphicsSceneHoverEvent):
+		super(CodeUIItem, self).hoverLeaveEvent(QGraphicsSceneHoverEvent)
+		self.isHover = False
+
+	def hoverEnterEvent(self, QGraphicsSceneHoverEvent):
+		super(CodeUIItem, self).hoverEnterEvent(QGraphicsSceneHoverEvent)
+		self.isHover = True

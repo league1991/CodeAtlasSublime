@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>212</width>
-    <height>253</height>
+    <width>237</width>
+    <height>298</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>Search</string>
@@ -21,11 +27,17 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>210</width>
-     <height>251</height>
+     <width>235</width>
+     <height>296</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="spacing">
+     <number>2</number>
+    </property>
+    <property name="margin">
+     <number>2</number>
+    </property>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
@@ -38,10 +50,6 @@
       <item>
        <widget class="QLineEdit" name="inputEdit"/>
       </item>
-     </layout>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
        <widget class="QLabel" name="label">
         <property name="text">
@@ -53,6 +61,44 @@
        <widget class="QLineEdit" name="kindEdit">
         <property name="text">
          <string>function</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>File</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="fileEdit">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Line</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSpinBox" name="lineBox">
+        <property name="minimum">
+         <number>-1</number>
+        </property>
+        <property name="maximum">
+         <number>100000</number>
+        </property>
+        <property name="value">
+         <number>-1</number>
         </property>
        </widget>
       </item>
@@ -95,8 +141,8 @@
      <y>21</y>
     </hint>
     <hint type="destinationlabel">
-     <x>62</x>
-     <y>78</y>
+     <x>56</x>
+     <y>64</y>
     </hint>
    </hints>
   </connection>
@@ -107,12 +153,12 @@
    <slot>click()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>142</x>
-     <y>51</y>
+     <x>232</x>
+     <y>17</y>
     </hint>
     <hint type="destinationlabel">
-     <x>142</x>
-     <y>74</y>
+     <x>115</x>
+     <y>60</y>
     </hint>
    </hints>
   </connection>
