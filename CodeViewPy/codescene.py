@@ -618,16 +618,17 @@ class CodeScene(QtGui.QGraphicsScene):
 		edgeDir = tarPos - srcPos
 		edgeDir /= math.sqrt(edgeDir.x()*edgeDir.x() + edgeDir.y()*edgeDir.y() + 1e-5)
 		proj = mainDirection[0]*edgeDir.x() + mainDirection[1]*edgeDir.y()
-
+ 
 		srcNode = self.getNode(centerItem.srcUniqueName)
 		tarNode = self.getNode(centerItem.tarUniqueName)
 
-		if proj > 0.4 and tarNode:
-			print('tar node----------------')
-			return tarNode
-		elif proj < -0.4 and srcNode:
-			print('src node---------------')
-			return srcNode
+		if math.fabs(mainDirection[0]) > 0.8:			
+			if proj > 0.1 and tarNode:
+				print('tar node----------------')
+				return tarNode
+			elif proj < -0.1 and srcNode:
+				print('src node---------------')
+				return srcNode
 
 		# 找出最近的边
 		minEdgeVal = 1.0e12

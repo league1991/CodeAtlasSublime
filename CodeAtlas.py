@@ -12,11 +12,11 @@ class Start_atlas_Command(ApplicationCommand):
 
 	def run(self):
 		curPath = os.path.split(os.path.realpath(__file__))[0]
-		curPath = curPath + '\\CodeViewPy'
-		print('curPath ', curPath)
+		print('curPath ', curPath)		
+		subprocess.Popen(curPath + '\\codeView.bat', cwd = curPath, stdout = None)
 		
-		#subprocess.Popen(curPath + '\\codeView.bat', cwd = curPath, stdout = None)
-		subprocess.Popen('main', cwd = curPath, shell = True )
+		#curPath = curPath + '\\CodeViewPy'
+		#subprocess.Popen('main', cwd = curPath, shell = True )
 
 		socketThread = DataManager.instance().getSocket()
 		if not socketThread.isListening():

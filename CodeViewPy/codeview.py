@@ -26,7 +26,7 @@ class CodeView(QtGui.QGraphicsView):
 		self.isFrameSelectMode = False
 
 		self.updateTimer = QtCore.QTimer()
-		self.updateTimer.setInterval(50)
+		self.updateTimer.setInterval(70)
 		#print('connect')
 		self.connect(self.updateTimer, QtCore.SIGNAL('timeout()'), self, QtCore.SLOT('updateView()'))
 		#print('connect end')
@@ -41,7 +41,7 @@ class CodeView(QtGui.QGraphicsView):
 			scene.acquireLock()
 
 			pos = scene.getSelectedCenter()
-			self.centerPnt = self.centerPnt * 0.95 + pos * 0.05
+			self.centerPnt = self.centerPnt * 0.97 + pos * 0.03
 			self.centerOn(self.centerPnt)
 
 			self.invalidateScene()
