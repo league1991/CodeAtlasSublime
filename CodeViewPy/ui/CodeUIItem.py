@@ -45,7 +45,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			self.color = QtGui.QColor(195,195,195)
 
 		#self.titleFont = QtGui.QFont('arial', int(self.getRadius() * 0.3) + 8)
-		self.titleFont = QtGui.QFont('arial', 9)
+		self.titleFont = QtGui.QFont('arial', 8)
 		fontMetrics = QtGui.QFontMetricsF(self.titleFont)
 		self.fontSize = fontMetrics.size(QtCore.Qt.TextSingleLine, self.name)
 		self.displayScore = 0
@@ -89,12 +89,12 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		painter.setRenderHint(QtGui.QPainter.Antialiasing)
 		painter.setRenderHint(QtGui.QPainter.TextAntialiasing)
 		r = self.getRadius()
-
+ 
 		trans = painter.worldTransform()
 		lod = QtGui.QStyleOptionGraphicsItem().levelOfDetailFromTransform(trans)
 
 		selectedOrHover = self.isSelected() or self.isHover
-		if r * lod > 2:
+		if r * lod > 1.5:
 			painter.setPen(QtCore.Qt.NoPen)
 			clr = self.color
 			if selectedOrHover:
@@ -102,9 +102,9 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			painter.setBrush(clr)
 			painter.drawEllipse(-r,-r,r*2,r*2)
 
-		if r * lod > 5 or selectedOrHover:
+		if r * lod > 3 or selectedOrHover:
 			painter.scale(1.0/lod, 1.0/lod)
-			painter.setPen(QtGui.QPen())
+			painter.setPen(QtGui.QPen()) 
 			painter.setFont(self.titleFont)
 			#rect = QtCore.QRectF(self.fontSize.width() * -0.5, self.fontSize.height() * -0.5, self.fontSize.width(), self.fontSize.height())
 			rect = QtCore.QRectF(0, self.fontSize.height() * -0.5, self.fontSize.width(), self.fontSize.height())

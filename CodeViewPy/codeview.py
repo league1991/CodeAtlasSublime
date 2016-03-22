@@ -24,14 +24,15 @@ class CodeView(QtGui.QGraphicsView):
 		self.mousePressPnt = None
 		self.mouseCurPnt = None
 		self.isFrameSelectMode = False
-
+ 
 		self.updateTimer = QtCore.QTimer()
 		self.updateTimer.setInterval(70)
 		#print('connect')
 		self.connect(self.updateTimer, QtCore.SIGNAL('timeout()'), self, QtCore.SLOT('updateView()'))
 		#print('connect end')
-		self.updateTimer.start()
+		#self.updateTimer.start()
 		self.centerPnt = QtCore.QPointF()
+		self.scale(0.7,0.7) 
 
 	@QtCore.pyqtSlot()
 	def updateView(self):
@@ -42,11 +43,9 @@ class CodeView(QtGui.QGraphicsView):
 
 			pos = scene.getSelectedCenter()
 			self.centerPnt = self.centerPnt * 0.97 + pos * 0.03
-			self.centerOn(self.centerPnt)
-
-			self.invalidateScene()
-			self.update()
+			self.centerOn(self.centerPnt) 
 			scene.releaseLock()
+			#self.viewport().update()
 
 	def mousePressEvent(self, event):
 		self.mouseCurPnt = self.mousePressPnt = event.pos()

@@ -13,8 +13,8 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		self.setZValue(-1)
 		self.path = None
 		self.pathShape = None
+		self.curve = None
 		self.pathPnt = None
-		self.buildPath()
 
 		self.file = ''
 		self.line = -1
@@ -25,6 +25,10 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 			self.column = dbRef.column()
 
 		self.isHover = False
+
+		# (number, point)
+		self.orderData = None
+		self.buildPath()
 
 	def getNodePos(self):
 		from UIManager import UIManager
@@ -57,25 +61,61 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 
 		return QtCore.QRectF(minPnt[0], minPnt[1], maxPnt[0]-minPnt[0], maxPnt[1]- minPnt[1])
 
+	def getNumberRect(self):
+		if self.orderData:
+			pnt = self.orderData[1]
+			rect = QtCore.QRectF(pnt.x()-8, pnt.y()-8,16,16)
+			return rect
+		return QtCore.QRectF()
+
 	def buildPath(self):
 		srcPos, tarPos = self.getNodePos()
 		if self.pathPnt and (self.pathPnt[0]-srcPos).manhattanLength() < 0.05 and (self.pathPnt[1]-tarPos).manhattanLength() < 0.05:
-			return self.path
+			return self.path 
 		#print('build path', self.pathPnt, srcPos, tarPos)
 		self.pathPnt = (srcPos, tarPos)
-		path = QtGui.QPainterPath()
+		path = QtGui.QPainterPath()  
 		path.moveTo(srcPos)
 		dx = tarPos.x() - srcPos.x()
-		p1 = srcPos + QtCore.QPointF(dx*0.5, 0)
-		p2 = tarPos + QtCore.QPointF(-dx*0.7, 0)
+		p1 = srcPos + QtCore.QPointF(dx*0.25, 0)
+		p2 = tarPos + QtCore.QPointF(-dx*0.75, 0)
 		path.cubicTo(p1,p2,tarPos)
+		self.curve = QtGui.QPainterPath(path)
 		self.path = path
 
 		from PyQt4.QtGui import QPainterPathStroker
 		stroker = QPainterPathStroker()
 		stroker.setWidth(10.0)
 		self.pathShape = stroker.createStroke(self.path)
+
+		if self.orderData:
+			pnt = self.orderData[1]
+			rect = self.getNumberRect()
+			self.pathShape.addEllipse(rect)
+			self.path.addEllipse(rect)
 		return path
+
+	def findCurveYPos(self, x):
+		if not self.pathPnt:
+			return 0.0
+		if not self.curve:
+			minY = min(self.pathPnt[0].y(), self.pathPnt[1].y())
+			maxY = max(self.pathPnt[0].y(), self.pathPnt[1].y())
+			return (minY + maxY) * 0.5
+		minT = 0.0
+		maxT = 1.0
+		minPnt = self.curve.pointAtPercent(minT)
+		maxPnt = self.curve.pointAtPercent(maxT)
+		for i in range(8):
+			midT = (minT + maxT) * 0.5
+			midPnt = self.curve.pointAtPercent(midT)
+			if midPnt.x() < x:
+				minT = midT
+				minPnt = midPnt
+			else:
+				maxT = midT
+				maxPnt = midPnt
+		return (minPnt.y() + maxPnt.y()) * 0.5
 
 	def shape(self):
 		#srcPos, tarPos = self.getNodePos()
@@ -89,7 +129,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 	def paint(self, painter, styleOptionGraphicsItem, widget_widget=None):
 		painter.setRenderHint(QtGui.QPainter.Antialiasing)
 		clr = QtCore.Qt.darkGray if self.isSelected() else QtCore.Qt.lightGray
-
+ 
 		if self.isSelected() or self.isHover:
 			clr = QtGui.QColor(255,127,39)
 		else:
@@ -114,6 +154,16 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		#painter.drawLines([srcPos, tarPos, leftPos, midPos, rightPos, midPos])
 		painter.drawLines([leftPos, midPos, rightPos, midPos])
 		painter.drawPath(self.path)
+
+		if self.orderData is not None:
+			#print('order data', self.orderData)
+			#print('target pnt ', tarPos)
+			order = self.orderData[0]
+			rect = self.getNumberRect()
+			painter.setBrush(clr)
+			painter.drawEllipse(rect)
+			painter.setPen(QtGui.QPen(QtGui.QColor(0,0,0), 2.0))
+			painter.drawText(rect, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter, '%s' % order)
 
 	def hoverLeaveEvent(self, QGraphicsSceneHoverEvent):
 		super(CodeUIEdgeItem, self).hoverLeaveEvent(QGraphicsSceneHoverEvent)

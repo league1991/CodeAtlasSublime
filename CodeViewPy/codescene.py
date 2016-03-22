@@ -38,12 +38,14 @@ class SceneUpdateThread(QtCore.QThread):
 					self.updateLayeredLayoutWithComp()
 				#print('before move items')
 				self.moveItems()
+				self.updateCallOrder()
 				#print('before invalidate scene')
 				#self.scene.invalidate()
 				self.lock.release()
+				self.scene.update()
 			time.sleep(0.05)
 
-	def updatePos(self):
+	def updatePos(self): 
 		import ui.CodeUIItem as CodeUIItem
 		posList = [item.pos() for item in self.scene.itemDict.values()]
 		rList = [item.getRadius() for item in self.scene.itemDict.values()]
@@ -114,7 +116,7 @@ class SceneUpdateThread(QtCore.QThread):
 			item.setTargetPos(posList[i])
 			i+=1
 
-	def updateLayeredLayoutWithComp(self):
+	def updateLayeredLayoutWithComp(self): 
 		class Vtx(object):
 			def __init__(self, name, idx, radius = 1):
 				self.inNodes = set()
@@ -198,11 +200,11 @@ class SceneUpdateThread(QtCore.QThread):
 			for oldId in compMap:
 				r = vtxList[oldId].radius
 				vtx = Vertex(oldId)
-				height = len(vtxList[oldId].name) * 0.5 + 2
+				height = len(vtxList[oldId].name) * 0.9 + 2
 				vtx.view = VtxView(r*2.0, max(r*2.0,height))
 				V.append(vtx)
-
-			E = []
+ 
+			E = []  
 			for edgeKey in edgeList:
 				if vtxList[edgeKey[0]].comp == ithComp:
 					E.append(Edge(V[vtxList[edgeKey[0]].compIdx], V[vtxList[edgeKey[1]].compIdx]))
@@ -256,56 +258,81 @@ class SceneUpdateThread(QtCore.QThread):
 		self.itemSet = set(self.scene.itemDict.keys())
 		self.edgeNum = len(self.scene.edgeDict)
 
-	def updateLayeredLayout(self):
-		#print('update layered layout') 
-		from grandalf.graphs import Vertex, Edge, Graph
+	def updateCallOrder(self):
+		import ui.CodeUIItem
+		import ui.CodeUIEdgeItem
 
-		class VtxView(object):
-			def __init__(self, w, h):
-				self.w = w
-				self.h = h
+		for key, edge in self.scene.edgeDict.items():
+			edge.orderData = None
 
-		self.itemSet = set()
-		V = []
-		vid = {}
-		for name, item in self.scene.itemDict.items():
-			r = item.getRadius()
-			vtx = Vertex(item.getUniqueName())
-			vtx.view = VtxView(r*2.0, r*2.0)
-			vid[name] = len(V)
-			V.append(vtx)
-			self.itemSet.add(name)
-
-		E = []
-		for edgeKey, edge in self.scene.edgeDict.items():
-			vi = vid.get(edgeKey[0], None)
-			vj = vid.get(edgeKey[1], None)
-			if vi is None or vj is None:
-				continue
-			E.append(Edge(V[vi], V[vj]))
-
-		g = Graph(V,E)
-		if len(g.C) <= 0:
+		item = self.scene.selectedItems()
+		if not item:
+			return
+		item = item[0]
+		if isinstance(item, ui.CodeUIEdgeItem.CodeUIEdgeItem):
+			item = self.scene.itemDict.get(item.srcUniqueName, None)
+		if not item or item.kind != ui.CodeUIItem.ITEM_FUNCTION:
 			return
 
-		from grandalf.layouts import SugiyamaLayout
-		sug = SugiyamaLayout(g.C[0])
-		sug.init_all()
-		sug.draw(5)
+		edgeList = []
+		xRange = [1e6, -1e6]
+		for key, edge in self.scene.edgeDict.items():
+			if key[0] == item.getUniqueName() and self.scene.itemDict[key[1]].kind == ui.CodeUIItem.ITEM_FUNCTION:
+				edgeList.append(edge)
+				srcPos, tarPos = edge.getNodePos()
+				xRange[0] = min(tarPos.x(), xRange[0])
+				xRange[1] = max(tarPos.x(), xRange[1])
+		if not edgeList:
+			return
 
-		for v in g.C[0].sV:
-			item = self.scene.itemDict.get(v.data)
-			if item:
-				item.setTargetPos(QtCore.QPointF(v.view.xy[1], v.view.xy[0]))
+		basePos = 0
+		stepSize = 0
+		itemX = item.pos().x()
+		if xRange[0] < itemX and xRange[1] > itemX:
+			stepSize = 0
+			basePos = None
+		elif xRange[0] >= itemX:
+			stepSize = -10
+			basePos = xRange[0]
+		elif xRange[1] <= itemX:
+			stepSize = 10
+			basePos = xRange[1]
+
+		edgeList.sort(key = lambda edge: edge.line + edge.column / 1000.0)
+
+		#print('edge item list', edgeList)
+
+		nEdge = len(edgeList)
+		for i, edge in enumerate(edgeList):
+			srcPos, tarPos = edge.getNodePos()
+			padding = -20.0 if srcPos.x() < tarPos.x() else 20.0
+			if basePos is None:
+				x = tarPos.x() + padding
+				y = edge.findCurveYPos(x)
+				edge.orderData = (i+1, QtCore.QPointF(x,y))
+			else:
+				x = basePos + padding + stepSize * (nEdge-i-1)
+				y = edge.findCurveYPos(x)
+				edge.orderData = (i+1, QtCore.QPointF(x,y))
+
 
 	def moveItems(self):
+		#print('move items')
 		pos = QtCore.QPointF(0,0)
 		nSelected = 0
+		bboxMin = [1e6, 1e6]
+		bboxMax = [-1e6, -1e6]
 		for name, item in self.scene.itemDict.items():
 			item.moveToTarget(0.1)
 			if item.isSelected():
 				pos += item.pos()
 				nSelected+=1
+			newPos = item.pos()
+			bboxMin[0] = min(bboxMin[0], newPos.x())
+			bboxMin[1] = min(bboxMin[1], newPos.y())
+			bboxMax[0] = max(bboxMax[0], newPos.x())
+			bboxMax[1] = max(bboxMax[1], newPos.y())
+			#print('offset', offset)
 
 		for name, item in self.scene.edgeDict.items():
 			item.buildPath()
@@ -313,6 +340,20 @@ class SceneUpdateThread(QtCore.QThread):
 				pos += item.getMiddlePos()
 				nSelected+=1
 
+		# 设置四个角的item
+		if bboxMax[0] > bboxMin[0] and bboxMax[1] > bboxMin[1]:
+			cornerList = self.scene.cornerItem
+			mar = 300
+			cornerList[0].setPos(bboxMin[0]-mar, bboxMin[1]-mar)
+			cornerList[1].setPos(bboxMin[0]-mar, bboxMax[1]+mar)
+			cornerList[2].setPos(bboxMax[0]+mar, bboxMin[1]-mar)
+			cornerList[3].setPos(bboxMax[0]+mar, bboxMax[1]+mar)
+
+		for view in self.scene.views():
+			pos = self.scene.getSelectedCenter()
+			if getattr(view, 'centerPnt', None):
+				view.centerPnt = view.centerPnt * 0.97 + pos * 0.03
+				view.centerOn(view.centerPnt) 
 		# if nSelected:
 		# 	pos /= float(nSelected)
 
@@ -347,12 +388,21 @@ class CodeScene(QtGui.QGraphicsScene):
 
 		self.cornerItem = []
 		for i in range(4):
-			item = QtGui.QGraphicsRectItem(0,0,1,1)
+			item = QtGui.QGraphicsRectItem(0,0,5,5)
 			item.setPen(QtGui.QPen(QtGui.QColor(0,0,0,0)))
 			item.setBrush(QtGui.QBrush())
 			self.cornerItem.append(item)
 			self.addItem(item)
 		self.connect(self, QtCore.SIGNAL('selectionChanged()'), self, QtCore.SLOT('onSelectItems()'))
+
+	def event(self, eventObj):
+		#print('CodeScene. event', self, eventObj)
+		if getattr(self, 'lock', None):
+			self.lock.acquire()
+			res = super(CodeScene, self).event(eventObj)
+			self.lock.release()
+			return res
+		return super(CodeScene, self).event(eventObj)
 
 	def setAlphaFromLru(self):
 		ithItem = 0
@@ -605,9 +655,9 @@ class CodeScene(QtGui.QGraphicsScene):
 		#from UIManager import UIManager
 		print('find nei', minItem)
 		if minItem:
-			self.selectOneItem(minItem)
-			print('show in editor------')
-			self.showInEditor()
+			if self.selectOneItem(minItem):
+				print('show in editor------')
+				self.showInEditor()
 
 	def findNeighbourForEdge(self, centerItem, mainDirection):
 		from ui.CodeUIItem import CodeUIItem
@@ -791,9 +841,15 @@ class CodeScene(QtGui.QGraphicsScene):
 
 	def selectOneItem(self, item):
 		if not item:
-			return
-		self.clearSelection()
+			return False
 		item.setSelected(True)
+		if item.isSelected():
+			self.clearSelection()
+			item.setSelected(True)
+			return True
+		else:
+			item.setSelected(False)
+			return False
 
 		# for view in self.views():
 		# 	view.centerOn(item)
@@ -810,7 +866,9 @@ class CodeScene(QtGui.QGraphicsScene):
 				minItem = item
 
 		if minItem:
-			self.selectOneItem(minItem)
+			return self.selectOneItem(minItem)
+		else:
+			return False
 
 	def showInEditor(self):
 		from ui.CodeUIItem import CodeUIItem
