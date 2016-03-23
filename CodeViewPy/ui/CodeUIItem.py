@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
 from PyQt4 import QtCore, QtGui, uic
 import math
+import re
 
 ITEM_UNKNOWN = 0
 ITEM_VARIABLE = 1
@@ -17,16 +19,21 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		from db.DBManager import DBManager
 		entity = DBManager.instance().getDB().searchFromUniqueName(self.uniqueName)
 		self.name = ''
+		self.displayName = ''
 		self.lines = 1
 		self.kindName = ''
 		self.kind = ITEM_UNKNOWN
+		self.titleFont = QtGui.QFont('arial', 8)
+		self.fontSize = QtCore.QSize()
 		if entity:
 			self.name = entity.name()
+			self.buildDisplayName(self.name)
 			self.kindName = entity.kindname()
 			metricRes = entity.metric(('CountLine',))
 			self.lines = metricRes.get('CountLine',1)
 			if not self.lines:
 				self.lines = 1
+
 		print('name ', self.name, self.lines, self.kindName)
 
 		kindStr = self.kindName.lower()
@@ -44,14 +51,32 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			self.kind = ITEM_UNKNOWN
 			self.color = QtGui.QColor(195,195,195)
 
-		#self.titleFont = QtGui.QFont('arial', int(self.getRadius() * 0.3) + 8)
-		self.titleFont = QtGui.QFont('arial', 8)
-		fontMetrics = QtGui.QFontMetricsF(self.titleFont)
-		self.fontSize = fontMetrics.size(QtCore.Qt.TextSingleLine, self.name)
 		self.displayScore = 0
 
 		self.targetPos = self.pos()	# 用于动画目标
 		self.isHover = False
+
+	def buildDisplayName(self, name):
+		p = re.compile(r'([A-Z]*[a-z0-9]*_*)')
+		nameList = p.findall(name)
+		print('disp name list', nameList)
+		partLength = 0
+		self.displayName = ''
+		fontMetrics = QtGui.QFontMetricsF(self.titleFont)
+		for i, part in enumerate(nameList):
+			self.displayName += part
+			partLength += len(part)
+			if partLength > 8:
+				self.displayName += '\n'
+				partLength = 0
+		self.displayName = self.displayName.strip()
+		nLine = self.displayName.count('\n')+1
+		self.fontSize = fontMetrics.size(QtCore.Qt.TextSingleLine, self.name)
+		self.fontSize.setHeight(self.fontSize.height()*nLine + 6)
+		print('disp name:\n', self.displayName,'---')
+
+	def isFunction(self):
+		return self.kind == ITEM_FUNCTION
 
 	def setTargetPos(self, pos):
 		self.targetPos = pos
@@ -123,7 +148,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			painter.setPen(QtGui.QPen(QtGui.QColor(0,0,0)))
 			angle = -20
 			#painter.rotate(angle)
-			painter.drawText(rect, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter, self.name)
+			painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter, self.displayName)
 			#painter.rotate(-1.0 * angle)
 
 	def contextMenuEvent(self, event):
@@ -160,3 +185,9 @@ class CodeUIItem(QtGui.QGraphicsItem):
 	def hoverEnterEvent(self, QGraphicsSceneHoverEvent):
 		super(CodeUIItem, self).hoverEnterEvent(QGraphicsSceneHoverEvent)
 		self.isHover = True
+
+if __name__ == "__main__":
+	import re
+	p = re.compile(r'([A-Z]*[a-z0-9]*_*)')
+	s = 'aa_bbAbbbAAbbb_aa_123__'
+	print(p.findall(s))

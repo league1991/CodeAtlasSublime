@@ -77,8 +77,8 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		path = QtGui.QPainterPath()  
 		path.moveTo(srcPos)
 		dx = tarPos.x() - srcPos.x()
-		p1 = srcPos + QtCore.QPointF(dx*0.25, 0)
-		p2 = tarPos + QtCore.QPointF(-dx*0.75, 0)
+		p1 = srcPos + QtCore.QPointF(dx*0.3, 0)
+		p2 = tarPos + QtCore.QPointF(-dx*0.7, 0)
 		path.cubicTo(p1,p2,tarPos)
 		self.curve = QtGui.QPainterPath(path)
 		self.path = path
@@ -87,12 +87,6 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		stroker = QPainterPathStroker()
 		stroker.setWidth(10.0)
 		self.pathShape = stroker.createStroke(self.path)
-
-		if self.orderData:
-			pnt = self.orderData[1]
-			rect = self.getNumberRect()
-			self.pathShape.addEllipse(rect)
-			self.path.addEllipse(rect)
 		return path
 
 	def findCurveYPos(self, x):
@@ -124,7 +118,12 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		# path.lineTo(tarPos)
 		#path.addRect(self.boundingRect())
 		#return path
-		return self.pathShape
+		path = QtGui.QPainterPath(self.pathShape)
+		if self.orderData:
+			pnt = self.orderData[1]
+			rect = self.getNumberRect()
+			path.addEllipse(rect)
+		return path
 
 	def paint(self, painter, styleOptionGraphicsItem, widget_widget=None):
 		painter.setRenderHint(QtGui.QPainter.Antialiasing)
@@ -133,7 +132,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		if self.isSelected() or self.isHover:
 			clr = QtGui.QColor(255,127,39)
 		else:
-			clr = QtGui.QColor(180,180,180)
+			clr = QtGui.QColor(200,200,200)
 		painter.setPen(QtGui.QPen(clr, 2.0))
 
 		srcPos, tarPos = self.getNodePos()
@@ -163,6 +162,9 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 			painter.setBrush(clr)
 			painter.drawEllipse(rect)
 			painter.setPen(QtGui.QPen(QtGui.QColor(0,0,0), 2.0))
+
+			textFont = QtGui.QFont('arial', 10)
+			painter.setFont(textFont)
 			painter.drawText(rect, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter, '%s' % order)
 
 	def hoverLeaveEvent(self, QGraphicsSceneHoverEvent):

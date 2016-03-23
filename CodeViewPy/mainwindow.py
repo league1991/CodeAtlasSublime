@@ -73,8 +73,11 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 			dbmgr.getDB().open(dbPath)
 
 	def onTest(self):
+		import os
+		defaultPath = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)) + r'\CodeAtlasSublime.udb'
+		print(defaultPath)
 		dbmgr = DBManager.DBManager.instance()
-		dbmgr.getDB().open(r'C:\Users\me\AppData\Roaming\Sublime Text 3\Packages\CodeAtlas\CodeAtlasSublime.udb')
+		dbmgr.getDB().open(defaultPath)
 
 	def onFindCallers(self):
 		self.findRefs('callby','function')

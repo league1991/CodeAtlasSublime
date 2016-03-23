@@ -118,7 +118,7 @@ class SceneUpdateThread(QtCore.QThread):
 
 	def updateLayeredLayoutWithComp(self): 
 		class Vtx(object):
-			def __init__(self, name, idx, radius = 1):
+			def __init__(self, name, idx, radius = 1, height = 1):
 				self.inNodes = set()
 				self.outNodes = set()
 				self.name = name
@@ -127,6 +127,8 @@ class SceneUpdateThread(QtCore.QThread):
 				self.compIdx = None
 				self.pos = None
 				self.radius = radius
+				self.fontHeight = height
+				self.height = max(radius*2, height)
 
 		if len(self.scene.itemDict) == 0:
 			return
@@ -135,7 +137,7 @@ class SceneUpdateThread(QtCore.QThread):
 		edgeList = []
 		for name, item in self.scene.itemDict.items():
 			ithVtx = len(vtxList)
-			vtxList.append(Vtx(name, ithVtx, item.getRadius()))
+			vtxList.append(Vtx(name, ithVtx, item.getRadius(), item.fontSize.height()))
 			vtxName2Id[name] = ithVtx
 
 		for edgeKey, edge in self.scene.edgeDict.items():
@@ -198,13 +200,14 @@ class SceneUpdateThread(QtCore.QThread):
 			# 构造图数据并布局
 			V = []
 			for oldId in compMap:
-				r = vtxList[oldId].radius
+				w = vtxList[oldId].height
 				vtx = Vertex(oldId)
-				height = len(vtxList[oldId].name) * 0.9 + 2
-				vtx.view = VtxView(r*2.0, max(r*2.0,height))
-				V.append(vtx)
+				height = 150#len(vtxList[oldId].name) * 1.0 + 1
+				print('height--------', height)
+				vtx.view = VtxView(w, max(w,height))
+				V.append(vtx) 
  
-			E = []  
+			E = []   
 			for edgeKey in edgeList:
 				if vtxList[edgeKey[0]].comp == ithComp:
 					E.append(Edge(V[vtxList[edgeKey[0]].compIdx], V[vtxList[edgeKey[1]].compIdx]))
@@ -229,9 +232,9 @@ class SceneUpdateThread(QtCore.QThread):
 				y= v.view.xy[0]
 				oldV.pos = (x,y)
 				minPnt[0] = min(minPnt[0],x)
-				minPnt[1] = min(minPnt[1],y-oldV.radius)
+				minPnt[1] = min(minPnt[1],y-oldV.height*0.5)
 				maxPnt[0] = max(maxPnt[0],x)
-				maxPnt[1] = max(maxPnt[1],y+oldV.radius)
+				maxPnt[1] = max(maxPnt[1],y+oldV.height*0.5)
 
 			#print('bbox', minPnt, maxPnt)
 			for v in g.C[0].sV:
@@ -282,7 +285,7 @@ class SceneUpdateThread(QtCore.QThread):
 				srcPos, tarPos = edge.getNodePos()
 				xRange[0] = min(tarPos.x(), xRange[0])
 				xRange[1] = max(tarPos.x(), xRange[1])
-		if not edgeList:
+		if len(edgeList) <= 1:
 			return
 
 		basePos = 0
@@ -292,26 +295,26 @@ class SceneUpdateThread(QtCore.QThread):
 			stepSize = 0
 			basePos = None
 		elif xRange[0] >= itemX:
-			stepSize = -10
+			stepSize = -22
 			basePos = xRange[0]
 		elif xRange[1] <= itemX:
-			stepSize = 10
+			stepSize = 22
 			basePos = xRange[1]
 
 		edgeList.sort(key = lambda edge: edge.line + edge.column / 1000.0)
 
 		#print('edge item list', edgeList)
-
 		nEdge = len(edgeList)
+		levelSize = int(nEdge / 6) + 1
 		for i, edge in enumerate(edgeList):
 			srcPos, tarPos = edge.getNodePos()
-			padding = -20.0 if srcPos.x() < tarPos.x() else 20.0
+			padding = -12.0 if srcPos.x() < tarPos.x() else 12.0
 			if basePos is None:
 				x = tarPos.x() + padding
 				y = edge.findCurveYPos(x)
 				edge.orderData = (i+1, QtCore.QPointF(x,y))
 			else:
-				x = basePos + padding + stepSize * (nEdge-i-1)
+				x = basePos + padding + stepSize * int((nEdge-i-1) / levelSize)
 				y = edge.findCurveYPos(x)
 				edge.orderData = (i+1, QtCore.QPointF(x,y))
 
@@ -351,7 +354,8 @@ class SceneUpdateThread(QtCore.QThread):
 
 		for view in self.scene.views():
 			pos = self.scene.getSelectedCenter()
-			if getattr(view, 'centerPnt', None):
+			if getattr(view, 'centerPnt', None) is not None:
+				#print('view center', view.centerPnt)
 				view.centerPnt = view.centerPnt * 0.97 + pos * 0.03
 				view.centerOn(view.centerPnt) 
 		# if nSelected:
@@ -662,6 +666,18 @@ class CodeScene(QtGui.QGraphicsScene):
 	def findNeighbourForEdge(self, centerItem, mainDirection):
 		from ui.CodeUIItem import CodeUIItem
 		from ui.CodeUIEdgeItem import CodeUIEdgeItem
+
+		# 对于函数调用边，先找出其前后的调用
+		if centerItem.orderData and math.fabs(mainDirection[1]) > 0.8:
+			srcItem = self.itemDict.get(centerItem.srcUniqueName)
+			tarItem = self.itemDict.get(centerItem.tarUniqueName)
+			if srcItem and tarItem and srcItem.isFunction() and tarItem.isFunction():
+				tarOrder = centerItem.orderData[0] - 1 if mainDirection[1] < 0 else centerItem.orderData[0] + 1
+				for edgeKey, edge in self.edgeDict.items():
+					if edge.srcUniqueName == centerItem.srcUniqueName and edge.orderData and edge.orderData[0] == tarOrder:
+						return edge
+				return None
+
 		centerPos = centerItem.getMiddlePos()
 
 		srcPos, tarPos = centerItem.getNodePos()
@@ -781,7 +797,7 @@ class CodeScene(QtGui.QGraphicsScene):
 					minEdgeVal = dist
 					minEdge = item
 
-		print('min edge val', minEdgeVal, minEdge)
+		#print('min edge val', minEdgeVal, minEdge)
 		# 找出最近的节点
 		minNodeValConnected = 1.0e12
 		minNodeConnected = None
@@ -819,6 +835,28 @@ class CodeScene(QtGui.QGraphicsScene):
 
 		minEdgeVal *= 3
 		minNodeVal *= 2
+
+		# 横向优先选边
+		if math.fabs(mainDirection[0]) > 0.8:
+			if minEdgeConnected:
+				return minEdgeConnected
+			elif minEdge:
+				return minEdge
+			elif minNodeConnected:
+				return minNodeConnected
+			elif minNode:
+				return minNode
+
+		# 纵向优先选点
+		if math.fabs(mainDirection[1]) > 0.8:
+			if minNodeConnected:
+				return minNodeConnected
+			elif minNode:
+				return minNode
+			elif minEdgeConnected:
+				return minEdgeConnected
+			elif minEdge:
+				return minEdge
 
 		valList = [minEdgeVal, minEdgeValConnected, minNodeVal, minNodeValConnected]
 		itemList =[minEdge, minEdgeConnected, minNode, minNodeConnected]

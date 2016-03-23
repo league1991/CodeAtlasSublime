@@ -82,7 +82,7 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 		print('before add item')
 		for ent in ents:
 			resItem = ResultItem(ent)
-			if ent == bestEntList[0]:
+			if len(bestEntList) > 0 and ent == bestEntList[0]:
 				bestItem = resItem
 			self.resultList.addItem(resItem)
 		print('best item', bestItem, bestEntList)
