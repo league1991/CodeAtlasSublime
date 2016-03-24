@@ -40,9 +40,10 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		srcPos = srcNode.pos()
 		tarPos = tarNode.pos()
 		sign = 1 if tarPos.x() > srcPos.x() else -1
-		sr = srcNode.getRadius()
-		tr = tarNode.getRadius()
-		return srcPos + QtCore.QPointF(sr*sign,0), tarPos - QtCore.QPointF(tr*sign, 0)
+		if tarPos.x() > srcPos.x():
+			return (srcNode.getRightSlotPos(), tarNode.getLeftSlotPos())
+		else:
+			return (srcNode.getLeftSlotPos(), tarNode.getRightSlotPos())
 
 	def getMiddlePos(self):
 		from UIManager import UIManager
@@ -96,6 +97,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 			minY = min(self.pathPnt[0].y(), self.pathPnt[1].y())
 			maxY = max(self.pathPnt[0].y(), self.pathPnt[1].y())
 			return (minY + maxY) * 0.5
+		sign = 1.0 if self.pathPnt[1].x() > self.pathPnt[0].x() else -1.0
 		minT = 0.0
 		maxT = 1.0
 		minPnt = self.curve.pointAtPercent(minT)
@@ -103,7 +105,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		for i in range(8):
 			midT = (minT + maxT) * 0.5
 			midPnt = self.curve.pointAtPercent(midT)
-			if midPnt.x() < x:
+			if (midPnt.x() - x) * sign < 0:
 				minT = midT
 				minPnt = midPnt
 			else:

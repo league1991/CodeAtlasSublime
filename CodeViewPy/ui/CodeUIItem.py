@@ -37,10 +37,25 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		print('name ', self.name, self.lines, self.kindName)
 
 		kindStr = self.kindName.lower()
+		# 自定义数据
+		self.customData = {}
+
 		print('kind str', kindStr)
 		if kindStr.find('function') != -1:
 			self.kind = ITEM_FUNCTION
-			self.color = QtGui.QColor(255,218,89)
+			self.color = QtGui.QColor(158,203,22)
+
+			# 找出调用者和被调用者数目
+			dbObj = DBManager.instance().getDB()
+			callerList = dbObj.searchRefEntity(self.uniqueName, 'callby','function', True)[0]
+			calleeList = dbObj.searchRefEntity(self.uniqueName, 'call','function', True)[0]
+			# print('call: ', self.name)
+			# print(callerList)
+			# print(calleeList)
+			self.customData['nCaller'] = len(callerList)
+			self.customData['nCallee'] = len(calleeList)
+			self.customData['callerR'] = self.getCallerRadius(len(callerList))
+			self.customData['calleeR'] = self.getCallerRadius(len(calleeList))
 		elif kindStr.find('attribute') != -1 or kindStr.find('variable') != -1:
 			self.kind = ITEM_VARIABLE
 			self.color = QtGui.QColor(255,198,217)
@@ -72,7 +87,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.displayName = self.displayName.strip()
 		nLine = self.displayName.count('\n')+1
 		self.fontSize = fontMetrics.size(QtCore.Qt.TextSingleLine, self.name)
-		self.fontSize.setHeight(self.fontSize.height()*nLine + 6)
+		self.fontSize.setHeight(self.fontSize.height()*nLine + 13)
 		print('disp name:\n', self.displayName,'---')
 
 	def isFunction(self):
@@ -95,10 +110,30 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		return DBManager.instance().getDB().searchFromUniqueName(self.uniqueName)
 
 	def getRadius(self):
-		return math.pow(float(self.lines+1), 0.25) * 5
+		return math.pow(float(self.lines+1), 0.25) * 5.0
+
+	def getHeight(self):
+		h = max(self.fontSize.height(), self.getRadius() * 2)
+		if self.isFunction():
+			h = max(h, self.customData['callerR'] / 0.8, self.customData['calleeR'] / 0.8)
+		return h
+
+	def getLeftSlotPos(self):
+		l = self.getRadius()
+		if self.isFunction():
+			l += self.customData['callerR']
+		return self.pos() + QtCore.QPointF(-l, 0)
+
+	def getRightSlotPos(self):
+		l = self.getRadius()
+		if self.isFunction():
+			l += self.customData['calleeR']
+		return self.pos() + QtCore.QPointF(l, 0)
 
 	def boundingRect(self):
 		adj = 10
+		if self.isFunction():
+			adj = max(self.customData['callerR'], self.customData['calleeR'], adj)
 		r = self.getRadius()
 		return QtCore.QRectF(-r-adj, -r-adj, r*2 + adj*2, r*2 + adj*2)
 
@@ -107,6 +142,9 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		path = QtGui.QPainterPath()
 		path.addEllipse(-r,-r,r*2,r*2)
 		return path
+
+	def getCallerRadius(self, num):
+		return math.sqrt(float(num)) * 5.0
 
 	def paint(self, painter, styleOptionGraphicsItem, widget_widget=None):
 		#super(CodeUIItem, self).paint(painter, styleOptionGraphicsItem, widget_widget)
@@ -121,9 +159,27 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		selectedOrHover = self.isSelected() or self.isHover
 		if r * lod > 1.5:
 			painter.setPen(QtCore.Qt.NoPen)
+
+			clr = self.color
+
+			if self.isFunction():
+				clr = clr.lighter(130)
+				if selectedOrHover:
+					clr = clr.darker(150)
+				painter.setBrush(clr)
+				nCaller = self.customData.get('nCaller', 0)
+				nCallee = self.customData.get('nCallee', 0)
+				# print('ncall', nCaller, nCallee)
+				if nCaller > 0:
+					cr = self.customData['callerR']
+					painter.drawPie(-r-cr, -cr, cr*2, cr*2, 150*16, 60*16)
+				if nCallee > 0:
+					cr = self.customData['calleeR']
+					painter.drawPie(r-cr, -cr, cr*2, cr*2, -30*16, 60*16)
+
 			clr = self.color
 			if selectedOrHover:
-				clr = clr.dark(150)
+				clr = clr.darker(150)
 			painter.setBrush(clr)
 			painter.drawEllipse(-r,-r,r*2,r*2)
 
@@ -163,8 +219,19 @@ class CodeUIItem(QtGui.QGraphicsItem):
 
 	def mousePressEvent(self, event):
 		super(CodeUIItem, self).mousePressEvent(event)
-
 		self.displayScore += 1
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		if scene:
+			scene.autoFocus = False
+
+	def mouseReleaseEvent(self, event):
+		super(CodeUIItem, self).mouseReleaseEvent(event)
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		if scene:
+			scene.autoFocus = True
+
 
 	def mouseDoubleClickEvent(self, event):
 		super(CodeUIItem, self).mouseDoubleClickEvent(event)

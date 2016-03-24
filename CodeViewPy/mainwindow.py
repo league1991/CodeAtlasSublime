@@ -31,6 +31,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.actionFindUses.triggered.connect(self.onFindUses)
 		self.actionGoToEditor.triggered.connect(self.goToEditor)
 		self.actionDeleteOldestItem.triggered.connect(self.onClearOldestItem)
+		self.actionToggleFocus.triggered.connect(self.onToggleFocus)
 
 		self.actionUpdatePosition.triggered.connect(self.onUpdatePosition)
 		self.actionDeleteOldItems.triggered.connect(self.onDeleteOldItems)
@@ -46,6 +47,11 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 
 	def getScene(self):
 		return self.getView().scene()
+
+	def onToggleFocus(self):
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		scene.autoFocusToggle = not scene.autoFocusToggle
 
 	def onUpdatePosition(self):
 		from UIManager import UIManager

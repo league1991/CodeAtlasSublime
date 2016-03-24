@@ -45,7 +45,7 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 			#print('ent', ent.name(), ent.longname(), searchWord, type(ent.name), type(searchWord))
  
 		#print('best ent list 1', bestEntList)
-		if searchFile: 
+		if searchFile and len(ents) < 100:
 			entList = bestEntList
 			bestEntList = []
 			bestEntDist = []
@@ -80,12 +80,14 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 
 		bestItem = None
 		print('before add item')
-		for ent in ents:
+		for i, ent in enumerate(ents):
+			if i > 200:
+				break
 			resItem = ResultItem(ent)
 			if len(bestEntList) > 0 and ent == bestEntList[0]:
 				bestItem = resItem
 			self.resultList.addItem(resItem)
-		print('best item', bestItem, bestEntList)
+		#print('best item', bestItem, bestEntList)
 		if bestItem:
 			self.resultList.setCurrentItem(bestItem)
 

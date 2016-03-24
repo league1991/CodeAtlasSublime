@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>262</width>
+    <width>305</width>
     <height>649</height>
    </rect>
   </property>
@@ -41,7 +41,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>262</width>
+     <width>305</width>
      <height>22</height>
     </rect>
    </property>
@@ -73,6 +73,7 @@
     <addaction name="actionDeleteOldItems"/>
     <addaction name="actionDeleteSelectedItems"/>
     <addaction name="actionDeleteOldestItem"/>
+    <addaction name="actionToggleFocus"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuItem"/>
@@ -104,6 +105,12 @@
    <widget class="SearchWindow" name="searchWidget"/>
   </widget>
   <widget class="QToolBar" name="toolBar">
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>8</pointsize>
+    </font>
+   </property>
    <property name="windowTitle">
     <string>toolBar</string>
    </property>
@@ -115,9 +122,7 @@
    </attribute>
    <addaction name="actionOpen"/>
    <addaction name="actionTest"/>
-   <addaction name="actionDeleteOldItems"/>
-   <addaction name="actionDeleteSelectedItems"/>
-   <addaction name="actionDeleteOldestItem"/>
+   <addaction name="actionToggleFocus"/>
   </widget>
   <action name="actionOpen">
    <property name="text">
@@ -191,6 +196,17 @@
   <action name="actionDeleteOldestItem">
    <property name="text">
     <string>Delete Oldest Item</string>
+   </property>
+  </action>
+  <action name="actionToggleFocus">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Toggle Focus</string>
    </property>
   </action>
  </widget>

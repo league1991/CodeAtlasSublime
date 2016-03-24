@@ -14,7 +14,7 @@ class Start_atlas_Command(ApplicationCommand):
 		curPath = os.path.split(os.path.realpath(__file__))[0]
 		print('curPath ', curPath)		
 		subprocess.Popen(curPath + '\\codeView.bat', cwd = curPath, stdout = None)
-		
+		 
 		#curPath = curPath + '\\CodeViewPy'
 		#subprocess.Popen('main', cwd = curPath, shell = True )
 

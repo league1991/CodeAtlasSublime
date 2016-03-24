@@ -129,6 +129,9 @@ class SceneUpdateThread(QtCore.QThread):
 				self.radius = radius
 				self.fontHeight = height
 				self.height = max(radius*2, height)
+				self.firstKey = 0.0
+				self.secondKey = 0.0
+				self.thirdKey = 0.0
 
 		if len(self.scene.itemDict) == 0:
 			return
@@ -137,8 +140,19 @@ class SceneUpdateThread(QtCore.QThread):
 		edgeList = []
 		for name, item in self.scene.itemDict.items():
 			ithVtx = len(vtxList)
-			vtxList.append(Vtx(name, ithVtx, item.getRadius(), item.fontSize.height()))
+			v = Vtx(name, ithVtx, item.getRadius(), item.getHeight())
+			v.dispName = item.name
+			vtxList.append(v)
 			vtxName2Id[name] = ithVtx
+
+		for edgeKey, edge in self.scene.edgeDict.items():
+			v1 = self.scene.itemDict[edgeKey[0]]
+			v2 = self.scene.itemDict[edgeKey[1]]
+			if v1.isFunction() and v2.isFunction():
+				vtx2 = vtxList[vtxName2Id[edgeKey[1]]]
+				vtx2.firstKey = hash(edge.file)
+				vtx2.secondKey = edge.line
+				vtx2.thirdKey = edge.column
 
 		for edgeKey, edge in self.scene.edgeDict.items():
 			v1 = vtxName2Id[edgeKey[0]]
@@ -150,6 +164,7 @@ class SceneUpdateThread(QtCore.QThread):
 		#print('vtx list', vtxList)
 		#print('edge list', edgeList)
 
+		# 构造连通分量
 		remainSet = set([i for i in range(len(vtxList))])
 		compList = []   # [[idx1,idx2,...],[...]]
 		while len(remainSet) > 0:
@@ -179,7 +194,15 @@ class SceneUpdateThread(QtCore.QThread):
 							newIds.append(outId)
 					remainSet.discard(id)
 				ids = newIds
-			# 增加一个完整的连通分量
+
+			# 按节点被调用顺序排序, 没有用
+			# print('comp before sort', compMap)
+			# compMap.sort(key = lambda vid: vtxList[vid].secondKey + vtxList[vid].thirdKey / 200.0)
+			# for i, vid in enumerate(compMap):
+			# 	vtxList[vid].compIdx = i
+			# 	print(vtxList[vid].dispName, i)
+			# print('comp after sort', compMap)
+			# 增加一个连通分量
 			compList.append(compMap)
 
 		#print('comp list', compList)
@@ -202,9 +225,9 @@ class SceneUpdateThread(QtCore.QThread):
 			for oldId in compMap:
 				w = vtxList[oldId].height
 				vtx = Vertex(oldId)
-				height = 150#len(vtxList[oldId].name) * 1.0 + 1
-				print('height--------', height)
-				vtx.view = VtxView(w, max(w,height))
+				height = 170#len(vtxList[oldId].name) * 1.0 + 1
+				#print('height--------', height)
+				vtx.view = VtxView(w, height)
 				V.append(vtx) 
  
 			E = []   
@@ -295,10 +318,10 @@ class SceneUpdateThread(QtCore.QThread):
 			stepSize = 0
 			basePos = None
 		elif xRange[0] >= itemX:
-			stepSize = -22
+			stepSize = -20
 			basePos = xRange[0]
 		elif xRange[1] <= itemX:
-			stepSize = 22
+			stepSize = 20
 			basePos = xRange[1]
 
 		edgeList.sort(key = lambda edge: edge.line + edge.column / 1000.0)
@@ -352,12 +375,13 @@ class SceneUpdateThread(QtCore.QThread):
 			cornerList[2].setPos(bboxMax[0]+mar, bboxMin[1]-mar)
 			cornerList[3].setPos(bboxMax[0]+mar, bboxMax[1]+mar)
 
-		for view in self.scene.views():
-			pos = self.scene.getSelectedCenter()
-			if getattr(view, 'centerPnt', None) is not None:
-				#print('view center', view.centerPnt)
-				view.centerPnt = view.centerPnt * 0.97 + pos * 0.03
-				view.centerOn(view.centerPnt) 
+		if self.scene.isAutoFocus():
+			for view in self.scene.views():
+				pos = self.scene.getSelectedCenter()
+				if getattr(view, 'centerPnt', None) is not None:
+					#print('view center', view.centerPnt)
+					view.centerPnt = view.centerPnt * 0.97 + pos * 0.03
+					view.centerOn(view.centerPnt)
 		# if nSelected:
 		# 	pos /= float(nSelected)
 
@@ -391,6 +415,8 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.updateThread.start()
 
 		self.cornerItem = []
+		self.autoFocus = True
+		self.autoFocusToggle = True
 		for i in range(4):
 			item = QtGui.QGraphicsRectItem(0,0,5,5)
 			item.setPen(QtGui.QPen(QtGui.QColor(0,0,0,0)))
@@ -398,6 +424,9 @@ class CodeScene(QtGui.QGraphicsScene):
 			self.cornerItem.append(item)
 			self.addItem(item)
 		self.connect(self, QtCore.SIGNAL('selectionChanged()'), self, QtCore.SLOT('onSelectItems()'))
+
+	def isAutoFocus(self):
+		return self.autoFocus and self.autoFocusToggle
 
 	def event(self, eventObj):
 		#print('CodeScene. event', self, eventObj)
@@ -771,6 +800,12 @@ class CodeScene(QtGui.QGraphicsScene):
 		from ui.CodeUIEdgeItem import CodeUIEdgeItem
 		centerPos = centerItem.pos()
 
+		if centerItem.isFunction():
+			if mainDirection[0] > 0.8:
+				for edgeKey, edge in self.edgeDict.items():
+					if edge.srcUniqueName == centerItem.getUniqueName() and edge.orderData and edge.orderData[0] == 1:
+						return edge
+
 		# 找出最近的边
 		minEdgeValConnected = 1.0e12
 		minEdgeConnected = None
@@ -849,10 +884,10 @@ class CodeScene(QtGui.QGraphicsScene):
 
 		# 纵向优先选点
 		if math.fabs(mainDirection[1]) > 0.8:
-			if minNodeConnected:
-				return minNodeConnected
-			elif minNode:
+			if minNode:
 				return minNode
+			elif minNodeConnected:
+				return minNodeConnected
 			elif minEdgeConnected:
 				return minEdgeConnected
 			elif minEdge:
