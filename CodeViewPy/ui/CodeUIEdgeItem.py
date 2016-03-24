@@ -39,11 +39,12 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 			return QtCore.QPointF(), QtCore.QPointF()
 		srcPos = srcNode.pos()
 		tarPos = tarNode.pos()
-		sign = 1 if tarPos.x() > srcPos.x() else -1
-		if tarPos.x() > srcPos.x():
-			return (srcNode.getRightSlotPos(), tarNode.getLeftSlotPos())
-		else:
-			return (srcNode.getLeftSlotPos(), tarNode.getRightSlotPos())
+		#sign = 1 if tarPos.x() > srcPos.x() else -1
+		return (srcNode.getRightSlotPos(), tarNode.getLeftSlotPos())
+		# if tarPos.x() > srcPos.x():
+		# 	return (srcNode.getRightSlotPos(), tarNode.getLeftSlotPos())
+		# else:
+		# 	return (srcNode.getLeftSlotPos(), tarNode.getRightSlotPos())
 
 	def getMiddlePos(self):
 		from UIManager import UIManager
@@ -153,7 +154,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		rightPos = QtCore.QPointF(midPos.x() + d[0]*back + ld[0]*-side, midPos.y() + d[1]*back + ld[1]*-side)
 
 		#painter.drawLines([srcPos, tarPos, leftPos, midPos, rightPos, midPos])
-		painter.drawLines([leftPos, midPos, rightPos, midPos])
+		#painter.drawLines([leftPos, midPos, rightPos, midPos])
 		painter.drawPath(self.path)
 
 		if self.orderData is not None:
