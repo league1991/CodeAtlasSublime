@@ -14,6 +14,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.setFlag(QtGui.QGraphicsItem.ItemIsMovable)
 		self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable)
 		self.setFlag(QtGui.QGraphicsItem.ItemIsFocusable)
+		self.setAcceptDrops(True);
 		self.setAcceptHoverEvents(True)
 		self.uniqueName = uniqueName
 		from db.DBManager import DBManager
@@ -144,7 +145,8 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		return path
 
 	def getCallerRadius(self, num):
-		return math.sqrt(float(num)) * 5.0
+		#return math.sqrt(float(num)) * 5.0
+		return math.log2(float(num+1.0)) * 3.0
 
 	def paint(self, painter, styleOptionGraphicsItem, widget_widget=None):
 		#super(CodeUIItem, self).paint(painter, styleOptionGraphicsItem, widget_widget)
@@ -157,13 +159,13 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		lod = QtGui.QStyleOptionGraphicsItem().levelOfDetailFromTransform(trans)
 
 		selectedOrHover = self.isSelected() or self.isHover
-		if r * lod > 1.5:
+		if r * lod > 1.0:
 			painter.setPen(QtCore.Qt.NoPen)
 
 			clr = self.color
 
 			if self.isFunction():
-				clr = clr.lighter(130)
+				#clr = clr.lighter(130)
 				if selectedOrHover:
 					clr = clr.darker(150)
 				painter.setBrush(clr)
@@ -172,10 +174,10 @@ class CodeUIItem(QtGui.QGraphicsItem):
 				# print('ncall', nCaller, nCallee)
 				if nCaller > 0:
 					cr = self.customData['callerR']
-					painter.drawPie(-r-cr, -cr, cr*2, cr*2, 150*16, 60*16)
+					painter.drawPie(-r-cr, -cr, cr*2, cr*2, 160*16, 40*16)
 				if nCallee > 0:
 					cr = self.customData['calleeR']
-					painter.drawPie(r-cr, -cr, cr*2, cr*2, -30*16, 60*16)
+					painter.drawPie(r-cr, -cr, cr*2, cr*2, -20*16, 40*16)
 
 			clr = self.color
 			if selectedOrHover:
@@ -211,8 +213,8 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		#print ('context menu')
 
 		from UIManager import UIManager
-		UIManager.instance().getScene().clearSelection()
-		self.setSelected(True)
+		#UIManager.instance().getScene().clearSelection()
+		#self.setSelected(True)
 
 		itemMenu = UIManager.instance().getMainUI().getItemMenu()
 		itemMenu.exec(event.screenPos())
@@ -225,12 +227,18 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		if scene:
 			scene.autoFocus = False
 
+		# if event.button() == QtCore.Qt.MidButton:
+		# 	self.setCursor(QtCore.Qt.ClosedHandCursor)
+
 	def mouseReleaseEvent(self, event):
 		super(CodeUIItem, self).mouseReleaseEvent(event)
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
 		if scene:
 			scene.autoFocus = True
+
+		# if event.button() == QtCore.Qt.MidButton:
+		# 	self.setCursor(QtCore.Qt.OpenHandCursor)
 
 
 	def mouseDoubleClickEvent(self, event):
@@ -241,9 +249,19 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		if scene:
 			scene.showInEditor()
 
+
 	def mouseMoveEvent(self, event):
 		super(CodeUIItem, self).mouseMoveEvent(event)
 		self.targetPos = QtCore.QPointF(self.pos().x(), self.pos().y())
+
+		if event.buttons().__int__() & QtCore.Qt.MidButton:
+			print('event button:', event.buttons().__int__())
+			drag = QtGui.QDrag(event.widget())
+			mime = QtCore.QMimeData()
+			mime.setText(self.uniqueName)
+			drag.setMimeData(mime)
+			drag.exec()
+			#self.setCursor(QtCore.Qt.OpenHandCursor)
 
 	def hoverLeaveEvent(self, QGraphicsSceneHoverEvent):
 		super(CodeUIItem, self).hoverLeaveEvent(QGraphicsSceneHoverEvent)
@@ -252,6 +270,32 @@ class CodeUIItem(QtGui.QGraphicsItem):
 	def hoverEnterEvent(self, QGraphicsSceneHoverEvent):
 		super(CodeUIItem, self).hoverEnterEvent(QGraphicsSceneHoverEvent)
 		self.isHover = True
+
+	def dragEnterEvent(self, event):
+		#print('drag', event, event.source())
+		event.setAccepted(True)
+
+	def dropEvent(self, event):
+		super(CodeUIItem, self).dropEvent(event)
+		print('drop', event, event.source(), event.mimeData().text())
+
+		srcName = event.mimeData().text()
+
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		if not scene:
+			return
+
+		srcItem = scene.getNode(srcName)
+		print('src item', srcItem)
+		if not srcItem:
+			return
+
+		print('src is function', srcItem.isFunction() , self.isFunction())
+		if not srcItem.isFunction() or not self.isFunction():
+			return
+
+		scene.addCallPaths(srcName, self.uniqueName)
 
 if __name__ == "__main__":
 	import re

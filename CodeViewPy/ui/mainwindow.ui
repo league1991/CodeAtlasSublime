@@ -17,7 +17,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Code Atlas</string>
   </property>
   <property name="animated">
    <bool>false</bool>
@@ -207,6 +207,11 @@
    </property>
    <property name="text">
     <string>Toggle Focus</string>
+   </property>
+  </action>
+  <action name="actionFindCallPaths">
+   <property name="text">
+    <string>Find Call Paths</string>
    </property>
   </action>
  </widget>

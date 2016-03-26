@@ -980,6 +980,40 @@ class CodeScene(QtGui.QGraphicsScene):
 		socket = DBManager.instance().getSocket()
 		socket.remoteCall('goToPage', (fileName, line, column))
 
+	def _addCallPaths(self, srcName, tarName):
+		from db.DBManager import DBManager
+		from ui.CodeUIItem import CodeUIItem
+		dbObj = DBManager.instance().getDB()
+		if not dbObj:
+			return []
+
+		srcItem = self.itemDict.get(srcName, None)
+		tarItem = self.itemDict.get(tarName, None)
+		if not srcItem or not tarItem or not isinstance(srcItem, CodeUIItem) or not isinstance(tarItem, CodeUIItem) or\
+				not srcItem.isFunction() or not tarItem.isFunction():
+			return []
+
+		entList, refList = dbObj.searchCallPaths(srcName, tarName)
+		for entName in entList:
+			self._doAddCodeItem(entName)
+		for refObj in refList:
+			self._doAddCodeEdgeItem(refObj[0], refObj[1], refObj[2])
+		return entList
+
+	def addCallPaths(self, srcName = '', tarName = ''):
+		self.lock.acquire()
+		print('add call path', srcName, tarName)
+		if not srcName or not tarName:
+			itemList = self.selectedItems()
+			srcName, tarName = itemList[0].getUniqueName(), itemList[1].getUniqueName()
+			if self.itemLruQueue.index(srcName) < self.itemLruQueue.index(tarName):
+				tarName, srcName = srcName, tarName
+
+		entNameList = self._addCallPaths(srcName, tarName)
+		self.updateLRU(entNameList)
+		self.removeItemLRU()
+		self.lock.release()
+
 	def _addRefs(self, refStr, entStr, inverseEdge = False):
 		from db.DBManager import DBManager
 		from ui.CodeUIItem import CodeUIItem
@@ -1094,8 +1128,8 @@ class CodeScene(QtGui.QGraphicsScene):
 	def onSelectItems(self):
 		from ui.CodeUIItem import CodeUIItem
 		from ui.CodeUIEdgeItem import CodeUIEdgeItem
-		#print( 'on select items')
 		itemList = self.selectedItems()
+		#print( 'on select items', itemList)
 
 		for item in itemList:
 			if not isinstance(item, CodeUIItem):

@@ -20,6 +20,7 @@ class CodeView(QtGui.QGraphicsView):
 		self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
 		self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 		self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+		self.setAcceptDrops(True)
 
 		self.mousePressPnt = None
 		self.mouseCurPnt = None

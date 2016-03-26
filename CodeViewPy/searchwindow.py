@@ -39,8 +39,10 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 			self.resultList.takeItem(0)
 
 		bestEntList = []
+		if not ents:
+			return
 		for ent in ents:
-			if ent.name() == searchWord:
+			if ent and ent.name() == searchWord:
 				bestEntList.append(ent)
 			#print('ent', ent.name(), ent.longname(), searchWord, type(ent.name), type(searchWord))
  
@@ -56,6 +58,8 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 				fileNameSet = set()
 				lineDist = 10000000
 				for ref in refs:
+					if not ref:
+						continue
 					fileEnt = ref.file()
 					line = ref.line()
 					column = ref.column()
@@ -105,6 +109,7 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 		if not item or not scene:
 			return
 
+		scene.acquireLock()
 		print('before code item')
 		res, codeItem = scene.addCodeItem(item.getUniqueName())
 		print('add code item')
@@ -112,6 +117,8 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 		if codeItem:
 			UIManager.instance().getScene().clearSelection()
 			codeItem.setSelected(True)
+
+		scene.releaseLock()
 
 if __name__ == "__main__":
 	app = QtGui.QApplication(sys.argv)

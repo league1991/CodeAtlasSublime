@@ -32,12 +32,12 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.actionGoToEditor.triggered.connect(self.goToEditor)
 		self.actionDeleteOldestItem.triggered.connect(self.onClearOldestItem)
 		self.actionToggleFocus.triggered.connect(self.onToggleFocus)
+		self.actionFindCallPaths.triggered.connect(self.onFindCallPaths)
 
 		self.actionUpdatePosition.triggered.connect(self.onUpdatePosition)
 		self.actionDeleteOldItems.triggered.connect(self.onDeleteOldItems)
 		self.actionDeleteSelectedItems.triggered.connect(self.onDeleteSelectedItems)
 		self.setCentralWidget(codeview.CodeView())
-
 
 	def getItemMenu(self):
 		return self.menuItem
@@ -47,6 +47,11 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 
 	def getScene(self):
 		return self.getView().scene()
+
+	def onFindCallPaths(self):
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		scene.addCallPaths()
 
 	def onToggleFocus(self):
 		from UIManager import UIManager
@@ -146,6 +151,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		sw.kindEdit.setText(kind)
 		sw.fileEdit.setText(fileName)
 		sw.lineBox.setValue(line)
+
 		print('search')
 		sw.onSearch()
 		print('add to scene')
