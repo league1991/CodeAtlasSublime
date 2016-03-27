@@ -1002,7 +1002,7 @@ class CodeScene(QtGui.QGraphicsScene):
 
 	def addCallPaths(self, srcName = '', tarName = ''):
 		self.lock.acquire()
-		print('add call path', srcName, tarName)
+		#print('add call path', srcName, tarName)
 		if not srcName or not tarName:
 			itemList = self.selectedItems()
 			srcName, tarName = itemList[0].getUniqueName(), itemList[1].getUniqueName()

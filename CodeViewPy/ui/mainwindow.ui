@@ -141,10 +141,16 @@
    <property name="text">
     <string>Find Callers</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+C</string>
+   </property>
   </action>
   <action name="actionFindCallees">
    <property name="text">
     <string>Find Callees</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+V</string>
    </property>
   </action>
   <action name="actionUpdatePosition">
@@ -164,10 +170,16 @@
    <property name="text">
     <string>Find Members</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+M</string>
+   </property>
   </action>
   <action name="actionFindBases">
    <property name="text">
     <string>Find Bases</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+B</string>
    </property>
   </action>
   <action name="actionDeleteSelectedItems">
@@ -187,10 +199,16 @@
    <property name="text">
     <string>Find Uses</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+U</string>
+   </property>
   </action>
   <action name="actionGoToEditor">
    <property name="text">
     <string>Go to Editor</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+G</string>
    </property>
   </action>
   <action name="actionDeleteOldestItem">
