@@ -33,6 +33,10 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.actionDeleteOldestItem.triggered.connect(self.onClearOldestItem)
 		self.actionToggleFocus.triggered.connect(self.onToggleFocus)
 		self.actionFindCallPaths.triggered.connect(self.onFindCallPaths)
+		self.actionGoUp.triggered.connect(self.goToUp)
+		self.actionGoDown.triggered.connect(self.goToDown)
+		self.actionGoLeft.triggered.connect(self.goToLeft)
+		self.actionGoRight.triggered.connect(self.goToRight)
 
 		self.actionUpdatePosition.triggered.connect(self.onUpdatePosition)
 		self.actionDeleteOldItems.triggered.connect(self.onDeleteOldItems)
