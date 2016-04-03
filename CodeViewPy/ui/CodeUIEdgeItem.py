@@ -29,6 +29,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		# (number, point)
 		self.orderData = None
 		self.buildPath()
+		self.isConnectedToFocusNode = False
 
 	def getNodePos(self):
 		from UIManager import UIManager
@@ -134,8 +135,11 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
  
 		if self.isSelected() or self.isHover:
 			clr = QtGui.QColor(255,127,39)
+		elif self.isConnectedToFocusNode:
+			clr = QtGui.QColor(200,200,200,255)
 		else:
-			clr = QtGui.QColor(200,200,200)
+			clr = QtGui.QColor(230,230,230,255)
+
 		painter.setPen(QtGui.QPen(clr, 2.0))
 
 		srcPos, tarPos = self.getNodePos()
@@ -164,6 +168,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 			rect = self.getNumberRect()
 			painter.setBrush(clr)
 			painter.drawEllipse(rect)
+			#painter.drawRect(rect)
 			painter.setPen(QtGui.QPen(QtGui.QColor(0,0,0), 2.0))
 
 			textFont = QtGui.QFont('arial', 10)

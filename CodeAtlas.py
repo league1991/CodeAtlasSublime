@@ -9,9 +9,9 @@ from CodeAtlas.DataManager import DataManager
 class Start_atlas_Command(ApplicationCommand):
 	def is_enabled(self):
 		return True
-
+ 
 	def run(self):
-		curPath = os.path.split(os.path.realpath(__file__))[0]
+		curPath = os.path.split(os.path.realpath(__file__))[0] 
 		print('curPath ', curPath)		
 		subprocess.Popen(curPath + '\\codeView.bat', cwd = curPath, stdout = None)
 		 

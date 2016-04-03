@@ -62,10 +62,10 @@ class CodeDB(QtCore.QObject):
 
 	def searchRefEntity(self, uniqueName, refKindStr, entKindStr, isUnique = True):
 		if not self._db:
-			return []
+			return [],[]
 		ent = self._db.lookup_uniquename(uniqueName)
 		if not ent :
-			return []
+			return [],[]
 
 		refList = ent.refs(refKindStr, entKindStr, isUnique)
 		entList = [refObj.ent().uniquename() for refObj in refList]

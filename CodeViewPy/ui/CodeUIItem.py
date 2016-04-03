@@ -35,13 +35,13 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			if not self.lines:
 				self.lines = 1
 
-		print('name ', self.name, self.lines, self.kindName)
+		#print('name ', self.name, self.lines, self.kindName)
 
 		kindStr = self.kindName.lower()
 		# 自定义数据
 		self.customData = {}
 
-		print('kind str', kindStr)
+		#print('kind str', kindStr)
 		if kindStr.find('function') != -1:
 			self.kind = ITEM_FUNCTION
 			self.color = QtGui.QColor(158,203,22)
@@ -75,21 +75,21 @@ class CodeUIItem(QtGui.QGraphicsItem):
 	def buildDisplayName(self, name):
 		p = re.compile(r'([A-Z]*[a-z0-9]*_*)')
 		nameList = p.findall(name)
-		print('disp name list', nameList)
+		#print('disp name list', nameList)
 		partLength = 0
 		self.displayName = ''
 		fontMetrics = QtGui.QFontMetricsF(self.titleFont)
 		for i, part in enumerate(nameList):
 			self.displayName += part
 			partLength += len(part)
-			if partLength > 8:
-				self.displayName += '\n'
+			if partLength > 13:
+				self.displayName += '\n     '
 				partLength = 0
 		self.displayName = self.displayName.strip()
 		nLine = self.displayName.count('\n')+1
 		self.fontSize = fontMetrics.size(QtCore.Qt.TextSingleLine, self.name)
 		self.fontSize.setHeight(self.fontSize.height()*nLine + 13)
-		print('disp name:\n', self.displayName,'---')
+		#print('disp name:\n', self.displayName,'---')
 
 	def isFunction(self):
 		return self.kind == ITEM_FUNCTION
@@ -132,10 +132,10 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		return self.pos() + QtCore.QPointF(l, 0)
 
 	def boundingRect(self):
-		adj = 10
+		r = self.getRadius()
+		adj = r * 2 # 10
 		if self.isFunction():
 			adj = max(self.customData['callerR'], self.customData['calleeR'], adj)
-		r = self.getRadius()
 		return QtCore.QRectF(-r-adj, -r-adj, r*2 + adj*2, r*2 + adj*2)
 
 	def shape(self):

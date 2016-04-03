@@ -42,7 +42,7 @@
      <x>0</x>
      <y>0</y>
      <width>305</width>
-     <height>22</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -187,7 +187,7 @@
     <string>Delete Selected Items</string>
    </property>
    <property name="shortcut">
-    <string>Del</string>
+    <string>Alt+Del</string>
    </property>
   </action>
   <action name="actionAnalyze">
@@ -230,6 +230,29 @@
   <action name="actionFindCallPaths">
    <property name="text">
     <string>Find Call Paths</string>
+   </property>
+  </action>
+  <action name="actionGoUp">
+   <property name="text">
+    <string>Go Up</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Up</string>
+   </property>
+  </action>
+  <action name="actionGoDown">
+   <property name="text">
+    <string>Go Down</string>
+   </property>
+  </action>
+  <action name="actionGoLeft">
+   <property name="text">
+    <string>Go Left</string>
+   </property>
+  </action>
+  <action name="actionGoRight">
+   <property name="text">
+    <string>Go Right</string>
    </property>
   </action>
  </widget>

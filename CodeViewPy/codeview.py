@@ -48,6 +48,22 @@ class CodeView(QtGui.QGraphicsView):
 			scene.releaseLock()
 			#self.viewport().update()
 
+	def keyPressEvent(self, event):
+		if event.modifiers() == QtCore.Qt.AltModifier:
+			from UIManager import UIManager
+			mainUI = UIManager.instance().getMainUI()
+			if event.key() == QtCore.Qt.Key_Up:
+				mainUI.goToUp()
+			elif event.key() == QtCore.Qt.Key_Down:
+				mainUI.goToDown()
+			elif event.key() == QtCore.Qt.Key_Left:
+				mainUI.goToLeft()
+			elif event.key() == QtCore.Qt.Key_Right:
+				mainUI.goToRight()
+
+		else:
+			super(CodeView, self).keyPressEvent(event)
+
 	def mousePressEvent(self, event):
 		self.mouseCurPnt = self.mousePressPnt = event.pos()
 
@@ -91,6 +107,8 @@ class CodeView(QtGui.QGraphicsView):
 		mov = posMouse - event.pos()
 		self.horizontalScrollBar().setValue(mov.x() + self.horizontalScrollBar().value())
 		self.verticalScrollBar().setValue(mov.x() + self.verticalScrollBar().value())
+
+		self.centerPnt = self.mapToScene(self.viewport().rect().center())
 
 	def drawForeground(self, painter, rectF):
 		super(CodeView, self).drawForeground(painter, rectF)

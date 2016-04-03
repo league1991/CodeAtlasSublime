@@ -28,25 +28,33 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 
 
 	def onSearch(self):
+		print('on search')
 		searchWord = self.inputEdit.text()
 		searchKind = self.kindEdit.text() 
 		searchFile = self.fileEdit.text()
 		searchLine = self.lineBox.value()
 		db = DBManager.instance().getDB()
+		if not db:
+			return
+		print('db search', searchWord, searchKind, searchFile, searchLine)
 		ents = db.search(searchWord, searchKind)
 
-		while self.resultList.count() > 0:
-			self.resultList.takeItem(0)
+		print('before take item')
+		# while self.resultList.count() > 0:
+		# 	print('item count', self.resultList.count())
+		# 	self.resultList.takeItem(0)
+		self.resultList.clear()
 
 		bestEntList = []
 		if not ents:
 			return
+		print('ents')
 		for ent in ents:
 			if ent and ent.name() == searchWord:
 				bestEntList.append(ent)
 			#print('ent', ent.name(), ent.longname(), searchWord, type(ent.name), type(searchWord))
  
-		#print('best ent list 1', bestEntList)
+		print('best ent list 1')
 		if searchFile and len(ents) < 100:
 			entList = bestEntList
 			bestEntList = []
@@ -71,7 +79,7 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 					bestEntList.append(ent)
 					bestEntDist.append(lineDist)
 
-			#print('best ent list before line', bestEntList, bestEntDist)
+			print('best ent list before line')
 			if searchLine > -1:
 				minDist = 10000000
 				bestEnt = None
@@ -80,7 +88,7 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 						minDist = bestEntDist[i]
 						bestEnt = bestEntList[i]
 				bestEntList = [bestEnt]
-				#print('best ent list line', bestEntList)
+				print('best ent list line', bestEntList)
 
 		bestItem = None
 		print('before add item')
@@ -91,7 +99,7 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 			if len(bestEntList) > 0 and ent == bestEntList[0]:
 				bestItem = resItem
 			self.resultList.addItem(resItem)
-		#print('best item', bestItem, bestEntList)
+		print('best item')
 		if bestItem:
 			self.resultList.setCurrentItem(bestItem)
 
