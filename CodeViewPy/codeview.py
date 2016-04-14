@@ -37,6 +37,7 @@ class CodeView(QtGui.QGraphicsView):
 
 	@QtCore.pyqtSlot()
 	def updateView(self):
+		print('update view begin ')
 		scene = self.scene()
 		if scene:
 			#print('update view')
@@ -47,6 +48,7 @@ class CodeView(QtGui.QGraphicsView):
 			self.centerOn(self.centerPnt) 
 			scene.releaseLock()
 			#self.viewport().update()
+		#print('update view end ')
 
 	def keyPressEvent(self, event):
 		if event.modifiers() == QtCore.Qt.AltModifier:
@@ -73,6 +75,7 @@ class CodeView(QtGui.QGraphicsView):
 		super(CodeView, self).mousePressEvent(event)
 
 	def mouseMoveEvent(self, event):
+		#print('mouse move begin ')
 		if self.isFrameSelectMode:
 			#print('frame move')
 			self.mouseCurPnt = event.pos()
@@ -81,6 +84,7 @@ class CodeView(QtGui.QGraphicsView):
 		#self.invalidateScene(self.scene().sceneRect())
 		#self.update()
 		self.viewport().update()
+		#print('mouse move end ')
 
 	def mouseReleaseEvent(self, event):
 		self.mouseCurPnt = event.pos()
@@ -99,6 +103,7 @@ class CodeView(QtGui.QGraphicsView):
 		super(CodeView, self).mouseReleaseEvent(event)
 
 	def wheelEvent(self, event):
+		#print('wheel begin ')
 		posScene = self.mapToScene(event.pos())
 		factor = 1.001 ** event.delta()
 		self.scale(factor, factor)
@@ -109,8 +114,10 @@ class CodeView(QtGui.QGraphicsView):
 		self.verticalScrollBar().setValue(mov.x() + self.verticalScrollBar().value())
 
 		self.centerPnt = self.mapToScene(self.viewport().rect().center())
+		#print('wheel end ')
 
 	def drawForeground(self, painter, rectF):
+		#print('draw foregrpund begin ')
 		super(CodeView, self).drawForeground(painter, rectF)
 		if self.isFrameSelectMode and self.mousePressPnt and self.mouseCurPnt:
 			topLeftX = min(self.mousePressPnt.x(), self.mouseCurPnt.x())
@@ -123,10 +130,13 @@ class CodeView(QtGui.QGraphicsView):
 			painter.setTransform(QtGui.QTransform())
 			painter.drawRect(topLeftX, topLeftY, width, height)
 
+		#print('draw foregrpund end')
 		#return True
 
 	def paintEvent(self, QPaintEvent):
+		#print('paint event begin ')
 		scene = self.scene()
 		scene.acquireLock()
 		QtGui.QGraphicsView.paintEvent(self, QPaintEvent)
 		scene.releaseLock()
+		#print('paint event end ')

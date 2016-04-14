@@ -13,5 +13,6 @@ if __name__ == "__main__":
 
 	print('main')
 	uiObj.showMainUI()
+	dbObj.startSocket()
 
 	sys.exit(app.exec_())

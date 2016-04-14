@@ -138,7 +138,8 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		elif self.isConnectedToFocusNode:
 			clr = QtGui.QColor(200,200,200,255)
 		else:
-			clr = QtGui.QColor(230,230,230,255)
+			clr = QtGui.QColor(200,200,200,255)
+			#clr = QtGui.QColor(230,230,230,255)
 
 		painter.setPen(QtGui.QPen(clr, 2.0))
 

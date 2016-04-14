@@ -7,7 +7,6 @@ class DBManager(object):
 		self.db = CodeDB.CodeDB()
 		from SocketThread import SocketThread
 		self.socket = SocketThread(('127.0.0.1', 12345),('127.0.0.1', 12346))
-		self.socket.start()
 
 	@staticmethod
 	def instance():
@@ -21,3 +20,6 @@ class DBManager(object):
 
 	def getSocket(self):
 		return self.socket
+
+	def startSocket(self):
+		self.socket.start()

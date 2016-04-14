@@ -10,6 +10,7 @@ import codeview
 import random
 import ui.CodeUIItem as CodeUIItem
 import db.DBManager as DBManager
+from json import *
 
 
 qtCreatorFile = './ui/mainwindow.ui' # Enter file here.
@@ -42,6 +43,32 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.actionDeleteOldItems.triggered.connect(self.onDeleteOldItems)
 		self.actionDeleteSelectedItems.triggered.connect(self.onDeleteSelectedItems)
 		self.setCentralWidget(codeview.CodeView())
+
+	@QtCore.pyqtSlot(str)
+	def onSocketEvent(self, dataStr):
+		from UIManager import UIManager
+		print('on socket event+++++++++++', dataStr)
+
+		print('data str')
+		dataObj = JSONDecoder().decode(dataStr)
+		print('data obj')
+
+		funName = dataObj.get('f')
+		paramDict = dataObj.get('p', None)
+		print('----------receive:', funName, paramDict)
+		mainUI = self
+		scene = UIManager.instance().getScene()
+		#print('main ui:', mainUI)
+		funObj = getattr(mainUI, funName)
+		print('fun obj:', funObj)
+		if funObj:
+			scene.acquireLock()
+			if paramDict is None:
+				funObj()
+			else:
+				funObj(paramDict)
+			scene.releaseLock()
+		print('release lock-----------')
 
 	def getItemMenu(self):
 		return self.menuItem

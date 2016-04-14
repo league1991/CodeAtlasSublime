@@ -10,6 +10,7 @@ import time
 
 #class SceneUpdateThread(threading.Thread):
 class SceneUpdateThread(QtCore.QThread):
+	updateSignal = QtCore.pyqtSignal()
 	def __init__(self, scene, lock):
 		#threading.Thread.__init__(self)
 		super(SceneUpdateThread, self).__init__()
@@ -19,6 +20,8 @@ class SceneUpdateThread(QtCore.QThread):
 
 		self.itemSet = set()
 		self.edgeNum = 0
+		print(self.updateSignal)
+		self.updateSignal.connect(self.scene.update, Qt.Qt.QueuedConnection)
 
 	def setActive(self, isActive):
 		self.lock.acquire()
@@ -30,20 +33,29 @@ class SceneUpdateThread(QtCore.QThread):
 		while True:
 			if self.isActive:
 				#print('acquire lock')
-				self.lock.acquire()
-				#print('update thread -----------------------------------------', self.lock, self.scene.lock)
+				#self.lock.acquire()
+				self.scene.acquireLock()
+				#print('update thread begin -----------------------------------------')
 				#self.updatePos()
 				if self.itemSet != set(self.scene.itemDict.keys()) or self.edgeNum != len(self.scene.edgeDict):
 					#print('before update layout')
 					self.updateLayeredLayoutWithComp()
 				#print('before move items')
 				self.moveItems()
+				#print('before call order')
 				self.updateCallOrder()
 				#print('before invalidate scene')
 				#self.scene.invalidate()
-				self.lock.release()
-				self.scene.update()
-			time.sleep(0.05)
+				#print('before update scene')
+				#self.scene.update()
+				self.updateSignal.emit()
+				#print('update thread end -----------------------------------------')
+				#self.lock.release()
+				self.scene.releaseLock()
+				#print('lock release')
+			#time.sleep(0.08)
+			self.msleep(60)
+			#print('sleep')
 
 	def updatePos(self): 
 		import ui.CodeUIItem as CodeUIItem
@@ -287,20 +299,24 @@ class SceneUpdateThread(QtCore.QThread):
 	def updateCallOrder(self):
 		import ui.CodeUIItem
 		import ui.CodeUIEdgeItem
-
+		#print('update call order')
 		for key, edge in self.scene.edgeDict.items():
 			edge.orderData = None
 			edge.isConnectedToFocusNode = False
 
 		item = self.scene.selectedItems()
+		#print('item', item)
 		if not item:
 			return
 		item = item[0]
 		if isinstance(item, ui.CodeUIEdgeItem.CodeUIEdgeItem):
+			#print('not ui item')
 			item = self.scene.itemDict.get(item.srcUniqueName, None)
 		if not item or item.kind != ui.CodeUIItem.ITEM_FUNCTION:
+			#print('not function')
 			return
 
+		#print('edge list')
 		edgeList = []
 		xRange = [1e6, -1e6]
 		itemUniqueName = item.getUniqueName()
@@ -313,7 +329,7 @@ class SceneUpdateThread(QtCore.QThread):
 			edge.isConnectedToFocusNode = itemUniqueName in key
 		if len(edgeList) <= 1:
 			return
-
+		#print('edge list2', edgeList)
 		basePos = 0
 		stepSize = 0
 		itemX = item.pos().x()
@@ -343,7 +359,7 @@ class SceneUpdateThread(QtCore.QThread):
 				x = basePos + padding + stepSize * int((nEdge-i-1) / levelSize)
 				y = edge.findCurveYPos(x)
 				edge.orderData = (i+1, QtCore.QPointF(x,y))
-
+		#print('update call end')
 
 	def moveItems(self):
 		#print('move items')
@@ -435,9 +451,13 @@ class CodeScene(QtGui.QGraphicsScene):
 		#print('CodeScene. event', self, eventObj)
 		if getattr(self, 'lock', None):
 			self.lock.acquire()
+			#print('code scene locked')
 			res = super(CodeScene, self).event(eventObj)
 			self.lock.release()
+			#print('code scene unlocked')
+
 			return res
+		#print('super codescene event')
 		return super(CodeScene, self).event(eventObj)
 
 	def setAlphaFromLru(self):
@@ -1154,12 +1174,17 @@ class CodeScene(QtGui.QGraphicsScene):
 			#print(posList[i])
 			i += 1
 
+
+	@QtCore.pyqtSlot()
+	def testSlot(self):
+		print('test')
+
 	@QtCore.pyqtSlot()
 	def onSelectItems(self):
 		from ui.CodeUIItem import CodeUIItem
 		from ui.CodeUIEdgeItem import CodeUIEdgeItem
 		itemList = self.selectedItems()
-		print( 'on select items', itemList)
+		print( 'on select items begin', itemList)
 
 		for item in itemList:
 			if not isinstance(item, CodeUIItem):
@@ -1168,3 +1193,4 @@ class CodeScene(QtGui.QGraphicsScene):
 			self.updateLRU([uniqueName])
 
 		self.removeItemLRU()
+		print( 'on select items end', itemList)

@@ -4,10 +4,11 @@ import time
 import inspect
 import ctypes
 from json import *
-from PyQt4 import QtCore
+from PyQt4 import QtCore, Qt
 
 class SocketThread(QtCore.QThread):
 #class SocketThread(threading.Thread):
+	recvSignal = QtCore.pyqtSignal(str)
 	def __init__(self, myAddress, remoteAddress):
 		# threading.Thread.__init__(self)
 		super(SocketThread, self).__init__()
@@ -20,6 +21,9 @@ class SocketThread(QtCore.QThread):
 
 	def run(self):
 		from UIManager import UIManager
+		mainUI = UIManager.instance().getMainUI()
+		self.recvSignal.connect(mainUI.onSocketEvent, Qt.Qt.QueuedConnection)
+
 		#print('run', self.name)
 		address = self.myAddress
 		self.socketObj = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -29,25 +33,7 @@ class SocketThread(QtCore.QThread):
 			data, addr = self.socketObj.recvfrom(1024 * 5)
 			print('recv data, addr')
 			dataStr = data.decode()
-			print('data str')
-			dataObj = JSONDecoder().decode(dataStr)
-			print('data obj')
-
-			funName = dataObj.get('f')
-			paramDict = dataObj.get('p', None)
-			print('----------receive:', funName, paramDict)
-			mainUI = UIManager.instance().getMainUI()
-			scene = UIManager.instance().getScene()
-			print('main ui:', mainUI)
-			funObj = getattr(mainUI, funName)
-			print('fun obj:', funObj)
-			if funObj:
-				scene.acquireLock()
-				if paramDict is None:
-					funObj()
-				else:
-					funObj(paramDict)
-				scene.releaseLock()
+			self.recvSignal.emit(dataStr)
 
 		print ('close socket')
 		self.socketObj.close()
