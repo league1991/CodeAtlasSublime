@@ -77,4 +77,10 @@
         ],
         "command": "analyze_database_"
     },
+    {
+        "keys": [
+            "alt+s"
+        ],
+        "command": "start_atlas_"
+    },
 ]

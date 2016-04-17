@@ -24,7 +24,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.lines = 1
 		self.kindName = ''
 		self.kind = ITEM_UNKNOWN
-		self.titleFont = QtGui.QFont('arial', 8)
+		self.titleFont = QtGui.QFont('tahoma', 8)
 		self.fontSize = QtCore.QSize()
 		if entity:
 			self.name = entity.name()
@@ -44,7 +44,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		#print('kind str', kindStr)
 		if kindStr.find('function') != -1:
 			self.kind = ITEM_FUNCTION
-			self.color = QtGui.QColor(158,203,22)
+			self.color = QtGui.QColor(190,228,73)
 
 			# 找出调用者和被调用者数目
 			dbObj = DBManager.instance().getDB()
@@ -167,7 +167,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			if self.isFunction():
 				#clr = clr.lighter(130)
 				if selectedOrHover:
-					clr = clr.darker(150)
+					clr = clr.darker(130)
 				painter.setBrush(clr)
 				nCaller = self.customData.get('nCaller', 0)
 				nCallee = self.customData.get('nCallee', 0)
@@ -181,7 +181,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 
 			clr = self.color
 			if selectedOrHover:
-				clr = clr.darker(150)
+				clr = clr.darker(130)
 			painter.setBrush(clr)
 			painter.drawEllipse(-r,-r,r*2,r*2)
 

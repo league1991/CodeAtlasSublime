@@ -33,7 +33,7 @@ class CodeView(QtGui.QGraphicsView):
 		#print('connect end')
 		#self.updateTimer.start()
 		self.centerPnt = QtCore.QPointF()
-		self.scale(0.7,0.7)
+		self.scale(0.6,0.6)
 
 	@QtCore.pyqtSlot()
 	def updateView(self):

@@ -67,7 +67,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 	def getNumberRect(self):
 		if self.orderData:
 			pnt = self.orderData[1]
-			rect = QtCore.QRectF(pnt.x()-8, pnt.y()-8,16,16)
+			rect = QtCore.QRectF(pnt.x()-10, pnt.y()-10,20,20)
 			return rect
 		return QtCore.QRectF()
 
@@ -172,7 +172,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 			#painter.drawRect(rect)
 			painter.setPen(QtGui.QPen(QtGui.QColor(0,0,0), 2.0))
 
-			textFont = QtGui.QFont('arial', 10)
+			textFont = QtGui.QFont('tahoma', 12)
 			painter.setFont(textFont)
 			painter.drawText(rect, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter, '%s' % order)
 
