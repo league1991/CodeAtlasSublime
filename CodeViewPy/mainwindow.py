@@ -109,8 +109,23 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 	def onOpen(self):
 		dialog = QtGui.QFileDialog()
 		curDir = QtCore.QDir()
+		curPath = curDir.currentPath()
 		dbPath = dialog.getOpenFileName(self, 'Open Database', curDir.currentPath())
 		if dbPath:
+			print(dbPath)
+			dbmgr = DBManager.DBManager.instance()
+			dbmgr.getDB().open(dbPath)
+
+	def onOpenPath(self, param):
+		dialog = QtGui.QFileDialog()
+		curDir = QtCore.QDir()
+		curPath = curDir.currentPath()
+		if param and False:
+			curPath = param[0]
+		dbPath = dialog.getOpenFileName(self, 'Open Database', curPath)
+		#dbPath = r'I:/Programs/test/myTest1/test1.udb'
+		if dbPath:
+			print(dbPath)
 			dbmgr = DBManager.DBManager.instance()
 			dbmgr.getDB().open(dbPath)
 
@@ -119,6 +134,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		defaultPath = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)) + r'\CodeAtlasSublime.udb'
 		print(defaultPath)
 		dbmgr = DBManager.DBManager.instance()
+		defaultPath = r'I:/Programs/test/myTest1/test1.udb'
 		dbmgr.getDB().open(defaultPath)
 
 	def onFindCallers(self):
@@ -172,10 +188,21 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		return self.searchWidget
 
 	def showInAtlas(self, param):
-		name = param.get('n','')
-		kind = param.get('k','')
-		fileName = param.get('f','')
-		line = param.get('l',-1)
+		#name = param.get('n','')
+		#kind = param.get('k','')
+		#fileName = param.get('f','')
+		#line = param.get('l',-1)
+		name = param[0]
+		kind = param[1]
+		fileName = param[2]
+		line = param[3]
+
+		if not name:
+			return
+		if not kind:
+			kind = '*'
+		if line == None:
+			line = -1
 		#print('show in atlas', param)
 		sw = self.getSearchWindow()
 		sw.inputEdit.setText(name)

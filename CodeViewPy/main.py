@@ -5,6 +5,7 @@ from codescene import CodeScene
 from UIManager import UIManager
 
 if __name__ == "__main__":
+	#print('main:', sys.argv)
 	app = QtGui.QApplication(sys.argv)
 
 	from db.DBManager import DBManager

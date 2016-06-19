@@ -1028,7 +1028,7 @@ class CodeScene(QtGui.QGraphicsScene):
 
 		from db.DBManager import DBManager
 		socket = DBManager.instance().getSocket()
-		socket.remoteCall('goToPage', (fileName, line, column))
+		socket.remoteCall('goToPage', [fileName, line, column])
 
 	def _addCallPaths(self, srcName, tarName):
 		from db.DBManager import DBManager

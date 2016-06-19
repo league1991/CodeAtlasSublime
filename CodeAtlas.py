@@ -54,7 +54,8 @@ class Show_in_atlas_Command(TextCommand):
 				kind = 'function'
 			elif scope.find('class') != -1:
 				kind = 'class'
-			socket.remoteCall('showInAtlas', {'n':name, 'f':fileName,'k':kind, 'l':line})
+			# socket.remoteCall('showInAtlas', {'n':name, 'f':fileName,'k':kind, 'l':line})
+			socket.remoteCall('showInAtlas', [name, kind, fileName, line])
 
 class Find_callers_Command(TextCommand):
 	def run(self, edit):
@@ -169,4 +170,5 @@ class SelectionListener(EventListener):
 			name = list(nameSet)[0]
 			socket = DataManager.instance().getSocket()
 			fileName = view.file_name()
-			socket.remoteCall('showInAtlas', {'n':name, 'f':fileName,'k':'function','l':line})
+			# socket.remoteCall('showInAtlas', {'n':name, 'f':fileName,'k':'function','l':line})
+			socket.remoteCall('showInAtlas', [name, fileName, 'function', line])

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import socket
 import threading
 import time
@@ -20,19 +21,23 @@ class SocketThread(QtCore.QThread):
 		return self.socketObj is not None
 
 	def run(self):
+		#print("begin to run")
 		from UIManager import UIManager
 		mainUI = UIManager.instance().getMainUI()
 		self.recvSignal.connect(mainUI.onSocketEvent, Qt.Qt.QueuedConnection)
+		#print("connect signal")
 
 		#print('run', self.name)
 		address = self.myAddress
 		self.socketObj = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.socketObj.bind(address)
+		#print("binded")
 
 		while True:
 			data, addr = self.socketObj.recvfrom(1024 * 5)
 			print('recv data, addr')
 			dataStr = data.decode()
+			#print(dataStr)
 			self.recvSignal.emit(dataStr)
 
 		print ('close socket')
@@ -61,11 +66,13 @@ class SocketThread(QtCore.QThread):
 
 	def send(self, data):
 		if self.socketObj:
-			self.socketObj.sendto(data.encode(), self.remoteAddress)
+			encodedData = data.encode()
+			self.socketObj.sendto(encodedData, self.remoteAddress)
 
 	def remoteCall(self, funName, paramDict):
 		codeDic = {'f':funName, 'p':paramDict}
 		codeStr = JSONEncoder().encode(codeDic)
+		#codeStr = 'aaa'
 		self.send(codeStr)
 
 if __name__ == "__main__":
@@ -73,11 +80,12 @@ if __name__ == "__main__":
 	add2 = ('127.0.0.1', 12346)
 
 	t1 = SocketThread(add1, add2)
-	t2 = SocketThread(add2, add1)
+	#t2 = SocketThread(add2, add1)
 	t1.start()
-	t2.start()
+	#t1.send("abc")
+	#t2.start()
 
-	time.sleep(1)
 	#t1.send('1 -> 2')
 	#t2.send('2 -> 1')
-	t1.remoteCall('fun',{'p1':1})
+	t1.remoteCall('onTest2', ['fff',123])
+	time.sleep(100)
