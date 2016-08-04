@@ -47,6 +47,15 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		# else:
 		# 	return (srcNode.getLeftSlotPos(), tarNode.getRightSlotPos())
 
+	def getNodeCenterPos(self):
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		srcNode = scene.getNode(self.srcUniqueName)
+		tarNode = scene.getNode(self.tarUniqueName)
+		if not srcNode or not tarNode:
+			return QtCore.QPointF(), QtCore.QPointF()
+		return srcNode.pos(), tarNode.pos()
+
 	def getMiddlePos(self):
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
@@ -132,13 +141,18 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 	def paint(self, painter, styleOptionGraphicsItem, widget_widget=None):
 		painter.setRenderHint(QtGui.QPainter.Antialiasing)
 		clr = QtCore.Qt.darkGray if self.isSelected() else QtCore.Qt.lightGray
- 
+
+		srcPos, tarPos = self.getNodeCenterPos()
+		isReverse = srcPos.x() > tarPos.x()
 		if self.isSelected() or self.isHover:
 			clr = QtGui.QColor(255,127,39)
-		elif self.isConnectedToFocusNode:
-			clr = QtGui.QColor(200,200,200,255)
+		# elif self.isConnectedToFocusNode:
+		# 	clr = QtGui.QColor(200,200,200,255)
 		else:
-			clr = QtGui.QColor(200,200,200,255)
+			if isReverse:
+				clr = QtGui.QColor(108,108,108,255)
+			else:
+				clr = QtGui.QColor(200,200,200,255)
 			#clr = QtGui.QColor(230,230,230,255)
 
 		painter.setPen(QtGui.QPen(clr, 2.0))

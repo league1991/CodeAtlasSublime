@@ -1,12 +1,32 @@
 # -*- coding: utf-8 -*-
 from PyQt4 import QtCore, QtGui, uic
 import math
+import hashlib
 import re
 
 ITEM_UNKNOWN = 0
 ITEM_VARIABLE = 1
 ITEM_CLASS = 2
 ITEM_FUNCTION = 3
+
+def name2color(name):
+	hashVal = int(hashlib.md5(name.encode("utf8")).hexdigest(),16) & 0xffffffff
+	h = (hashVal & 0xff) / 255.0
+	s = ((hashVal >> 8) & 0xff) / 255.0
+	l = ((hashVal >> 16)& 0xff) / 255.0
+	#return QtGui.QColor.fromHslF(h,s * 0.3 + 0.4,l * 0.4 + 0.5)
+	return QtGui.QColor.fromHslF(h, 0.5+s*0.5, 0.7+l*0.1)
+
+def getFunctionColor(ent):
+	defineList = ent.refs('definein')
+	name = ''
+	if not defineList:
+		defineList = ent.refs('declarein')
+	if defineList:
+		ref = defineList[0]
+		declareEnt = ref.ent()
+		name = declareEnt.name()
+	return name2color(name)
 
 class CodeUIItem(QtGui.QGraphicsItem):
 	def __init__(self, uniqueName, parent = None, scene = None):
@@ -26,7 +46,9 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.kind = ITEM_UNKNOWN
 		self.titleFont = QtGui.QFont('tahoma', 8)
 		self.fontSize = QtCore.QSize()
+		self.isConnectedToFocusNode = False
 		if entity:
+			self.setToolTip(entity.longname())
 			self.name = entity.name()
 			self.buildDisplayName(self.name)
 			self.kindName = entity.kindname()
@@ -42,14 +64,13 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.customData = {}
 
 		#print('kind str', kindStr)
-		if kindStr.find('function') != -1:
+		if kindStr.find('function') != -1 or kindStr.find('method') != -1:
 			self.kind = ITEM_FUNCTION
-			self.color = QtGui.QColor(190,228,73)
 
 			# 找出调用者和被调用者数目
 			dbObj = DBManager.instance().getDB()
-			callerList = dbObj.searchRefEntity(self.uniqueName, 'callby','function', True)[0]
-			calleeList = dbObj.searchRefEntity(self.uniqueName, 'call','function', True)[0]
+			callerList = dbObj.searchRefEntity(self.uniqueName, 'callby','function, method', True)[0]
+			calleeList = dbObj.searchRefEntity(self.uniqueName, 'call','function, method', True)[0]
 			# print('call: ', self.name)
 			# print(callerList)
 			# print(calleeList)
@@ -57,20 +78,48 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			self.customData['nCallee'] = len(calleeList)
 			self.customData['callerR'] = self.getCallerRadius(len(callerList))
 			self.customData['calleeR'] = self.getCallerRadius(len(calleeList))
-		elif kindStr.find('attribute') != -1 or kindStr.find('variable') != -1:
+		elif kindStr.find('attribute') != -1 or kindStr.find('variable') != -1 or kindStr.find('object') != -1:
 			self.kind = ITEM_VARIABLE
 			self.color = QtGui.QColor(255,198,217)
-		elif kindStr.find('class') != -1:
+		elif kindStr.find('class') != -1 or kindStr.find('struct') != -1:
 			self.kind = ITEM_CLASS
 			self.color = QtGui.QColor(154,177,209)
 		else:
 			self.kind = ITEM_UNKNOWN
 			self.color = QtGui.QColor(195,195,195)
 
+		if self.kind == ITEM_FUNCTION or self.kind == ITEM_VARIABLE:
+			if not entity:
+				self.color = QtGui.QColor(190,228,73)
+			else:
+				defineList = entity.refs('definein')
+				name = ''
+				if not defineList:
+					defineList = entity.refs('declarein')
+				if defineList:
+					ref = defineList[0]
+					declareEnt = ref.ent()
+					name = declareEnt.name()
+					if declareEnt.kindname().lower().find('class') != -1 or \
+						declareEnt.kindname().lower().find('struct') != -1:
+						self.customData['className'] = name
+					# self.setToolTip(declareEnt.kindname() + "+" + name)
+				self.color = name2color(name)
+		elif self.kind == ITEM_CLASS:
+			self.color = name2color(self.name)
+
 		self.displayScore = 0
 
 		self.targetPos = self.pos()	# 用于动画目标
 		self.isHover = False
+
+	def getColor(self):
+		return self.color
+
+	def getClassName(self):
+		if self.kind == ITEM_CLASS:
+			return self.name
+		return self.customData.get('className','')
 
 	def buildDisplayName(self, name):
 		p = re.compile(r'([A-Z]*[a-z0-9]*_*)')
@@ -111,7 +160,10 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		return DBManager.instance().getDB().searchFromUniqueName(self.uniqueName)
 
 	def getRadius(self):
-		return math.pow(float(self.lines+1), 0.25) * 5.0
+		if self.kind == ITEM_VARIABLE:
+			return 8
+		else:
+			return math.pow(float(self.lines+1), 0.3) * 5.0
 
 	def getHeight(self):
 		h = max(self.fontSize.height(), self.getRadius() * 2)
@@ -159,15 +211,15 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		lod = QtGui.QStyleOptionGraphicsItem().levelOfDetailFromTransform(trans)
 
 		selectedOrHover = self.isSelected() or self.isHover
-		if r * lod > 1.0:
+		if selectedOrHover:
+			pen = QtGui.QPen(QtGui.QBrush(QtGui.QColor(255,127,39)), 3.0)
+			painter.setPen(pen)
+		else:
 			painter.setPen(QtCore.Qt.NoPen)
-
+		if r * lod > 1.0:
 			clr = self.color
-
 			if self.isFunction():
 				#clr = clr.lighter(130)
-				if selectedOrHover:
-					clr = clr.darker(130)
 				painter.setBrush(clr)
 				nCaller = self.customData.get('nCaller', 0)
 				nCallee = self.customData.get('nCallee', 0)
@@ -180,17 +232,29 @@ class CodeUIItem(QtGui.QGraphicsItem):
 					painter.drawPie(r-cr, -cr, cr*2, cr*2, -20*16, 40*16)
 
 			clr = self.color
-			if selectedOrHover:
-				clr = clr.darker(130)
+			# if selectedOrHover:
+			# 	clr = clr.darker(130)
 			painter.setBrush(clr)
-			painter.drawEllipse(-r,-r,r*2,r*2)
+			if self.kind == ITEM_FUNCTION:
+				painter.drawEllipse(-r,-r,r*2,r*2)
+			elif self.kind == ITEM_VARIABLE:
+				x = r * 0.707
+				# painter.rotate(45)
+				# painter.drawRect(-x,-x,x*2,x*2)
+				# painter.rotate(-45)
+				painter.drawPolygon(QtCore.QPoint(-r,0), QtCore.QPoint(r,-r), QtCore.QPoint(r,r))
+			elif self.kind == ITEM_CLASS:
+				painter.drawRect(-r,-r,r*2,r*2)
 
 		if r * lod > 3 or selectedOrHover:
 			painter.scale(1.0/lod, 1.0/lod)
 			painter.setPen(QtGui.QPen()) 
 			painter.setFont(self.titleFont)
 			#rect = QtCore.QRectF(self.fontSize.width() * -0.5, self.fontSize.height() * -0.5, self.fontSize.width(), self.fontSize.height())
-			rect = QtCore.QRectF(0, self.fontSize.height() * -0.5, self.fontSize.width(), self.fontSize.height())
+			if self.kind == ITEM_VARIABLE:
+				rect = QtCore.QRectF(r, self.fontSize.height() * -0.5, self.fontSize.width(), self.fontSize.height())
+			else:
+				rect = QtCore.QRectF(0, self.fontSize.height() * -0.5, self.fontSize.width(), self.fontSize.height())
 
 			# dx = 1.1
 			# painter.setPen(QtGui.QPen(QtGui.QColor(255,255,255)))

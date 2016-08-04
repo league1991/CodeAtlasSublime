@@ -7,6 +7,9 @@ import sys
 from PyQt4 import QtCore, QtGui, uic
 
 import codeview
+from callview import CallView
+from symbolview import SymbolView
+from symbolwindow import SymbolWindow
 import random
 import ui.CodeUIItem as CodeUIItem
 import db.DBManager as DBManager
@@ -42,7 +45,67 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.actionUpdatePosition.triggered.connect(self.onUpdatePosition)
 		self.actionDeleteOldItems.triggered.connect(self.onDeleteOldItems)
 		self.actionDeleteSelectedItems.triggered.connect(self.onDeleteSelectedItems)
+		self.actionShowSymbolWindow.triggered.connect(self.onActionShowSymbolWindow)
+		self.actionShowSearchWindow.triggered.connect(self.onActionShowSearchWindow)
+		self.actionBuildSymbolScene.triggered.connect(self.onBuildSymbolScene)
+		self.actionPinSymbol.triggered.connect(self.onPinSymbol)
+		self.actionUnpinSymbol.triggered.connect(self.onUnpinSymbol)
+		self.actionIgnoreSymbol.triggered.connect(self.onIgnoreSymbol)
+		self.actionUnignoreSymbol.triggered.connect(self.onUnignoreSymbol)
 		self.setCentralWidget(codeview.CodeView())
+		self.symbolView = None
+
+		self.symbolDock = QtGui.QDockWidget()
+		self.symbolDock.setWidget(SymbolWindow())
+		self.symbolDock.setWindowTitle('Symbol')
+		self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.symbolDock)
+		self.tabifyDockWidget(self.symbolDock, self.searchDock)
+		self.searchDock.setVisible(False)
+		self.symbolDock.setVisible(False)
+
+	def closeEvent(self, event):
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		scene.onCloseDB()
+
+	def onActionShowSearchWindow(self):
+		visible = self.searchDock.isVisible()
+		self.searchDock.setVisible(not visible)
+		self.symbolDock.setVisible(not visible)
+
+	def onBuildSymbolScene(self):
+		from UIManager import UIManager
+		symScene = UIManager.instance().getSymbolScene()
+		symScene.buildScene()
+
+	def onIgnoreSymbol(self):
+		from UIManager import UIManager
+		scene = UIManager.instance().getSymbolScene()
+		if scene:
+			scene.ignoreSymbol(True)
+
+	def onUnignoreSymbol(self):
+		from UIManager import UIManager
+		scene = UIManager.instance().getSymbolScene()
+		if scene:
+			scene.ignoreSymbol(False)
+
+	def onPinSymbol(self):
+		from UIManager import UIManager
+		scene = UIManager.instance().getSymbolScene()
+		if scene:
+			scene.pinSymbol(True)
+
+	def onUnpinSymbol(self):
+		from UIManager import UIManager
+		scene = UIManager.instance().getSymbolScene()
+		if scene:
+			scene.pinSymbol(False)
+
+	def onActionShowSymbolWindow(self):
+		self.symbolView = SymbolView()
+		#self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.symbolView)
+		self.symbolView.show()
 
 	@QtCore.pyqtSlot(str)
 	def onSocketEvent(self, dataStr):
@@ -72,6 +135,9 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 
 	def getItemMenu(self):
 		return self.menuItem
+
+	def getSymbolMenu(self):
+		return self.menuSymbol
 
 	def getView(self):
 		return self.centralWidget()
@@ -116,6 +182,10 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 			dbmgr = DBManager.DBManager.instance()
 			dbmgr.getDB().open(dbPath)
 
+			from UIManager import UIManager
+			symScene = UIManager.instance().getSymbolScene()
+			#symScene.buildScene()
+
 	def onOpenPath(self, param):
 		dialog = QtGui.QFileDialog()
 		curDir = QtCore.QDir()
@@ -128,26 +198,35 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 			print(dbPath)
 			dbmgr = DBManager.DBManager.instance()
 			dbmgr.getDB().open(dbPath)
+			from UIManager import UIManager
+			symScene = UIManager.instance().getSymbolScene()
+			#symScene.buildScene()
 
 	def onTest(self):
-		import os
-		defaultPath = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)) + r'\CodeAtlasSublime.udb'
-		print(defaultPath)
+		#import os
+		#defaultPath = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)) + r'\CodeAtlasSublime.udb'
+		#print(defaultPath)
 		dbmgr = DBManager.DBManager.instance()
-		defaultPath = r'I:/Programs/test/myTest1/test1.udb'
+		#defaultPath = r'C:\Users\me\AppData\Roaming\Sublime Text 3\Packages\CodeAtlas\CodeAtlasSublime.udb'
+		defaultPath = r'I:\Programs\autodesk\rapidrt-master\rapidRT.udb'
 		dbmgr.getDB().open(defaultPath)
 
+		from UIManager import UIManager
+		symScene = UIManager.instance().getSymbolScene()
+		#symScene.buildScene()
+
 	def onFindCallers(self):
-		self.findRefs('callby','function')
+		self.findRefs('callby','function, method')
 
 	def onFindCallees(self):
-		self.findRefs('call','function', True)
+		self.findRefs('call','function, method', True)
 
 	def onFindMembers(self):
-		self.findRefs('declare,define','function, variable', True)
+		self.findRefs('declare,define','function, variable, object', True)
 
 	def onFindBases(self):
-		self.findRefs('base','class',True)
+		self.findRefs('base','class',False)
+		self.findRefs('derive','class',True)
 
 	def onFindUses(self):
 		self.findRefs('declarein,definein,useby', 'function,class')

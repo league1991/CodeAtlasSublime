@@ -2,10 +2,9 @@
 import sys
 import os
 from PyQt4 import QtCore, QtGui, Qt
-#print sys.path
-#sys.path.append('D:/Program Files (x86)/SciTools/bin/pc-win32/python')
 import understand
 import subprocess
+from db.SymbolNode import FileData, SymbolNode
 
 class CodeDB(QtCore.QObject):
 	reopenSignal = QtCore.pyqtSignal()
@@ -20,7 +19,11 @@ class CodeDB(QtCore.QObject):
 			self._db.close()
 		self._dbPath = path
 		self._db = understand.open(path)
+		self.onOpen()
 		print('open', self._db)
+
+	def getDBPath(self):
+		return self._dbPath
 
 	def close(self):
 		if self._db:
@@ -30,6 +33,7 @@ class CodeDB(QtCore.QObject):
 	def reopen(self):
 		if self._dbPath:
 			self._db = understand.open(self._dbPath)
+			self.onOpen()
 
 	def analyze(self):
 		if self._db and self._dbPath:
@@ -48,6 +52,14 @@ class CodeDB(QtCore.QObject):
 			#self._db = understand.open(self._dbPath)
 			self.reopenSignal.emit()
 			print('open finish')
+
+	def onOpen(self):
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		scene.onOpenDB()
+
+		mainUI = UIManager.instance().getMainUI()
+		mainUI.symbolDock.widget().updateForbiddenSymbol()
 
 	def search(self, name, kindstring = None):
 		if not self._db:
@@ -71,6 +83,19 @@ class CodeDB(QtCore.QObject):
 		entList = [refObj.ent().uniquename() for refObj in refList]
 		#print('entList', entList)
 		return entList, refList
+
+	def searchRefObj(self, srcUName, tarUName):
+		if not self._db:
+			return None
+		ent = self._db.lookup_uniquename(srcUName)
+		if not ent:
+			return None
+
+		refList = ent.refs()
+		for ref in refList:
+			if ref.ent().uniquename() == tarUName:
+				return ref
+		return None
 
 	def searchRef(self, uniqueName, refKindStr, entKindStr, isUnique = True):
 		if not self._db:
@@ -100,7 +125,7 @@ class CodeDB(QtCore.QObject):
 
 				# 找出调用的所有entity
 				if self.ent:					
-					refList = self.ent.refs('call', 'function', True)
+					refList = self.ent.refs('call', 'function, method', True)
 					self.adjNameList = [(refObj.ent().uniquename(), refObj) for refObj in refList]
 
 		vtxDict = {srcUniqueName: Vtx(srcUniqueName)}	# 存储访问过的节点
@@ -147,4 +172,101 @@ class CodeDB(QtCore.QObject):
 		vtxSet.discard(srcUniqueName)
 		return list(vtxSet), list(refSet)
 
+	def listFiles(self):
+		if not self._db:
+			return
+
+		files = self._db.ents('file')
+		#print(files)
+
+		for fileEnt in files:
+			print(fileEnt.longname())
+
+	def buildSymbolTree(self):
+		if not self._db:
+			return None, None
+
+		# list all global objects
+		#entList = self._db.ents('class,struct,function,method,variable,object,namespace')
+		entList = self._db.ents('class,struct,namespace,function')
+		symbolDict = {}
+		print (len(entList))
+		nNoDefine = 0
+		for ent in entList:
+			if ent.kindname().lower().find('local') != -1:
+				continue
+			# refList = ent.refs('definein')
+			# if not refList:
+			# 	nNoDefine += 1
+			# 	continue
+			#print(ent.name(), ent.kindname())
+			symbol = SymbolNode(ent.uniquename(), ent.name(), ent)
+			symbolDict[ent.uniquename()] = symbol
+		print('n no define:', nNoDefine)
+		# for uname, sym in symbolDict.items():
+		# 	self._buildSymbolTreeRecursive(sym)
+
+		# return symbolDict
+		for uniname, symbol in symbolDict.items():
+			ent = self._db.lookup_uniquename(uniname)
+			if not ent:
+				continue
+			refList = ent.refs('declare,define')
+			for ref in refList:
+				#print('ref:', ref.ent().name(), ref.ent().kindname())
+				refSymbol = symbolDict.get(ref.ent().uniquename())
+				if not refSymbol:
+					continue
+				symbol.addChild(refSymbol)
+
+			defineList = ent.refs('definein')
+			if not defineList:
+				defineList = ent.refs('declarein')
+			if defineList:
+				ref = defineList[0]
+				fileName = ref.file().longname()
+				symbol.setDefineFile(fileName)
+
+		rootNode = SymbolNode('root','root', None)
+		for uniname, symbol in symbolDict.items():
+			if symbol.parent == None:
+				rootNode.addChild(symbol)
+		printSymbolDict(rootNode)
+		return rootNode, symbolDict
+
+	def _buildSymbolTreeRecursive(self, symbol):
+		if not symbol:
+			return
+
+		symbolEnt = self._db.lookup_uniquename(symbol.uniqueName)
+		if not symbolEnt:
+			return
+
+		# ignore function body
+		kindStr = symbolEnt.kindname().lower()
+		if kindStr.find('function') != -1 or kindStr.find('method') != -1:
+			return
+
+		refList = symbolEnt.refs('declare,define')
+		print(symbol.name, kindStr, 'ref:', len(refList))
+		for ref in refList:
+			ent = ref.ent()
+			childSymbol = SymbolNode(ent.uniquename(), ent.name(), ent)
+			symbol.addChild(childSymbol)
+
+
+def printSymbolDict(sym, indent = 0):
+	print('-' * indent + sym.name)
+	for uname, childSym in sym.childrenDict.items():
+		printSymbolDict(childSym, indent+1)
+
+if __name__ == "__main__":
+	db = CodeDB()
+	db.open('I:/Programs/CodeAtlasProject/CodeView/vega.udb')
+	#db.open('C:/Users/me/AppData/Roaming/Sublime Text 3/Packages/CodeAtlas/codeatlassublime.udb')
+	#db.listFiles()
+	root = db.buildSymbolTree()
+
+	printSymbolDict(root)
+	db.close()
 

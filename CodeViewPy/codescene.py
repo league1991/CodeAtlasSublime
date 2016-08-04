@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
+import os
 from PyQt4 import QtCore, QtGui, uic, Qt
 import math
 import random
@@ -7,6 +8,7 @@ import sys
 import traceback
 import threading
 import time
+from json import *
 
 #class SceneUpdateThread(threading.Thread):
 class SceneUpdateThread(QtCore.QThread):
@@ -303,6 +305,8 @@ class SceneUpdateThread(QtCore.QThread):
 		for key, edge in self.scene.edgeDict.items():
 			edge.orderData = None
 			edge.isConnectedToFocusNode = False
+		for key, node in self.scene.itemDict.items():
+			node.isConnectedToFocusNode = False
 
 		item = self.scene.selectedItems()
 		#print('item', item)
@@ -327,6 +331,12 @@ class SceneUpdateThread(QtCore.QThread):
 				xRange[0] = min(tarPos.x(), xRange[0])
 				xRange[1] = max(tarPos.x(), xRange[1])
 			edge.isConnectedToFocusNode = itemUniqueName in key
+
+			if key[0] == itemUniqueName and self.scene.itemDict[key[1]].kind == ui.CodeUIItem.ITEM_FUNCTION:
+				self.scene.itemDict[key[1]].isConnectedToFocusNode = True
+			if key[1] == itemUniqueName and self.scene.itemDict[key[0]].kind == ui.CodeUIItem.ITEM_FUNCTION:
+				self.scene.itemDict[key[0]].isConnectedToFocusNode = True
+
 		if len(edgeList) <= 1:
 			return
 		#print('edge list2', edgeList)
@@ -423,6 +433,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		super(CodeScene, self).__init__(*args)
 		self.itemDict = {}
 		self.edgeDict = {}
+		self.stopItem = {}		# 不显示的符号
 		self.itemLruQueue = []
 		self.lruMaxLength = 50
 
@@ -443,6 +454,66 @@ class CodeScene(QtGui.QGraphicsScene):
 			self.cornerItem.append(item)
 			self.addItem(item)
 		self.connect(self, QtCore.SIGNAL('selectionChanged()'), self, QtCore.SLOT('onSelectItems()'))
+
+	# 添加不显示的符号
+	def addForbiddenSymbol(self):
+		for itemKey, item in self.itemDict.items():
+			if item.isSelected():
+				self.stopItem[item.getUniqueName()] = item.name
+
+	def getForbiddenSymbol(self):
+		return self.stopItem
+
+	def deleteForbiddenSymbol(self, uname):
+		if uname in self.stopItem:
+			print('delete forbidden--', uname)
+			del self.stopItem[uname]
+
+	def onOpenDB(self):
+		print('open db-----------------')
+		from db.DBManager import DBManager
+		dbObj = DBManager.instance().getDB()
+		dbPath = dbObj.getDBPath()
+		if not dbPath:
+			return
+
+		configPath = dbPath + '.config'
+		if os.path.exists(configPath):
+			file = open(dbPath + '.config')
+			jsonStr = file.read()
+			file.close()
+			sceneData = JSONDecoder().decode(jsonStr)
+			self.lock.acquire()
+			self.stopItem = sceneData.get('stopItem',{})
+			codeItemList = sceneData.get('codeItem',[])
+			for uname in codeItemList:
+				self.addCodeItem(uname)
+			edgeItemList = sceneData.get('edgeItem',[])
+			for edgePair in edgeItemList:
+				refObj = dbObj.searchRefObj(edgePair[0], edgePair[1])
+				if refObj:
+					self._doAddCodeEdgeItem(edgePair[0], edgePair[1], refObj)
+			if self.itemDict:
+				self.selectOneItem(list(self.itemDict.values())[0])
+			self.lock.release()
+		else:
+			print('no such file: ' + dbPath)
+
+	def onCloseDB(self):
+		print('close db------------------')
+		from db.DBManager import DBManager
+		dbPath = DBManager.instance().getDB().getDBPath()
+		if not dbPath:
+			return
+		file = open(dbPath + '.config', 'w')
+		codeItemList = list(self.itemDict.keys())
+		edgeItemList = list(self.edgeDict.keys())
+		jsonStr = JSONEncoder().encode({'stopItem':self.stopItem, 'codeItem':codeItemList, 'edgeItem':edgeItemList})
+		file.write(jsonStr)
+		file.close()
+
+	def getItemDict(self):
+		return self.itemDict
 
 	def isAutoFocus(self):
 		return self.autoFocus and self.autoFocusToggle
@@ -567,6 +638,8 @@ class CodeScene(QtGui.QGraphicsScene):
 		item = self.itemDict.get(uniqueName, None)
 		if item:
 			return False, item
+		if uniqueName in self.stopItem:
+			return False, None
 		from ui.CodeUIItem import CodeUIItem
 		item = CodeUIItem(uniqueName)
 		off = 0.03

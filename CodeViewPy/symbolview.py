@@ -1,70 +1,33 @@
 # -*- coding: utf-8 -*-
-from PyQt4 import QtGui,QtCore
+from PyQt4 import QtGui,QtCore,uic,QtOpenGL
+import time
 import math
-import codescene
-import ui.CodeUIItem as CodeUIItem
+import SymbolScene
+from db.SymbolAttr import SymbolAttr
 
-
-class CodeView(QtGui.QGraphicsView):
+class SymbolView(QtGui.QGraphicsView):
 	def __init__(self, *args):
-		super(CodeView, self).__init__(*args)
+		super(SymbolView, self).__init__(*args)
 		from UIManager import UIManager
-		self.setScene(UIManager.instance().getScene())
-		#self.setInteractive(True)
+		self.setScene(UIManager.instance().getSymbolScene())
+
+
 		self.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
 		self.setCacheMode(QtGui.QGraphicsView.CacheNone)
 		#self.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
 		self.setTransformationAnchor(QtGui.QGraphicsView.AnchorUnderMouse)
 		self.setMouseTracking(True)
-		self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-		self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
 		self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 		self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 		self.setAcceptDrops(True)
+		self.setViewport(QtOpenGL.QGLWidget())
+
+		self.centerPnt = QtCore.QPointF()
+		self.scale(0.6,0.6)
 
 		self.mousePressPnt = None
 		self.mouseCurPnt = None
 		self.isFrameSelectMode = False
- 
-		self.updateTimer = QtCore.QTimer()
-		self.updateTimer.setInterval(70)
-		#print('connect')
-		self.connect(self.updateTimer, QtCore.SIGNAL('timeout()'), self, QtCore.SLOT('updateView()'))
-		#print('connect end')
-		#self.updateTimer.start()
-		self.centerPnt = QtCore.QPointF()
-		self.scale(0.6,0.6)
-
-	@QtCore.pyqtSlot()
-	def updateView(self):
-		print('update view begin ')
-		scene = self.scene()
-		if scene:
-			#print('update view')
-			scene.acquireLock()
-
-			pos = scene.getSelectedCenter()
-			self.centerPnt = self.centerPnt * 0.97 + pos * 0.03
-			self.centerOn(self.centerPnt) 
-			scene.releaseLock()
-			#self.viewport().update()
-		#print('update view end ')
-
-	def keyPressEvent(self, event):
-		if event.modifiers() == QtCore.Qt.AltModifier:
-			from UIManager import UIManager
-			mainUI = UIManager.instance().getMainUI()
-			if event.key() == QtCore.Qt.Key_Up:
-				mainUI.goToUp()
-			elif event.key() == QtCore.Qt.Key_Down:
-				mainUI.goToDown()
-			elif event.key() == QtCore.Qt.Key_Left:
-				mainUI.goToLeft()
-			elif event.key() == QtCore.Qt.Key_Right:
-				mainUI.goToRight()
-
-		else:
-			super(CodeView, self).keyPressEvent(event)
 
 	def mousePressEvent(self, event):
 		self.mouseCurPnt = self.mousePressPnt = event.pos()
@@ -72,7 +35,7 @@ class CodeView(QtGui.QGraphicsView):
 		item = self.itemAt(self.mousePressPnt)
 		self.isFrameSelectMode = (not item)
 		#print('is frame select', self.isFrameSelectMode)
-		super(CodeView, self).mousePressEvent(event)
+		super(SymbolView, self).mousePressEvent(event)
 
 	def mouseMoveEvent(self, event):
 		#print('mouse move begin ')
@@ -80,7 +43,7 @@ class CodeView(QtGui.QGraphicsView):
 			#print('frame move')
 			self.mouseCurPnt = event.pos()
 
-		super(CodeView,self).mouseMoveEvent(event)
+		super(SymbolView,self).mouseMoveEvent(event)
 		#self.invalidateScene(self.scene().sceneRect())
 		#self.update()
 		self.viewport().update()
@@ -100,7 +63,7 @@ class CodeView(QtGui.QGraphicsView):
 			for item in itemList:
 				item.setSelected(True)
 
-		super(CodeView, self).mouseReleaseEvent(event)
+		super(SymbolView, self).mouseReleaseEvent(event)
 
 	def wheelEvent(self, event):
 		#print('wheel begin ')
@@ -114,11 +77,9 @@ class CodeView(QtGui.QGraphicsView):
 		self.verticalScrollBar().setValue(mov.x() + self.verticalScrollBar().value())
 
 		self.centerPnt = self.mapToScene(self.viewport().rect().center())
-		#print('wheel end ')
 
 	def drawForeground(self, painter, rectF):
-		#print('draw foregrpund begin ')
-		super(CodeView, self).drawForeground(painter, rectF)
+		super(SymbolView, self).drawForeground(painter, rectF)
 		if self.isFrameSelectMode and self.mousePressPnt and self.mouseCurPnt:
 			topLeftX = min(self.mousePressPnt.x(), self.mouseCurPnt.x())
 			topLeftY = min(self.mousePressPnt.y(), self.mouseCurPnt.y())
@@ -130,41 +91,46 @@ class CodeView(QtGui.QGraphicsView):
 			painter.setTransform(QtGui.QTransform())
 			painter.drawRect(topLeftX, topLeftY, width, height)
 
-		self.drawLegend(painter, rectF)
-		#print('draw foregrpund end')
-		#return True
 
-	def drawLegend(self, painter, rectF):
 		painter.setTransform(QtGui.QTransform())
 		painter.setFont(QtGui.QFont('tahoma', 8))
+		from db.SymbolAttr import UIAttr
 
-		from UIManager import UIManager
-		scene = UIManager.instance().getScene()
-		itemDict = scene.getItemDict()
-		classNameDict = {}
-		for uname, item in itemDict.items():
-			if item.isSelected() or item.isConnectedToFocusNode:
-				cname = item.getClassName()
-				if not cname:
-					cname = '[global function]'
-				classNameDict[cname] = item.getColor()
-
-		cw = 10
-		y = self.height() - 20
-		for cname, clr in classNameDict.items():
-			painter.setPen(QtCore.Qt.NoPen)
-			painter.setBrush(QtGui.QBrush(clr))
-			painter.drawEllipse(QtCore.QRect(10,y,cw,cw))
-
-			painter.setPen(QtCore.Qt.black)
-			painter.drawText(cw+12, y+cw, cname)
-			y -= cw + 2
-
-
-	def paintEvent(self, QPaintEvent):
-		#print('paint event begin ')
+		lod = QtGui.QStyleOptionGraphicsItem().levelOfDetailFromTransform(self.transform())
 		scene = self.scene()
-		scene.acquireLock()
-		QtGui.QGraphicsView.paintEvent(self, QPaintEvent)
-		scene.releaseLock()
-		#print('paint event end ')
+		for uname, item in scene.symbolDict.items():
+			uiAttr = item.getAttr(UIAttr.ATTR_UI)
+			uiItem = uiAttr.uiItem
+			arcLength = uiItem.radius[0] * (uiItem.theta[1] - uiItem.theta[0])
+			if arcLength * lod > 15:
+				posView = self.mapFromScene(uiItem.txtPos)
+				painter.drawText(posView, item.name)
+
+	def drawBackground(self, painter, rectF):
+		trans = painter.worldTransform()
+		lod = QtGui.QStyleOptionGraphicsItem().levelOfDetailFromTransform(trans)
+
+		scene = self.scene()
+		scene.updateNodeVisibility(lod)
+
+		super(SymbolView, self).drawBackground(painter, rectF)
+		# painter.setTransform(QtGui.QTransform())
+
+		#painter.setPen(QtGui.QPen(QtGui.QColor(238,237,234,20),1))
+		lineList = scene.getLowPosList()
+		# for line in lineList:
+		# 	line.paint(painter,1)
+
+		t0 = time.clock()
+		lineList = scene.getNormalPosList()
+		for line in lineList:
+			line.paint(painter,20,1.0)
+
+		lineList = scene.getHighPosList()
+		for line in lineList:
+			line.paint(painter,100,2.0)
+
+
+		t1 = time.clock()
+		print("time is ", (t1-t0))
+

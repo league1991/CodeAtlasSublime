@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>305</width>
-    <height>649</height>
+    <width>347</width>
+    <height>589</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -21,6 +21,12 @@
   </property>
   <property name="animated">
    <bool>false</bool>
+  </property>
+  <property name="documentMode">
+   <bool>false</bool>
+  </property>
+  <property name="dockOptions">
+   <set>QMainWindow::AllowTabbedDocks|QMainWindow::ForceTabbedDocks|QMainWindow::VerticalTabs</set>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="sizePolicy">
@@ -41,8 +47,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>305</width>
-     <height>23</height>
+     <width>347</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -75,35 +81,30 @@
     <addaction name="actionDeleteOldestItem"/>
     <addaction name="actionToggleFocus"/>
    </widget>
+   <widget class="QMenu" name="menuWindow">
+    <property name="title">
+     <string>Window</string>
+    </property>
+    <addaction name="actionShowSymbolWindow"/>
+    <addaction name="actionBuildSymbolScene"/>
+    <addaction name="actionShowSearchWindow"/>
+   </widget>
+   <widget class="QMenu" name="menuSymbol">
+    <property name="title">
+     <string>Symbol</string>
+    </property>
+    <addaction name="actionPinSymbol"/>
+    <addaction name="actionUnpinSymbol"/>
+    <addaction name="actionIgnoreSymbol"/>
+    <addaction name="actionUnignoreSymbol"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuItem"/>
    <addaction name="menuLayout"/>
+   <addaction name="menuWindow"/>
+   <addaction name="menuSymbol"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <widget class="QDockWidget" name="searchDock">
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-     <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-   <property name="minimumSize">
-    <size>
-     <width>80</width>
-     <height>38</height>
-    </size>
-   </property>
-   <property name="features">
-    <set>QDockWidget::AllDockWidgetFeatures</set>
-   </property>
-   <property name="windowTitle">
-    <string>Search</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>8</number>
-   </attribute>
-   <widget class="SearchWindow" name="searchWidget"/>
-  </widget>
   <widget class="QToolBar" name="toolBar">
    <property name="font">
     <font>
@@ -123,6 +124,47 @@
    <addaction name="actionOpen"/>
    <addaction name="actionTest"/>
    <addaction name="actionToggleFocus"/>
+   <addaction name="actionShowSearchWindow"/>
+  </widget>
+  <widget class="QDockWidget" name="searchDock">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>80</width>
+     <height>38</height>
+    </size>
+   </property>
+   <property name="floating">
+    <bool>false</bool>
+   </property>
+   <property name="features">
+    <set>QDockWidget::AllDockWidgetFeatures</set>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::AllDockWidgetAreas</set>
+   </property>
+   <property name="windowTitle">
+    <string>Search</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="SearchWindow" name="searchWidget">
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+   </widget>
   </widget>
   <action name="actionOpen">
    <property name="text">
@@ -253,6 +295,41 @@
   <action name="actionGoRight">
    <property name="text">
     <string>Go Right</string>
+   </property>
+  </action>
+  <action name="actionShowSymbolWindow">
+   <property name="text">
+    <string>Show Symbol Window</string>
+   </property>
+  </action>
+  <action name="actionPinSymbol">
+   <property name="text">
+    <string>Pin Symbol</string>
+   </property>
+  </action>
+  <action name="actionUnpinSymbol">
+   <property name="text">
+    <string>Unpin Symbol</string>
+   </property>
+  </action>
+  <action name="actionIgnoreSymbol">
+   <property name="text">
+    <string>Ignore Symbol</string>
+   </property>
+  </action>
+  <action name="actionUnignoreSymbol">
+   <property name="text">
+    <string>Unignore Symbol</string>
+   </property>
+  </action>
+  <action name="actionBuildSymbolScene">
+   <property name="text">
+    <string>Build Symbol Scene</string>
+   </property>
+  </action>
+  <action name="actionShowSearchWindow">
+   <property name="text">
+    <string>Toggle Search Window</string>
    </property>
   </action>
  </widget>

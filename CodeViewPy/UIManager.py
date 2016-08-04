@@ -2,6 +2,7 @@ import mainwindow
 import sys
 from PyQt4 import QtCore, QtGui, uic
 from codescene import CodeScene
+from SymbolScene import SymbolScene
 
 class UIManager(object):
 	uiMgr = None
@@ -10,6 +11,7 @@ class UIManager(object):
 		# import traceback
 		# traceback.print_stack()
 		self.scene = CodeScene()
+		self.symScene = SymbolScene()
 		self.mainUI = None
 		self.uiSetting = UISettings()
 		#print(self)
@@ -30,6 +32,9 @@ class UIManager(object):
 
 	def getScene(self):
 		return self.scene
+
+	def getSymbolScene(self):
+		return self.symScene
 
 	def getUISetting(self):
 		return self.uiSetting
