@@ -11,6 +11,7 @@ from callview import CallView
 from symbolview import SymbolView
 from symbolwindow import SymbolWindow
 from schemewindow import SchemeWindow
+from searchwindow import SearchWindow
 import random
 import ui.CodeUIItem as CodeUIItem
 import db.DBManager as DBManager
@@ -57,6 +58,10 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.setCentralWidget(codeview.CodeView())
 		self.symbolView = None
 
+		self.searchDock = QtGui.QDockWidget()
+		self.searchDock.setWidget(SearchWindow())
+		self.searchDock.setWindowTitle('Search')
+
 		self.symbolDock = QtGui.QDockWidget()
 		self.symbolDock.setWidget(SymbolWindow())
 		self.symbolDock.setWindowTitle('Symbol')
@@ -66,6 +71,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.schemeDock.setWindowTitle('Scheme')
 
 		self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.symbolDock)
+		self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.searchDock)
 		self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.schemeDock)
 		self.tabifyDockWidget(self.symbolDock, self.searchDock)
 		self.tabifyDockWidget(self.searchDock, self.schemeDock)
