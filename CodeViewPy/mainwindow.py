@@ -10,6 +10,7 @@ import codeview
 from callview import CallView
 from symbolview import SymbolView
 from symbolwindow import SymbolWindow
+from schemewindow import SchemeWindow
 import random
 import ui.CodeUIItem as CodeUIItem
 import db.DBManager as DBManager
@@ -45,6 +46,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.actionUpdatePosition.triggered.connect(self.onUpdatePosition)
 		self.actionDeleteOldItems.triggered.connect(self.onDeleteOldItems)
 		self.actionDeleteSelectedItems.triggered.connect(self.onDeleteSelectedItems)
+		self.actionDeleteAndIgnoreSelectedItems.triggered.connect(self.onDeleteSelectedItemsAndAddToStop)
 		self.actionShowSymbolWindow.triggered.connect(self.onActionShowSymbolWindow)
 		self.actionShowSearchWindow.triggered.connect(self.onActionShowSearchWindow)
 		self.actionBuildSymbolScene.triggered.connect(self.onBuildSymbolScene)
@@ -58,10 +60,18 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.symbolDock = QtGui.QDockWidget()
 		self.symbolDock.setWidget(SymbolWindow())
 		self.symbolDock.setWindowTitle('Symbol')
+
+		self.schemeDock = QtGui.QDockWidget()
+		self.schemeDock.setWidget(SchemeWindow())
+		self.schemeDock.setWindowTitle('Scheme')
+
 		self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.symbolDock)
+		self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.schemeDock)
 		self.tabifyDockWidget(self.symbolDock, self.searchDock)
+		self.tabifyDockWidget(self.searchDock, self.schemeDock)
 		self.searchDock.setVisible(False)
 		self.symbolDock.setVisible(False)
+		self.schemeDock.setVisible(False)
 
 	def closeEvent(self, event):
 		from UIManager import UIManager
@@ -72,6 +82,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		visible = self.searchDock.isVisible()
 		self.searchDock.setVisible(not visible)
 		self.symbolDock.setVisible(not visible)
+		self.schemeDock.setVisible(not visible)
 
 	def onBuildSymbolScene(self):
 		from UIManager import UIManager
@@ -110,20 +121,14 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 	@QtCore.pyqtSlot(str)
 	def onSocketEvent(self, dataStr):
 		from UIManager import UIManager
-		print('on socket event+++++++++++', dataStr)
 
-		print('data str')
 		dataObj = JSONDecoder().decode(dataStr)
-		print('data obj')
 
 		funName = dataObj.get('f')
 		paramDict = dataObj.get('p', None)
-		print('----------receive:', funName, paramDict)
 		mainUI = self
 		scene = UIManager.instance().getScene()
-		#print('main ui:', mainUI)
 		funObj = getattr(mainUI, funName)
-		print('fun obj:', funObj)
 		if funObj:
 			scene.acquireLock()
 			if paramDict is None:
@@ -131,7 +136,6 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 			else:
 				funObj(paramDict)
 			scene.releaseLock()
-		print('release lock-----------')
 
 	def getItemMenu(self):
 		return self.menuItem
@@ -240,7 +244,15 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
 		if scene:
-			scene.deleteSelectedItems()
+			scene.deleteSelectedItems(False)
+
+	def onDeleteSelectedItemsAndAddToStop(self):
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		if scene:
+			scene.deleteSelectedItems(True)
+			mainUI = UIManager.instance().getMainUI()
+			mainUI.symbolDock.widget().updateForbiddenSymbol()
 
 	def onDeleteOldItems(self):
 		from UIManager import UIManager
@@ -265,6 +277,13 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 
 	def getSearchWindow(self):
 		return self.searchWidget
+
+	def showScheme(self, param):
+		ithScheme = param[0]-1
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		if scene:
+			scene.showIthScheme(ithScheme)
 
 	def showInAtlas(self, param):
 		#name = param.get('n','')

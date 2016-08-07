@@ -6,3 +6,5 @@
 /CodeViewPy/ui/__pycache__
 /CodeViewPy/*.pyc
 *.pyc
+/CodeViewPy/graphLayout
+/udb/*.udb

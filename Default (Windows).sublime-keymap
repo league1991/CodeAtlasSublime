@@ -79,8 +79,44 @@
     },
     {
         "keys": [
-            "alt+s"
+            "alt+i"
         ],
-        "command": "start_atlas_"
+        "command": "delete_and_ignore_selected_items_"
+    },
+    {
+        "keys": ["alt+1"],
+        "command": "show_scheme_1_"
+    },
+    {
+        "keys": ["alt+2"],
+        "command": "show_scheme_2_"
+    },
+    {
+        "keys": ["alt+3"],
+        "command": "show_scheme_3_"
+    },
+    {
+        "keys": ["alt+4"],
+        "command": "show_scheme_4_"
+    },
+    {
+        "keys": ["alt+5"],
+        "command": "show_scheme_5_"
+    },
+    {
+        "keys": ["alt+6"],
+        "command": "show_scheme_6_"
+    },
+    {
+        "keys": ["alt+7"],
+        "command": "show_scheme_7_"
+    },
+    {
+        "keys": ["alt+8"],
+        "command": "show_scheme_8_"
+    },
+    {
+        "keys": ["alt+9"],
+        "command": "show_scheme_9_"
     },
 ]

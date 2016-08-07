@@ -145,17 +145,28 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		srcPos, tarPos = self.getNodeCenterPos()
 		isReverse = srcPos.x() > tarPos.x()
 		if self.isSelected() or self.isHover:
-			clr = QtGui.QColor(255,127,39)
+			clr = QtGui.QColor(255,168,38)
 		# elif self.isConnectedToFocusNode:
 		# 	clr = QtGui.QColor(200,200,200,255)
 		else:
 			if isReverse:
-				clr = QtGui.QColor(108,108,108,255)
+				clr = QtGui.QColor(159,49,52,200)
 			else:
-				clr = QtGui.QColor(200,200,200,255)
+				clr = QtGui.QColor(150,150,150,180)
 			#clr = QtGui.QColor(230,230,230,255)
 
-		painter.setPen(QtGui.QPen(clr, 2.0))
+
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		srcNode = scene.getNode(self.srcUniqueName)
+		tarNode = scene.getNode(self.tarUniqueName)
+		penStyle = QtCore.Qt.SolidLine
+		penWidth = 3.0
+		if srcNode and tarNode and srcNode.isFunction() and tarNode.isFunction():
+			pass
+		else:
+			penStyle = QtCore.Qt.DotLine
+		painter.setPen(QtGui.QPen(clr, penWidth, penStyle))
 
 		srcPos, tarPos = self.getNodePos()
 		#midPos = (srcPos + tarPos) * 0.5

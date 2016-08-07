@@ -15,11 +15,11 @@ def name2color(name):
 	s = ((hashVal >> 8) & 0xff) / 255.0
 	l = ((hashVal >> 16)& 0xff) / 255.0
 	#return QtGui.QColor.fromHslF(h,s * 0.3 + 0.4,l * 0.4 + 0.5)
-	return QtGui.QColor.fromHslF(h, 0.5+s*0.5, 0.7+l*0.1)
+	return QtGui.QColor.fromHslF(h, 0.7+s*0.3, 0.25+l*0.2)
 
 def getFunctionColor(ent):
 	defineList = ent.refs('definein')
-	name = ''
+	name = 'global'
 	if not defineList:
 		defineList = ent.refs('declarein')
 	if defineList:
@@ -99,9 +99,9 @@ class CodeUIItem(QtGui.QGraphicsItem):
 				if defineList:
 					ref = defineList[0]
 					declareEnt = ref.ent()
-					name = declareEnt.name()
 					if declareEnt.kindname().lower().find('class') != -1 or \
 						declareEnt.kindname().lower().find('struct') != -1:
+						name = declareEnt.name()
 						self.customData['className'] = name
 					# self.setToolTip(declareEnt.kindname() + "+" + name)
 				self.color = name2color(name)
@@ -212,7 +212,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 
 		selectedOrHover = self.isSelected() or self.isHover
 		if selectedOrHover:
-			pen = QtGui.QPen(QtGui.QBrush(QtGui.QColor(255,127,39)), 3.0)
+			pen = QtGui.QPen(QtGui.QBrush(QtGui.QColor(255,168,38)), 3.0)
 			painter.setPen(pen)
 		else:
 			painter.setPen(QtCore.Qt.NoPen)
@@ -239,9 +239,6 @@ class CodeUIItem(QtGui.QGraphicsItem):
 				painter.drawEllipse(-r,-r,r*2,r*2)
 			elif self.kind == ITEM_VARIABLE:
 				x = r * 0.707
-				# painter.rotate(45)
-				# painter.drawRect(-x,-x,x*2,x*2)
-				# painter.rotate(-45)
 				painter.drawPolygon(QtCore.QPoint(-r,0), QtCore.QPoint(r,-r), QtCore.QPoint(r,r))
 			elif self.kind == ITEM_CLASS:
 				painter.drawRect(-r,-r,r*2,r*2)
@@ -267,7 +264,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			# rect0 = rect.translated(-dx,-dx)
 			# painter.drawText(rect0, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter, self.name)
 
-			painter.setPen(QtGui.QPen(QtGui.QColor(0,0,0)))
+			painter.setPen(QtGui.QPen(QtGui.QColor(255,255,255)))
 			angle = -20
 			#painter.rotate(angle)
 			painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter, self.displayName)

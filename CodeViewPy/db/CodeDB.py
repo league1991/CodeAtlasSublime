@@ -60,6 +60,7 @@ class CodeDB(QtCore.QObject):
 
 		mainUI = UIManager.instance().getMainUI()
 		mainUI.symbolDock.widget().updateForbiddenSymbol()
+		mainUI.schemeDock.widget().updateScheme()
 
 	def search(self, name, kindstring = None):
 		if not self._db:

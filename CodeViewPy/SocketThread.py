@@ -35,7 +35,7 @@ class SocketThread(QtCore.QThread):
 
 		while True:
 			data, addr = self.socketObj.recvfrom(1024 * 5)
-			print('recv data, addr')
+			#print('recv data, addr')
 			dataStr = data.decode()
 			#print(dataStr)
 			self.recvSignal.emit(dataStr)

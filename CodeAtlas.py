@@ -32,6 +32,51 @@ class Analyze_database_Command(TextCommand):
 		socket = DataManager.instance().getSocket()
 		socket.remoteCall('onAnalyze', None)
 
+class Show_scheme_1_Command(TextCommand):
+	def run(self, edit):
+		socket = DataManager.instance().getSocket()
+		socket.remoteCall('showScheme',[1])
+
+class Show_scheme_2_Command(TextCommand):
+	def run(self, edit):
+		socket = DataManager.instance().getSocket()
+		socket.remoteCall('showScheme',[2])
+
+class Show_scheme_3_Command(TextCommand):
+	def run(self, edit):
+		socket = DataManager.instance().getSocket()
+		socket.remoteCall('showScheme',[3])
+
+class Show_scheme_4_Command(TextCommand):
+	def run(self, edit):
+		socket = DataManager.instance().getSocket()
+		socket.remoteCall('showScheme',[4])
+
+class Show_scheme_5_Command(TextCommand):
+	def run(self, edit):
+		socket = DataManager.instance().getSocket()
+		socket.remoteCall('showScheme',[5])
+
+class Show_scheme_6_Command(TextCommand):
+	def run(self, edit):
+		socket = DataManager.instance().getSocket()
+		socket.remoteCall('showScheme',[6])
+
+class Show_scheme_7_Command(TextCommand):
+	def run(self, edit):
+		socket = DataManager.instance().getSocket()
+		socket.remoteCall('showScheme',[7])
+
+class Show_scheme_8_Command(TextCommand):
+	def run(self, edit):
+		socket = DataManager.instance().getSocket()
+		socket.remoteCall('showScheme',[8])
+
+class Show_scheme_9_Command(TextCommand):
+	def run(self, edit):
+		socket = DataManager.instance().getSocket()
+		socket.remoteCall('showScheme',[9])
+
 class Show_in_atlas_Command(TextCommand):
 	def run(self, edit):
 		socket = DataManager.instance().getSocket()
@@ -126,6 +171,11 @@ class Delete_selected_items_Command(TextCommand):
 	def run(self, edit):
 		socket = DataManager.instance().getSocket()
 		socket.remoteCall('onDeleteSelectedItems', None)
+
+class Delete_and_ignore_selected_items_Command(TextCommand):
+	def run(self, edit):
+		socket = DataManager.instance().getSocket()
+		socket.remoteCall('onDeleteSelectedItemsAndAddToStop', None)
 
 class Delete_oldest_items_Command(TextCommand):
 	def run(self, edit):

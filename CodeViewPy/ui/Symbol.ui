@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>337</width>
-    <height>252</height>
+    <height>164</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,7 +22,7 @@
      <x>0</x>
      <y>0</y>
      <width>335</width>
-     <height>250</height>
+     <height>162</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0">
@@ -35,7 +35,7 @@
     <item>
      <widget class="QGroupBox" name="groupBox">
       <property name="title">
-       <string>Forbidden Symbol</string>
+       <string>Ignored Symbol</string>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <property name="spacing">

@@ -46,6 +46,7 @@ class SceneUpdateThread(QtCore.QThread):
 				self.moveItems()
 				#print('before call order')
 				self.updateCallOrder()
+				self.scene.updateCurrentValidScheme()
 				#print('before invalidate scene')
 				#self.scene.invalidate()
 				#print('before update scene')
@@ -313,9 +314,15 @@ class SceneUpdateThread(QtCore.QThread):
 		if not item:
 			return
 		item = item[0]
+		isEdgeSelected = False
 		if isinstance(item, ui.CodeUIEdgeItem.CodeUIEdgeItem):
 			#print('not ui item')
-			item = self.scene.itemDict.get(item.srcUniqueName, None)
+			srcItem = self.scene.itemDict.get(item.srcUniqueName, None)
+			dstItem = self.scene.itemDict.get(item.tarUniqueName, None)
+			isEdgeSelected = True
+			if srcItem and dstItem:
+				srcItem.isConnectedToFocusNode = dstItem.isConnectedToFocusNode = True
+			item = srcItem
 		if not item or item.kind != ui.CodeUIItem.ITEM_FUNCTION:
 			#print('not function')
 			return
@@ -332,10 +339,11 @@ class SceneUpdateThread(QtCore.QThread):
 				xRange[1] = max(tarPos.x(), xRange[1])
 			edge.isConnectedToFocusNode = itemUniqueName in key
 
-			if key[0] == itemUniqueName and self.scene.itemDict[key[1]].kind == ui.CodeUIItem.ITEM_FUNCTION:
-				self.scene.itemDict[key[1]].isConnectedToFocusNode = True
-			if key[1] == itemUniqueName and self.scene.itemDict[key[0]].kind == ui.CodeUIItem.ITEM_FUNCTION:
-				self.scene.itemDict[key[0]].isConnectedToFocusNode = True
+			if not isEdgeSelected:
+				if key[0] == itemUniqueName and self.scene.itemDict[key[1]].kind == ui.CodeUIItem.ITEM_FUNCTION:
+					self.scene.itemDict[key[1]].isConnectedToFocusNode = True
+				if key[1] == itemUniqueName and self.scene.itemDict[key[0]].kind == ui.CodeUIItem.ITEM_FUNCTION:
+					self.scene.itemDict[key[0]].isConnectedToFocusNode = True
 
 		if len(edgeList) <= 1:
 			return
@@ -407,10 +415,15 @@ class SceneUpdateThread(QtCore.QThread):
 		if self.scene.isAutoFocus() and self.scene.getNSelected() > 0:
 			for view in self.scene.views():
 				pos = self.scene.getSelectedCenter()
-				if getattr(view, 'centerPnt', None) is not None:
+				posView = view.mapFromScene(pos)
+				xRatio = float(posView.x()) / view.width()
+				yRatio = float(posView.y()) / view.height()
+				# print('xratio', xRatio, yRatio)
+				isInSafeRegion = xRatio > 0.3 and xRatio < 0.7 and yRatio > 0.2 and yRatio < 0.8
+				if getattr(view, 'centerPnt', None) is not None and not isInSafeRegion:
 					#print('view center', view.centerPnt)
 					view.centerPnt = view.centerPnt * 0.97 + pos * 0.03
-					view.centerOn(view.centerPnt)
+				view.centerOn(view.centerPnt)
 		# if nSelected:
 		# 	pos /= float(nSelected)
 
@@ -434,6 +447,8 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.itemDict = {}
 		self.edgeDict = {}
 		self.stopItem = {}		# 不显示的符号
+		self.scheme = {}		# 保存的call graph
+		self.curValidScheme = []# 选中物体有关的scheme
 		self.itemLruQueue = []
 		self.lruMaxLength = 50
 
@@ -454,6 +469,76 @@ class CodeScene(QtGui.QGraphicsScene):
 			self.cornerItem.append(item)
 			self.addItem(item)
 		self.connect(self, QtCore.SIGNAL('selectionChanged()'), self, QtCore.SLOT('onSelectItems()'))
+
+	# 添加或修改call graph
+	def addOrReplaceScheme(self, name):
+		nodes = [uname for uname, item in self.itemDict.items() if item.isSelected()]
+		if not nodes:
+			return
+		def bothNodesSelected(edge):
+			srcItem = self.itemDict.get(edge.srcUniqueName)
+			tarItem = self.itemDict.get(edge.tarUniqueName)
+			if not srcItem or not tarItem:
+				return False
+			return srcItem.isSelected() and tarItem.isSelected()
+		edges = [edgePair for edgePair, item in self.edgeDict.items() if bothNodesSelected(item)]
+		self.scheme[name] = {'node': nodes, 'edge':edges}
+
+	def getSchemeNameList(self):
+		return [name for name, schemeData in self.scheme.items()]
+
+	def deleteScheme(self, name):
+		if name in self.scheme:
+			del self.scheme[name]
+
+	def showScheme(self, name):
+		if name not in self.scheme:
+			return False
+
+		self.clearSelection()
+		from db.DBManager import DBManager
+		dbObj = DBManager.instance().getDB()
+		codeItemList = self.scheme[name].get('node',[])
+		for uname in codeItemList:
+			res, item = self.addCodeItem(uname)
+			if item:
+				item.setSelected(True)
+
+		edgeItemList = self.scheme[name].get('edge',[])
+		for edgePair in edgeItemList:
+			refObj = dbObj.searchRefObj(edgePair[0], edgePair[1])
+			if refObj:
+				self._doAddCodeEdgeItem(edgePair[0], edgePair[1], refObj)
+			edgeItem = self.edgeDict.get(edgePair)
+			if edgeItem:
+				edgeItem.setSelected(True)
+
+	def showIthScheme(self, ithScheme):
+		if ithScheme < 0 or ithScheme >= len(self.curValidScheme):
+			return
+		name = self.curValidScheme[ithScheme]
+		self.showScheme(name)
+
+	def getCurrentSchemeList(self):
+		return self.curValidScheme
+
+	def updateCurrentValidScheme(self):
+		schemeNameSet = set()
+		for uname, item in self.itemDict.items():
+			if item.isSelected():
+				for schemeName, schemeData in self.scheme.items():
+					if uname in schemeData['node']:
+						schemeNameSet.add(schemeName)
+
+		for uname, item in self.edgeDict.items():
+			if item.isSelected():
+				for schemeName, schemeData in self.scheme.items():
+					if uname in schemeData['edge']:
+						schemeNameSet.add(schemeName)
+
+		self.curValidScheme = list(schemeNameSet)
+		self.curValidScheme.sort()
+		self.curValidScheme = self.curValidScheme[0:9]
 
 	# 添加不显示的符号
 	def addForbiddenSymbol(self):
@@ -484,7 +569,9 @@ class CodeScene(QtGui.QGraphicsScene):
 			file.close()
 			sceneData = JSONDecoder().decode(jsonStr)
 			self.lock.acquire()
+			# stop item
 			self.stopItem = sceneData.get('stopItem',{})
+			# latest layout
 			codeItemList = sceneData.get('codeItem',[])
 			for uname in codeItemList:
 				self.addCodeItem(uname)
@@ -495,6 +582,13 @@ class CodeScene(QtGui.QGraphicsScene):
 					self._doAddCodeEdgeItem(edgePair[0], edgePair[1], refObj)
 			if self.itemDict:
 				self.selectOneItem(list(self.itemDict.values())[0])
+			# scheme
+			schemeDict = sceneData.get('scheme',{})
+			for name, schemeData in schemeDict.items():
+				edgeList = schemeData.get('edge',[])
+				newEdgeList = [(edge[0], edge[1]) for edge in edgeList]
+				schemeData['edge'] = newEdgeList
+			self.scheme = schemeDict
 			self.lock.release()
 		else:
 			print('no such file: ' + dbPath)
@@ -508,7 +602,11 @@ class CodeScene(QtGui.QGraphicsScene):
 		file = open(dbPath + '.config', 'w')
 		codeItemList = list(self.itemDict.keys())
 		edgeItemList = list(self.edgeDict.keys())
-		jsonStr = JSONEncoder().encode({'stopItem':self.stopItem, 'codeItem':codeItemList, 'edgeItem':edgeItemList})
+		jsonDict = {'stopItem':self.stopItem,
+					'codeItem':codeItemList,
+					'edgeItem':edgeItemList,
+					'scheme':self.scheme}
+		jsonStr = JSONEncoder().encode(jsonDict)
 		file.write(jsonStr)
 		file.close()
 
@@ -758,7 +856,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		if lastPos:
 			self.selectNearestItem(lastPos)
 
-	def deleteSelectedItems(self):
+	def deleteSelectedItems(self, addToStop = True):
 		self.lock.acquire()
 
 		#print('acquire lock -----------------------------------------', self.lock)
@@ -769,6 +867,8 @@ class CodeScene(QtGui.QGraphicsScene):
 			if item.isSelected():
 				itemList.append(itemKey)
 				lastPos = item.pos()
+				if addToStop:
+					self.stopItem[item.getUniqueName()] = item.name
 
 		if itemList:
 			#print('do delete code item')
@@ -792,10 +892,10 @@ class CodeScene(QtGui.QGraphicsScene):
 		return node
 
 	def findNeighbour(self, mainDirection = (1.0,0.0)):
-		print('find neighbour begin', mainDirection)
+		#print('find neighbour begin', mainDirection)
 		itemList = self.selectedItems()
 		if not itemList:
-			print('no item', itemList)
+			#print('no item', itemList)
 			return
 
 		from ui.CodeUIItem import CodeUIItem
@@ -808,10 +908,10 @@ class CodeScene(QtGui.QGraphicsScene):
 			minItem = self.findNeighbourForEdge(centerItem, mainDirection)
 
 		#from UIManager import UIManager
-		print('find nei', minItem)
+		#print('find nei', minItem)
 		if minItem:
 			if self.selectOneItem(minItem):
-				print('show in editor------')
+				#print('show in editor------')
 				self.showInEditor()
 
 	def findNeighbourForEdge(self, centerItem, mainDirection):
@@ -1069,16 +1169,13 @@ class CodeScene(QtGui.QGraphicsScene):
 	def showInEditor(self):
 		from ui.CodeUIItem import CodeUIItem
 		from ui.CodeUIEdgeItem import CodeUIEdgeItem
-		print('----------------import')
 		itemList = self.selectedItems()
-		print('item list', itemList)
 		if not itemList:
 			return
  
 		item = itemList[0]
 		if isinstance(item, CodeUIItem):
 			entity = item.getEntity()
-			print('entity', entity)
 			if not entity:
 				return
 
@@ -1093,7 +1190,7 @@ class CodeScene(QtGui.QGraphicsScene):
 			line = ref.line()
 			column = ref.column()
 			fileName = fileEnt.longname()
-			print('file ----', line, column, fileName, ref.kind(), ref.kindname())
+			#print('file ----', line, column, fileName, ref.kind(), ref.kindname())
 		elif isinstance(item, CodeUIEdgeItem):
 			line = item.line
 			column = item.column
@@ -1257,7 +1354,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		from ui.CodeUIItem import CodeUIItem
 		from ui.CodeUIEdgeItem import CodeUIEdgeItem
 		itemList = self.selectedItems()
-		print( 'on select items begin', itemList)
+		#print( 'on select items begin', itemList)
 
 		for item in itemList:
 			if not isinstance(item, CodeUIItem):
@@ -1266,4 +1363,4 @@ class CodeScene(QtGui.QGraphicsScene):
 			self.updateLRU([uniqueName])
 
 		self.removeItemLRU()
-		print( 'on select items end', itemList)
+		#print( 'on select items end', itemList)
