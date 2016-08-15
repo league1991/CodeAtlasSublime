@@ -207,16 +207,22 @@ class CodeView(QtGui.QGraphicsView):
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
 		schemeList = scene.getCurrentSchemeList()
+		colorList = scene.getCurrentSchemeColorList()
 		#print('schemelist', schemeList)
 		cw = 10
 		y  = 10
 		for ithScheme, schemeName in enumerate(schemeList):
 			painter.setPen(QtCore.Qt.NoPen)
 			painter.setBrush(QtGui.QBrush(QtGui.QColor(200,200,200,100)))
-			painter.drawRect(QtCore.QRect(10,y,40,cw+1))
+			painter.drawRect(QtCore.QRect(25,y,40,cw+1))
+
+			painter.setPen(QtCore.Qt.NoPen)
+			painter.setBrush(QtGui.QBrush(colorList[ithScheme]))
+			painter.drawRect(QtCore.QRect(10,y,cw,cw))
+
 
 			painter.setPen(QtCore.Qt.white)
-			painter.drawText(14, y+cw, 'Alt + %s   %s' % (ithScheme+1, schemeName))
+			painter.drawText(29, y+cw, 'Alt + %s   %s' % (ithScheme+1, schemeName))
 			y += cw + 2
 
 

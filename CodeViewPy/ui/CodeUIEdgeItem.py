@@ -30,6 +30,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		self.orderData = None
 		self.buildPath()
 		self.isConnectedToFocusNode = False
+		self.schemeColorList = []
 
 	def getNodePos(self):
 		from UIManager import UIManager
@@ -144,8 +145,10 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 
 		srcPos, tarPos = self.getNodeCenterPos()
 		isReverse = srcPos.x() > tarPos.x()
+		isHighLight = False
 		if self.isSelected() or self.isHover:
-			clr = QtGui.QColor(255,168,38)
+			clr = QtGui.QColor(255,255,0)
+			isHighLight = True
 		# elif self.isConnectedToFocusNode:
 		# 	clr = QtGui.QColor(200,200,200,255)
 		else:
@@ -155,37 +158,53 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 				clr = QtGui.QColor(150,150,150,180)
 			#clr = QtGui.QColor(230,230,230,255)
 
-
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
-		srcNode = scene.getNode(self.srcUniqueName)
-		tarNode = scene.getNode(self.tarUniqueName)
+		# srcNode = scene.getNode(self.srcUniqueName)
+		# tarNode = scene.getNode(self.tarUniqueName)
 		penStyle = QtCore.Qt.SolidLine
 		penWidth = 3.0
-		if srcNode and tarNode and srcNode.isFunction() and tarNode.isFunction():
-			pass
-		else:
-			penStyle = QtCore.Qt.DotLine
-		painter.setPen(QtGui.QPen(clr, penWidth, penStyle))
+		# if srcNode and tarNode and srcNode.isFunction() and tarNode.isFunction():
+		# 	pass
+		# else:
+		# 	penStyle = QtCore.Qt.DotLine
+		pen = QtGui.QPen(clr, penWidth, penStyle)
 
-		srcPos, tarPos = self.getNodePos()
-		#midPos = (srcPos + tarPos) * 0.5
-		midPos = tarPos
-		#d = [tarPos.x() - srcPos.x(), tarPos.y() - srcPos.y()]
-		d = [tarPos.x() - srcPos.x(), 0]
-		dirLength = math.sqrt(d[0]*d[0] + d[1]*d[1])
-		d[0] /= (dirLength + 1e-5)
-		d[1] /= (dirLength + 1e-5)
+		# srcPos, tarPos = self.getNodePos()
+		# #midPos = (srcPos + tarPos) * 0.5
+		# midPos = tarPos
+		# #d = [tarPos.x() - srcPos.x(), tarPos.y() - srcPos.y()]
+		# d = [tarPos.x() - srcPos.x(), 0]
+		# dirLength = math.sqrt(d[0]*d[0] + d[1]*d[1])
+		# d[0] /= (dirLength + 1e-5)
+		# d[1] /= (dirLength + 1e-5)
 
-		ld = (-d[1],d[0])
-		back = -10
-		side = 4
-		leftPos  = QtCore.QPointF(midPos.x() + d[0]*back + ld[0]*side, midPos.y() + d[1]*back + ld[1]*side)
-		rightPos = QtCore.QPointF(midPos.x() + d[0]*back + ld[0]*-side, midPos.y() + d[1]*back + ld[1]*-side)
+		# ld = (-d[1],d[0])
+		# back = -10
+		# side = 4
+		# leftPos  = QtCore.QPointF(midPos.x() + d[0]*back + ld[0]*side, midPos.y() + d[1]*back + ld[1]*side)
+		# rightPos = QtCore.QPointF(midPos.x() + d[0]*back + ld[0]*-side, midPos.y() + d[1]*back + ld[1]*-side)
 
 		#painter.drawLines([srcPos, tarPos, leftPos, midPos, rightPos, midPos])
 		#painter.drawLines([leftPos, midPos, rightPos, midPos])
-		painter.drawPath(self.path)
+		if self.schemeColorList:
+			if isHighLight:
+				pen.setWidthF(9.0)
+				painter.setPen(pen)
+				painter.drawPath(self.path)
+			dash = 5
+			pen = QtGui.QPen(clr, 3.0, QtCore.Qt.CustomDashLine, QtCore.Qt.FlatCap)
+			pen.setDashPattern([dash, dash*(len(self.schemeColorList)-1)])
+			for i, schemeColor in enumerate(self.schemeColorList):
+				pen.setDashOffset(i*dash)
+				pen.setColor(schemeColor)
+				painter.setPen(pen)
+				painter.drawPath(self.path)
+		else:
+			if isHighLight:
+				pen.setWidthF(9.0)
+			painter.setPen(pen)
+			painter.drawPath(self.path)
 
 		if self.orderData is not None:
 			#print('order data', self.orderData)
@@ -193,6 +212,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 			order = self.orderData[0]
 			rect = self.getNumberRect()
 			painter.setBrush(clr)
+			painter.setPen(QtCore.Qt.NoPen)
 			painter.drawEllipse(rect)
 			#painter.drawRect(rect)
 			painter.setPen(QtGui.QPen(QtGui.QColor(0,0,0), 2.0))

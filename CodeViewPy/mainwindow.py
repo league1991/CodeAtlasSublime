@@ -217,8 +217,8 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		#defaultPath = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)) + r'\CodeAtlasSublime.udb'
 		#print(defaultPath)
 		dbmgr = DBManager.DBManager.instance()
-		#defaultPath = r'C:\Users\me\AppData\Roaming\Sublime Text 3\Packages\CodeAtlas\CodeAtlasSublime.udb'
-		defaultPath = r'I:\Programs\autodesk\rapidrt-master\rapidRT.udb'
+		defaultPath = r'C:\Users\me\AppData\Roaming\Sublime Text 3\Packages\CodeAtlas\CodeAtlasSublime.udb'
+		#defaultPath = r'I:\Programs\autodesk\rapidrt-master\rapidRT.udb'
 		dbmgr.getDB().open(defaultPath)
 
 		from UIManager import UIManager

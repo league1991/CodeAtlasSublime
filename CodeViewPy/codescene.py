@@ -8,6 +8,7 @@ import sys
 import traceback
 import threading
 import time
+import hashlib
 from json import *
 
 #class SceneUpdateThread(threading.Thread):
@@ -449,6 +450,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.stopItem = {}		# 不显示的符号
 		self.scheme = {}		# 保存的call graph
 		self.curValidScheme = []# 选中物体有关的scheme
+		self.curValidSchemeColor = []
 		self.itemLruQueue = []
 		self.lruMaxLength = 50
 
@@ -522,6 +524,9 @@ class CodeScene(QtGui.QGraphicsScene):
 	def getCurrentSchemeList(self):
 		return self.curValidScheme
 
+	def getCurrentSchemeColorList(self):
+		return self.curValidSchemeColor
+
 	def updateCurrentValidScheme(self):
 		schemeNameSet = set()
 		for uname, item in self.itemDict.items():
@@ -531,6 +536,7 @@ class CodeScene(QtGui.QGraphicsScene):
 						schemeNameSet.add(schemeName)
 
 		for uname, item in self.edgeDict.items():
+			item.schemeColorList = []
 			if item.isSelected():
 				for schemeName, schemeData in self.scheme.items():
 					if uname in schemeData['edge']:
@@ -539,6 +545,25 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.curValidScheme = list(schemeNameSet)
 		self.curValidScheme.sort()
 		self.curValidScheme = self.curValidScheme[0:9]
+		self.curValidSchemeColor = []
+
+		def schemeName2color(name):
+			hashVal = int(hashlib.md5(name.encode("utf8")).hexdigest(),16) & 0xffffffff
+			h = (hashVal & 0xff) / 255.0
+			s = ((hashVal >> 8) & 0xff) / 255.0
+			l = ((hashVal >> 16)& 0xff) / 255.0
+			#return QtGui.QColor.fromHslF(h,s * 0.3 + 0.4,l * 0.4 + 0.5)
+			return QtGui.QColor.fromHslF(h, 0.7+s*0.3, 0.4+l*0.2)
+
+		for schemeName in self.curValidScheme:
+			schemeData = self.scheme[schemeName]
+			schemeColor = schemeName2color(schemeName)
+			self.curValidSchemeColor.append(schemeColor)
+			for edgePair in schemeData['edge']:
+				edge = self.edgeDict.get(edgePair, None)
+				if edge:
+					edge.schemeColorList.append(schemeColor)
+
 
 	# 添加不显示的符号
 	def addForbiddenSymbol(self):

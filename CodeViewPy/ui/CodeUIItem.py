@@ -212,10 +212,11 @@ class CodeUIItem(QtGui.QGraphicsItem):
 
 		selectedOrHover = self.isSelected() or self.isHover
 		if selectedOrHover:
-			pen = QtGui.QPen(QtGui.QBrush(QtGui.QColor(255,168,38)), 3.0)
+			pen = QtGui.QPen(QtGui.QBrush(QtGui.QColor(255,255,0,255)), 20.0)#, QtCore.Qt.SolidLine, QtCore.Qt.SquareCap, QtCore.Qt.RoundJoin)
 			painter.setPen(pen)
-		else:
-			painter.setPen(QtCore.Qt.NoPen)
+			self.drawShape(painter)
+
+		painter.setPen(QtCore.Qt.NoPen)
 		if r * lod > 1.0:
 			clr = self.color
 			if self.isFunction():
@@ -235,13 +236,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			# if selectedOrHover:
 			# 	clr = clr.darker(130)
 			painter.setBrush(clr)
-			if self.kind == ITEM_FUNCTION:
-				painter.drawEllipse(-r,-r,r*2,r*2)
-			elif self.kind == ITEM_VARIABLE:
-				x = r * 0.707
-				painter.drawPolygon(QtCore.QPoint(-r,0), QtCore.QPoint(r,-r), QtCore.QPoint(r,r))
-			elif self.kind == ITEM_CLASS:
-				painter.drawRect(-r,-r,r*2,r*2)
+			self.drawShape(painter)
 
 		if r * lod > 3 or selectedOrHover:
 			painter.scale(1.0/lod, 1.0/lod)
@@ -269,6 +264,14 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			#painter.rotate(angle)
 			painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter, self.displayName)
 			#painter.rotate(-1.0 * angle)
+	def drawShape(self, painter):
+		r = self.getRadius()
+		if self.kind == ITEM_FUNCTION:
+			painter.drawEllipse(-r,-r,r*2,r*2)
+		elif self.kind == ITEM_VARIABLE:
+			painter.drawPolygon(QtCore.QPoint(-r,0), QtCore.QPoint(r,-r), QtCore.QPoint(r,r))
+		elif self.kind == ITEM_CLASS:
+			painter.drawRect(-r,-r,r*2,r*2)
 
 	def contextMenuEvent(self, event):
 		#print ('context menu')
@@ -313,7 +316,8 @@ class CodeUIItem(QtGui.QGraphicsItem):
 
 	def mouseMoveEvent(self, event):
 		super(CodeUIItem, self).mouseMoveEvent(event)
-		self.targetPos = QtCore.QPointF(self.pos().x(), self.pos().y())
+		if self.isSelected():
+			self.targetPos = QtCore.QPointF(self.pos().x(), self.pos().y())
 
 		if event.buttons().__int__() & QtCore.Qt.MidButton:
 			print('event button:', event.buttons().__int__())
