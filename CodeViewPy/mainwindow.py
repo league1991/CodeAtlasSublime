@@ -282,7 +282,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 			scene.clearOldItem()
 
 	def getSearchWindow(self):
-		return self.searchWidget
+		return self.searchDock.widget()
 
 	def showScheme(self, param):
 		ithScheme = param[0]-1

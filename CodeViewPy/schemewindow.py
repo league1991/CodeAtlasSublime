@@ -47,7 +47,7 @@ class SchemeWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
 		scene.acquireLock()
-		scene.showScheme(schemeName)
+		scene.showScheme(schemeName, True)
 		scene.releaseLock()
 		self.updateScheme()
 

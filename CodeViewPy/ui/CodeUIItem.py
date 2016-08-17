@@ -264,6 +264,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			#painter.rotate(angle)
 			painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter, self.displayName)
 			#painter.rotate(-1.0 * angle)
+
 	def drawShape(self, painter):
 		r = self.getRadius()
 		if self.kind == ITEM_FUNCTION:
@@ -319,7 +320,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		if self.isSelected():
 			self.targetPos = QtCore.QPointF(self.pos().x(), self.pos().y())
 
-		if event.buttons().__int__() & QtCore.Qt.MidButton:
+		if event.buttons().__int__() & QtCore.Qt.MidButton or event.buttons().__int__() & QtCore.Qt.RightButton:
 			print('event button:', event.buttons().__int__())
 			drag = QtGui.QDrag(event.widget())
 			mime = QtCore.QMimeData()
@@ -342,25 +343,27 @@ class CodeUIItem(QtGui.QGraphicsItem):
 
 	def dropEvent(self, event):
 		super(CodeUIItem, self).dropEvent(event)
-		print('drop', event, event.source(), event.mimeData().text())
-
-		srcName = event.mimeData().text()
-
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
 		if not scene:
 			return
 
-		srcItem = scene.getNode(srcName)
-		print('src item', srcItem)
-		if not srcItem:
-			return
-
-		print('src is function', srcItem.isFunction() , self.isFunction())
-		if not srcItem.isFunction() or not self.isFunction():
-			return
-
-		scene.addCallPaths(srcName, self.uniqueName)
+		mouseButtons = event.buttons()
+		if mouseButtons & QtCore.Qt.MiddleButton:
+			srcName = event.mimeData().text()
+			srcItem = scene.getNode(srcName)
+			if not srcItem:
+				return
+			#print('src is function', srcItem.isFunction() , self.isFunction())
+			if not srcItem.isFunction() or not self.isFunction():
+				return
+			scene.addCallPaths(srcName, self.uniqueName)
+		elif mouseButtons & QtCore.Qt.RightButton:
+			srcName = event.mimeData().text()
+			srcItem = scene.getNode(srcName)
+			if not srcItem:
+				return
+			scene.addCustomEdge(srcName, self.uniqueName, {})
 
 if __name__ == "__main__":
 	import re

@@ -413,8 +413,13 @@ class SceneUpdateThread(QtCore.QThread):
 			cornerList[2].setPos(bboxMax[0]+mar, bboxMin[1]-mar)
 			cornerList[3].setPos(bboxMax[0]+mar, bboxMax[1]+mar)
 
-		if self.scene.isAutoFocus() and self.scene.getNSelected() > 0:
-			for view in self.scene.views():
+		for view in self.scene.views():
+			if self.scene.isAutoFocus() and self.scene.getNSelected() > 0:
+				mousePos = view.mapFromGlobal(QtGui.QCursor.pos())
+				isInView = view.rect().contains(mousePos)
+				if isInView:
+					view.centerPnt = view.mapToScene(view.rect().center())
+					continue
 				pos = self.scene.getSelectedCenter()
 				posView = view.mapFromScene(pos)
 				xRatio = float(posView.x()) / view.width()
@@ -425,12 +430,8 @@ class SceneUpdateThread(QtCore.QThread):
 					#print('view center', view.centerPnt)
 					view.centerPnt = view.centerPnt * 0.97 + pos * 0.03
 				view.centerOn(view.centerPnt)
-		# if nSelected:
-		# 	pos /= float(nSelected)
-
-			#self.centerPnt = self.centerPnt * 0.95 + pos * 0.05
-			# for view in self.scene.views():
-			# 	view.centerOn(self.centerPnt)
+			else:
+				view.centerPnt = view.mapToScene(view.rect().center())
 
 class RecursiveLock(QtCore.QMutex):
 	def __init__(self):
@@ -448,7 +449,8 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.itemDict = {}
 		self.edgeDict = {}
 		self.stopItem = {}		# 不显示的符号
-		self.scheme = {}		# 保存的call graph
+		self.scheme = {}		# 保存的call graph,
+								# {'schemeName': {'node':[node1, node2,...], 'edge':{(node3, node5):{'customEdge':True}, ...}}, ...}
 		self.curValidScheme = []# 选中物体有关的scheme
 		self.curValidSchemeColor = []
 		self.itemLruQueue = []
@@ -483,7 +485,14 @@ class CodeScene(QtGui.QGraphicsScene):
 			if not srcItem or not tarItem:
 				return False
 			return srcItem.isSelected() and tarItem.isSelected()
-		edges = [edgePair for edgePair, item in self.edgeDict.items() if bothNodesSelected(item)]
+
+		edges = {}
+		for edgePair, item in self.edgeDict.items():
+			if bothNodesSelected(item):
+				edgeData = {}
+				if item.customEdge:
+					edgeData = {'customEdge': True}
+				edges[edgePair] = edgeData
 		self.scheme[name] = {'node': nodes, 'edge':edges}
 
 	def getSchemeNameList(self):
@@ -493,9 +502,19 @@ class CodeScene(QtGui.QGraphicsScene):
 		if name in self.scheme:
 			del self.scheme[name]
 
-	def showScheme(self, name):
+	def showScheme(self, name, selectScheme = True):
 		if name not in self.scheme:
 			return False
+
+		selectedNode = []
+		selectedEdge = []
+		if not selectScheme:
+			for uname, node in self.itemDict.items():
+				if node.isSelected():
+					selectedNode.append(uname)
+			for uname, edge in self.edgeDict.items():
+				if edge.isSelected():
+					selectedEdge.append(uname)
 
 		self.clearSelection()
 		from db.DBManager import DBManager
@@ -503,23 +522,37 @@ class CodeScene(QtGui.QGraphicsScene):
 		codeItemList = self.scheme[name].get('node',[])
 		for uname in codeItemList:
 			res, item = self.addCodeItem(uname)
-			if item:
+			if item and selectScheme:
 				item.setSelected(True)
 
-		edgeItemList = self.scheme[name].get('edge',[])
-		for edgePair in edgeItemList:
-			refObj = dbObj.searchRefObj(edgePair[0], edgePair[1])
-			if refObj:
-				self._doAddCodeEdgeItem(edgePair[0], edgePair[1], refObj)
+		edgeItemDict = self.scheme[name].get('edge',{})
+		for edgePair, edgeData in edgeItemDict.items():
+			# 自定义边一定能够创建
+			if edgeData.get('customEdge', False):
+				self._doAddCodeEdgeItem(edgePair[0], edgePair[1], {'customEdge':True})
+			else:
+				refObj = dbObj.searchRefObj(edgePair[0], edgePair[1])
+				if refObj:
+					self._doAddCodeEdgeItem(edgePair[0], edgePair[1], {'dbRef':refObj})
 			edgeItem = self.edgeDict.get(edgePair)
-			if edgeItem:
+			if edgeItem and selectScheme:
 				edgeItem.setSelected(True)
+
+		if not selectScheme:
+			for uname in selectedNode:
+				node = self.itemDict.get(uname)
+				if node:
+					node.setSelected(True)
+			for uname in selectedEdge:
+				edge = self.edgeDict.get(uname)
+				if edge:
+					edge.setSelected(True)
 
 	def showIthScheme(self, ithScheme):
 		if ithScheme < 0 or ithScheme >= len(self.curValidScheme):
 			return
 		name = self.curValidScheme[ithScheme]
-		self.showScheme(name)
+		self.showScheme(name, False)
 
 	def getCurrentSchemeList(self):
 		return self.curValidScheme
@@ -553,13 +586,13 @@ class CodeScene(QtGui.QGraphicsScene):
 			s = ((hashVal >> 8) & 0xff) / 255.0
 			l = ((hashVal >> 16)& 0xff) / 255.0
 			#return QtGui.QColor.fromHslF(h,s * 0.3 + 0.4,l * 0.4 + 0.5)
-			return QtGui.QColor.fromHslF(h, 0.7+s*0.3, 0.4+l*0.2)
+			return QtGui.QColor.fromHslF(h, 0.6+s*0.3, 0.3+l*0.2)
 
 		for schemeName in self.curValidScheme:
 			schemeData = self.scheme[schemeName]
 			schemeColor = schemeName2color(schemeName)
 			self.curValidSchemeColor.append(schemeColor)
-			for edgePair in schemeData['edge']:
+			for edgePair, edgeData in schemeData['edge'].items():
 				edge = self.edgeDict.get(edgePair, None)
 				if edge:
 					edge.schemeColorList.append(schemeColor)
@@ -588,10 +621,12 @@ class CodeScene(QtGui.QGraphicsScene):
 			return
 
 		configPath = dbPath + '.config'
+		jsonStr = ''
 		if os.path.exists(configPath):
 			file = open(dbPath + '.config')
 			jsonStr = file.read()
 			file.close()
+		if jsonStr:
 			sceneData = JSONDecoder().decode(jsonStr)
 			self.lock.acquire()
 			# stop item
@@ -602,21 +637,30 @@ class CodeScene(QtGui.QGraphicsScene):
 				self.addCodeItem(uname)
 			edgeItemList = sceneData.get('edgeItem',[])
 			for edgePair in edgeItemList:
-				refObj = dbObj.searchRefObj(edgePair[0], edgePair[1])
-				if refObj:
-					self._doAddCodeEdgeItem(edgePair[0], edgePair[1], refObj)
+				edgeData = edgePair[2]
+				if edgeData.get('customEdge', False):
+					self._doAddCodeEdgeItem(edgePair[0], edgePair[1], {'customEdge':True})
+				else:
+					refObj = dbObj.searchRefObj(edgePair[0], edgePair[1])
+					if refObj:
+						self._doAddCodeEdgeItem(edgePair[0], edgePair[1], {'dbRef':refObj})
 			if self.itemDict:
 				self.selectOneItem(list(self.itemDict.values())[0])
 			# scheme
 			schemeDict = sceneData.get('scheme',{})
 			for name, schemeData in schemeDict.items():
 				edgeList = schemeData.get('edge',[])
-				newEdgeList = [(edge[0], edge[1]) for edge in edgeList]
-				schemeData['edge'] = newEdgeList
+				edgeDict = {}
+				for edgeData in edgeList:
+					if len(edgeData) == 2:
+						edgeDict[(edgeData[0], edgeData[1])] = {}
+					elif len(edgeData) == 3:
+						edgeDict[(edgeData[0], edgeData[1])] = edgeData[2]
+				schemeData['edge'] = edgeDict
 			self.scheme = schemeDict
 			self.lock.release()
 		else:
-			print('no such file: ' + dbPath)
+			print('no config file: ' + configPath)
 
 	def onCloseDB(self):
 		print('close db------------------')
@@ -626,11 +670,25 @@ class CodeScene(QtGui.QGraphicsScene):
 			return
 		file = open(dbPath + '.config', 'w')
 		codeItemList = list(self.itemDict.keys())
-		edgeItemList = list(self.edgeDict.keys())
+		edgeItemList = []
+		for edgeKey, edge in self.edgeDict.items():
+			edgeData = {}
+			if edge.customEdge:
+				edgeData['customEdge'] = True
+			edgeItemList.append([edgeKey[0], edgeKey[1], edgeData])
+
+		# 修改scheme边的数据格式，以便存成json格式
+		import copy
+		scheme = copy.deepcopy(self.scheme)
+		for schemeName, schemeData in scheme.items():
+			edgeList = []
+			for edgeKey, edgeData in schemeData.get('edge',{}).items():
+				edgeList.append([edgeKey[0], edgeKey[1], edgeData])
+			schemeData['edge'] = edgeList
 		jsonDict = {'stopItem':self.stopItem,
 					'codeItem':codeItemList,
 					'edgeItem':edgeItemList,
-					'scheme':self.scheme}
+					'scheme':scheme}
 		jsonStr = JSONEncoder().encode(jsonDict)
 		file.write(jsonStr)
 		file.close()
@@ -780,7 +838,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.lock.release()
 		return res, item
 
-	def _doAddCodeEdgeItem(self, srcUniqueName, tarUniqueName, refObj):
+	def _doAddCodeEdgeItem(self, srcUniqueName, tarUniqueName, dataObj):
 		key = (srcUniqueName, tarUniqueName)
 		if self.edgeDict.get(key, None):
 			return
@@ -788,14 +846,9 @@ class CodeScene(QtGui.QGraphicsScene):
 			return
 
 		from ui.CodeUIEdgeItem import CodeUIEdgeItem
-		item = CodeUIEdgeItem(srcUniqueName, tarUniqueName, dbRef=refObj)
+		item = CodeUIEdgeItem(srcUniqueName, tarUniqueName, edgeData = dataObj)
 		self.edgeDict[key] = item
 		self.addItem(item)
-
-	# def addCodeEdgeItem(self, srcUniqueName, tarUniqueName):
-	# 	self.lock.acquire()
-	# 	self._doAddCodeEdgeItem(srcUniqueName, tarUniqueName)
-	# 	self.lock.release()
 
 	def _doDeleteCodeItem(self, uniqueName):
 		node = self.itemDict.get(uniqueName, None)
@@ -904,6 +957,12 @@ class CodeScene(QtGui.QGraphicsScene):
 			#print('remove item lru')
 			self.removeItemLRU()
 
+		edgeList = []
+		for itemKey, item in self.edgeDict.items():
+			if item.isSelected():
+				edgeList.append(itemKey)
+		for edgeKey in edgeList:
+			self._doDeleteCodeEdgeItem(edgeKey)
 		if lastPos:
 			#print('select nearest item')
 			self.selectNearestItem(QtCore.QPointF(lastPos.x(), lastPos.y()))
@@ -1242,8 +1301,16 @@ class CodeScene(QtGui.QGraphicsScene):
 		for entName in entList:
 			self._doAddCodeItem(entName)
 		for refObj in refList:
-			self._doAddCodeEdgeItem(refObj[0], refObj[1], refObj[2])
+			self._doAddCodeEdgeItem(refObj[0], refObj[1], {'dbRef':refObj[2]})
 		return entList
+
+	def addCustomEdge(self, srcName, tarName, edgeData = {}):
+		if srcName not in self.itemDict or tarName not in self.itemDict:
+			return
+		self.acquireLock()
+		edgeData['customEdge'] = True
+		self._doAddCodeEdgeItem(srcName, tarName, edgeData)
+		self.releaseLock()
 
 	def addCallPaths(self, srcName = '', tarName = ''):
 		self.lock.acquire()
@@ -1278,17 +1345,10 @@ class CodeScene(QtGui.QGraphicsScene):
 			for ithRef, entName in enumerate(entNameList):
 				refObj = refList[ithRef]
 				res, refItem = scene._doAddCodeItem(entName)
-				# if res:
-				# 	if refStr.find('callby') != -1:
-				# 		refItem.setPos(item.pos() + QtCore.QPointF(-50,random.uniform(-50,50)))
-				# 	elif refStr.find('call') != -1:
-				# 		refItem.setPos(item.pos() + QtCore.QPointF(50,random.uniform(-50,50)))
-				# 	else:
-				# 		refItem.setPos(item.pos() + QtCore.QPointF(random.uniform(-50,50),random.uniform(-50,50)))
 				if inverseEdge:
-					scene._doAddCodeEdgeItem(uniqueName, entName, refObj)
+					scene._doAddCodeEdgeItem(uniqueName, entName, {'dbRef':refObj})
 				else:
-					scene._doAddCodeEdgeItem(entName, uniqueName, refObj)
+					scene._doAddCodeEdgeItem(entName, uniqueName, {'dbRef':refObj})
 
 		# for uname, item in self.itemDict.items():
 		# 	# 再增加与现有节点的联系

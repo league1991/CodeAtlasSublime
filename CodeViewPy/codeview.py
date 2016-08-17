@@ -2,6 +2,7 @@
 from PyQt4 import QtGui,QtCore
 import math
 import codescene
+import time
 import ui.CodeUIItem as CodeUIItem
 
 
@@ -95,6 +96,7 @@ class CodeView(QtGui.QGraphicsView):
 			self.setCursor(QtCore.Qt.BlankCursor)
 		else:
 			super(CodeView, self).keyPressEvent(event)
+		self.viewport().update()
 
 	def keyReleaseEvent(self, event):
 		self.setCursor(QtCore.Qt.ArrowCursor)
@@ -116,14 +118,18 @@ class CodeView(QtGui.QGraphicsView):
 		# 	item.mousePressEvent(event)
 		if not self.isBrushSelectMode and not self.isBrushDeselectMode:
 			super(CodeView, self).mousePressEvent(event)
+		else:
+			x = event.pos().x()
+			y = event.pos().y()
+			itemList = self.items(x-self.brushRadius, y-self.brushRadius, self.brushRadius*2, self.brushRadius*2)
+			for item in itemList:
+				item.setSelected(self.isBrushSelectMode)
 
 	def mouseMoveEvent(self, event):
-		#print('mouse move begin ')
+		self.mouseCurPnt = event.pos()
 		if self.isFrameSelectMode:
-			#print('frame move')
-			self.mouseCurPnt = event.pos()
+			pass
 		elif self.isBrushSelectMode or self.isBrushDeselectMode:
-			self.mouseCurPnt = event.pos()
 			if self.isMousePressed:
 				x = event.pos().x()
 				y = event.pos().y()
@@ -214,15 +220,15 @@ class CodeView(QtGui.QGraphicsView):
 		for ithScheme, schemeName in enumerate(schemeList):
 			painter.setPen(QtCore.Qt.NoPen)
 			painter.setBrush(QtGui.QBrush(QtGui.QColor(200,200,200,100)))
-			painter.drawRect(QtCore.QRect(25,y,40,cw+1))
+			painter.drawRect(QtCore.QRect(35,y,40,cw+1))
 
 			painter.setPen(QtCore.Qt.NoPen)
 			painter.setBrush(QtGui.QBrush(colorList[ithScheme]))
-			painter.drawRect(QtCore.QRect(10,y,cw,cw))
+			painter.drawRect(QtCore.QRect(10,y+5,20,2))
 
 
 			painter.setPen(QtCore.Qt.white)
-			painter.drawText(29, y+cw, 'Alt + %s   %s' % (ithScheme+1, schemeName))
+			painter.drawText(39, y+cw, 'Alt + %s   %s' % (ithScheme+1, schemeName))
 			y += cw + 2
 
 

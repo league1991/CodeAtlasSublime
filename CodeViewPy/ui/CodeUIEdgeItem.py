@@ -2,7 +2,7 @@ from PyQt4 import QtCore, QtGui, uic
 import math
 
 class CodeUIEdgeItem(QtGui.QGraphicsItem):
-	def __init__(self, srcUniqueName, tarUniqueName, dbRef = None, parent = None, scene = None):
+	def __init__(self, srcUniqueName, tarUniqueName, edgeData = {}, parent = None, scene = None):
 		super(CodeUIEdgeItem, self).__init__(parent, scene)
 		#self.setFlag(QtGui.QGraphicsItem.ItemIsMovable)
 		self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable)
@@ -19,6 +19,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		self.file = ''
 		self.line = -1
 		self.column = -1
+		dbRef = edgeData.get('dbRef', None)
 		if dbRef:
 			self.file = dbRef.file().longname()
 			self.line = dbRef.line()
@@ -31,6 +32,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		self.buildPath()
 		self.isConnectedToFocusNode = False
 		self.schemeColorList = []
+		self.customEdge = edgeData.get('customEdge', False)
 
 	def getNodePos(self):
 		from UIManager import UIManager
