@@ -453,6 +453,9 @@ class CodeScene(QtGui.QGraphicsScene):
 								# {'schemeName': {'node':[node1, node2,...], 'edge':{(node3, node5):{'customEdge':True}, ...}}, ...}
 		self.curValidScheme = []# 选中物体有关的scheme
 		self.curValidSchemeColor = []
+		self.edgeDataDict = {}  # 存放需要保存的边用户数据
+		self.itemDataDict = {}	# 存放需要保存的点用户数据
+
 		self.itemLruQueue = []
 		self.lruMaxLength = 50
 
@@ -490,8 +493,6 @@ class CodeScene(QtGui.QGraphicsScene):
 		for edgePair, item in self.edgeDict.items():
 			if bothNodesSelected(item):
 				edgeData = {}
-				if item.customEdge:
-					edgeData = {'customEdge': True}
 				edges[edgePair] = edgeData
 		self.scheme[name] = {'node': nodes, 'edge':edges}
 
@@ -526,8 +527,9 @@ class CodeScene(QtGui.QGraphicsScene):
 				item.setSelected(True)
 
 		edgeItemDict = self.scheme[name].get('edge',{})
-		for edgePair, edgeData in edgeItemDict.items():
+		for edgePair, _ in edgeItemDict.items():
 			# 自定义边一定能够创建
+			edgeData = self.edgeDataDict.get(edgePair, {})
 			if edgeData.get('customEdge', False):
 				self._doAddCodeEdgeItem(edgePair[0], edgePair[1], {'customEdge':True})
 			else:
@@ -635,10 +637,14 @@ class CodeScene(QtGui.QGraphicsScene):
 			codeItemList = sceneData.get('codeItem',[])
 			for uname in codeItemList:
 				self.addCodeItem(uname)
+			self.itemDataDict = sceneData.get('codeData',{})
+
+			for edgeData in sceneData.get('edgeData', []):
+				self.edgeDataDict[(edgeData[0], edgeData[1])] = edgeData[2]
+
 			edgeItemList = sceneData.get('edgeItem',[])
 			for edgePair in edgeItemList:
-				edgeData = edgePair[2]
-				if edgeData.get('customEdge', False):
+				if self.edgeDataDict.get((edgePair[0], edgePair[1]), {}).get('customEdge', False):
 					self._doAddCodeEdgeItem(edgePair[0], edgePair[1], {'customEdge':True})
 				else:
 					refObj = dbObj.searchRefObj(edgePair[0], edgePair[1])
@@ -652,10 +658,7 @@ class CodeScene(QtGui.QGraphicsScene):
 				edgeList = schemeData.get('edge',[])
 				edgeDict = {}
 				for edgeData in edgeList:
-					if len(edgeData) == 2:
-						edgeDict[(edgeData[0], edgeData[1])] = {}
-					elif len(edgeData) == 3:
-						edgeDict[(edgeData[0], edgeData[1])] = edgeData[2]
+					edgeDict[(edgeData[0], edgeData[1])] = {}
 				schemeData['edge'] = edgeDict
 			self.scheme = schemeDict
 			self.lock.release()
@@ -670,12 +673,10 @@ class CodeScene(QtGui.QGraphicsScene):
 			return
 		file = open(dbPath + '.config', 'w')
 		codeItemList = list(self.itemDict.keys())
-		edgeItemList = []
-		for edgeKey, edge in self.edgeDict.items():
-			edgeData = {}
-			if edge.customEdge:
-				edgeData['customEdge'] = True
-			edgeItemList.append([edgeKey[0], edgeKey[1], edgeData])
+		edgeItemList = list(self.edgeDict.keys())
+		edgeDataList = []
+		for edgeKey, edgeData in self.edgeDataDict.items():
+			edgeDataList.append([edgeKey[0], edgeKey[1], edgeData])
 
 		# 修改scheme边的数据格式，以便存成json格式
 		import copy
@@ -683,11 +684,13 @@ class CodeScene(QtGui.QGraphicsScene):
 		for schemeName, schemeData in scheme.items():
 			edgeList = []
 			for edgeKey, edgeData in schemeData.get('edge',{}).items():
-				edgeList.append([edgeKey[0], edgeKey[1], edgeData])
+				edgeList.append([edgeKey[0], edgeKey[1]])
 			schemeData['edge'] = edgeList
 		jsonDict = {'stopItem':self.stopItem,
 					'codeItem':codeItemList,
+					'codeData':self.itemDataDict,
 					'edgeItem':edgeItemList,
+					'edgeData':edgeDataList,
 					'scheme':scheme}
 		jsonStr = JSONEncoder().encode(jsonDict)
 		file.write(jsonStr)
@@ -841,14 +844,19 @@ class CodeScene(QtGui.QGraphicsScene):
 	def _doAddCodeEdgeItem(self, srcUniqueName, tarUniqueName, dataObj):
 		key = (srcUniqueName, tarUniqueName)
 		if self.edgeDict.get(key, None):
-			return
+			return False
 		if srcUniqueName not in self.itemDict or tarUniqueName not in self.itemDict:
-			return
+			return False
 
 		from ui.CodeUIEdgeItem import CodeUIEdgeItem
 		item = CodeUIEdgeItem(srcUniqueName, tarUniqueName, edgeData = dataObj)
 		self.edgeDict[key] = item
+		if dataObj.get('customEdge', False):
+			edgeData = self.edgeDataDict.get(key, {})
+			edgeData['customEdge'] = True
+			self.edgeDataDict[key] = edgeData
 		self.addItem(item)
+		return True
 
 	def _doDeleteCodeItem(self, uniqueName):
 		node = self.itemDict.get(uniqueName, None)
@@ -1309,7 +1317,7 @@ class CodeScene(QtGui.QGraphicsScene):
 			return
 		self.acquireLock()
 		edgeData['customEdge'] = True
-		self._doAddCodeEdgeItem(srcName, tarName, edgeData)
+		res = self._doAddCodeEdgeItem(srcName, tarName, edgeData)
 		self.releaseLock()
 
 	def addCallPaths(self, srcName = '', tarName = ''):
@@ -1439,8 +1447,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		from ui.CodeUIItem import CodeUIItem
 		from ui.CodeUIEdgeItem import CodeUIEdgeItem
 		itemList = self.selectedItems()
-		#print( 'on select items begin', itemList)
-
+		# update LRU
 		for item in itemList:
 			if not isinstance(item, CodeUIItem):
 				continue
@@ -1448,4 +1455,42 @@ class CodeScene(QtGui.QGraphicsScene):
 			self.updateLRU([uniqueName])
 
 		self.removeItemLRU()
-		#print( 'on select items end', itemList)
+
+		# update comment
+		itemName = ''
+		itemComment = ''
+		if len(itemList) == 1:
+			item = itemList[0]
+			if isinstance(item, CodeUIItem):
+				itemName = item.name
+				itemComment = self.itemDataDict.get(item.uniqueName, {}).get('comment','')
+			elif isinstance(item, CodeUIEdgeItem):
+				srcItem = self.itemDict.get(item.srcUniqueName)
+				tarItem = self.itemDict.get(item.tarUniqueName)
+				if srcItem and tarItem:
+					itemName = srcItem.name + ' -> ' + tarItem.name
+					itemComment = self.edgeDataDict.get((item.srcUniqueName, item.tarUniqueName), {}).get('comment', '')
+
+		from UIManager import UIManager
+		symbolWidget = UIManager.instance().getMainUI().getSymbolWidget()
+		if symbolWidget:
+			symbolWidget.updateSymbol(itemName, itemComment)
+
+	def updateSelectedComment(self, comment):
+		itemList = self.selectedItems()
+		from ui.CodeUIItem import CodeUIItem
+		from ui.CodeUIEdgeItem import CodeUIEdgeItem
+
+		if len(itemList) == 1:
+			item = itemList[0]
+			if isinstance(item, CodeUIItem):
+				itemData = self.itemDataDict.get(item.uniqueName, {})
+				itemData['comment'] = comment
+				self.itemDataDict[item.uniqueName] = itemData
+			elif isinstance(item, CodeUIEdgeItem):
+				srcItem = self.itemDict.get(item.srcUniqueName)
+				tarItem = self.itemDict.get(item.tarUniqueName)
+				if srcItem and tarItem:
+					edgeData = self.edgeDataDict.get((item.srcUniqueName, item.tarUniqueName), {})
+					edgeData['comment'] = comment
+					self.edgeDataDict[(item.srcUniqueName, item.tarUniqueName)] = edgeData

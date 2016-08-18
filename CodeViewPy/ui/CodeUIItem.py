@@ -15,7 +15,7 @@ def name2color(name):
 	s = ((hashVal >> 8) & 0xff) / 255.0
 	l = ((hashVal >> 16)& 0xff) / 255.0
 	#return QtGui.QColor.fromHslF(h,s * 0.3 + 0.4,l * 0.4 + 0.5)
-	return QtGui.QColor.fromHslF(h, 0.7+s*0.3, 0.25+l*0.2)
+	return QtGui.QColor.fromHslF(h, 0.7+s*0.3, 0.18+l*0.2)
 
 def getFunctionColor(ent):
 	defineList = ent.refs('definein')
@@ -264,6 +264,16 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			#painter.rotate(angle)
 			painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter, self.displayName)
 			#painter.rotate(-1.0 * angle)
+
+			scene = self.scene()
+			commentData = scene.itemDataDict.get(self.uniqueName, {}).get('comment')
+			if commentData:
+				painter.setPen(QtGui.QPen(QtGui.QColor(0,255,0)))
+				rect.moveTop(rect.bottom() - 8)
+				rect.setSize(QtCore.QSizeF(100,500))
+				painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, commentData)
+
+
 
 	def drawShape(self, painter):
 		r = self.getRadius()

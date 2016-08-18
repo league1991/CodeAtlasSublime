@@ -258,6 +258,17 @@ class CodeView(QtGui.QGraphicsView):
 			painter.drawText(cw+12, y+cw, cname)
 			y -= cw + 2
 
+	def drawComment(self, painter, rectF):
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+
+		for uname, itemData in scene.itemDataDict.items():
+			item = scene.itemDict.get(uname, None)
+			if not item:
+				continue
+
+
+
 
 	def paintEvent(self, QPaintEvent):
 		#print('paint event begin ')

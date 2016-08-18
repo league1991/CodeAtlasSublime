@@ -149,6 +149,9 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 	def getSymbolMenu(self):
 		return self.menuSymbol
 
+	def getSymbolWidget(self):
+		return self.symbolDock.widget()
+
 	def getView(self):
 		return self.centralWidget()
 

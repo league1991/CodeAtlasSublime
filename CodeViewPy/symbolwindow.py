@@ -21,6 +21,7 @@ class SymbolWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 		self.setupUi(self)
 		self.addForbidden.clicked.connect(self.onAddForbidden)
 		self.deleteForbidden.clicked.connect(self.onDeleteForbidden)
+		self.updateCommentButton.clicked.connect(self.updateComment)
 
 	def onAddForbidden(self):
 		from UIManager import UIManager
@@ -58,6 +59,16 @@ class SymbolWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 			self.forbiddenList.setCurrentItem(item)
 
 		scene.releaseLock()
+
+	def updateSymbol(self, symbolName, comment = ''):
+		self.symbolLabel.setText(symbolName)
+		self.commentEdit.setPlainText(comment)
+
+	def updateComment(self):
+		text = self.commentEdit.toPlainText()
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		scene.updateSelectedComment(text)
 
 if __name__ == "__main__":
 	app = QtGui.QApplication(sys.argv)
