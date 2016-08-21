@@ -15,7 +15,7 @@ def name2color(name):
 	s = ((hashVal >> 8) & 0xff) / 255.0
 	l = ((hashVal >> 16)& 0xff) / 255.0
 	#return QtGui.QColor.fromHslF(h,s * 0.3 + 0.4,l * 0.4 + 0.5)
-	return QtGui.QColor.fromHslF(h, 0.7+s*0.3, 0.18+l*0.2)
+	return QtGui.QColor.fromHslF(h, 0.6+s*0.3, 0.22+l*0.2)
 
 def getFunctionColor(ent):
 	defineList = ent.refs('definein')
@@ -38,6 +38,8 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.setAcceptHoverEvents(True)
 		self.uniqueName = uniqueName
 		from db.DBManager import DBManager
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
 		entity = DBManager.instance().getDB().searchFromUniqueName(self.uniqueName)
 		self.name = ''
 		self.displayName = ''
@@ -46,18 +48,20 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.kind = ITEM_UNKNOWN
 		self.titleFont = QtGui.QFont('tahoma', 8)
 		self.fontSize = QtCore.QSize()
+		self.commentSize = QtCore.QSize()
+		self.lineHeight = 0
 		self.isConnectedToFocusNode = False
 		if entity:
 			self.setToolTip(entity.longname())
 			self.name = entity.name()
 			self.buildDisplayName(self.name)
+			comment = scene.itemDataDict.get(self.uniqueName, {}).get('comment','')
+			self.buildCommentSize(comment)
 			self.kindName = entity.kindname()
 			metricRes = entity.metric(('CountLine',))
 			self.lines = metricRes.get('CountLine',1)
 			if not self.lines:
 				self.lines = 1
-
-		#print('name ', self.name, self.lines, self.kindName)
 
 		kindStr = self.kindName.lower()
 		# 自定义数据
@@ -66,14 +70,10 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		#print('kind str', kindStr)
 		if kindStr.find('function') != -1 or kindStr.find('method') != -1:
 			self.kind = ITEM_FUNCTION
-
 			# 找出调用者和被调用者数目
 			dbObj = DBManager.instance().getDB()
 			callerList = dbObj.searchRefEntity(self.uniqueName, 'callby','function, method', True)[0]
 			calleeList = dbObj.searchRefEntity(self.uniqueName, 'call','function, method', True)[0]
-			# print('call: ', self.name)
-			# print(callerList)
-			# print(calleeList)
 			self.customData['nCaller'] = len(callerList)
 			self.customData['nCallee'] = len(calleeList)
 			self.customData['callerR'] = self.getCallerRadius(len(callerList))
@@ -109,7 +109,6 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			self.color = name2color(self.name)
 
 		self.displayScore = 0
-
 		self.targetPos = self.pos()	# 用于动画目标
 		self.isHover = False
 
@@ -122,7 +121,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		return self.customData.get('className','')
 
 	def buildDisplayName(self, name):
-		p = re.compile(r'([A-Z]*[a-z0-9]*_*)')
+		p = re.compile(r'([A-Z]*[a-z0-9]*_*~*)')
 		nameList = p.findall(name)
 		#print('disp name list', nameList)
 		partLength = 0
@@ -132,13 +131,25 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			self.displayName += part
 			partLength += len(part)
 			if partLength > 13:
-				self.displayName += '\n     '
+				self.displayName += '\n'
 				partLength = 0
 		self.displayName = self.displayName.strip()
 		nLine = self.displayName.count('\n')+1
 		self.fontSize = fontMetrics.size(QtCore.Qt.TextSingleLine, self.name)
-		self.fontSize.setHeight(self.fontSize.height()*nLine + 13)
+		self.lineHeight = fontMetrics.lineSpacing()*1.67
+		self.fontSize.setHeight(fontMetrics.lineSpacing()*nLine*1.67)
 		#print('disp name:\n', self.displayName,'---')
+
+	def buildCommentSize(self, comment):
+		if not comment:
+			self.commentSize = QtCore.QSize()
+			return
+
+		fontMetrics = QtGui.QFontMetricsF(self.titleFont)
+		lineHeight = fontMetrics.lineSpacing()
+		width = fontMetrics.width(comment)
+		lines = math.ceil(width/100)
+		self.commentSize = QtCore.QSize(100, lineHeight * lines*1.67)
 
 	def isFunction(self):
 		return self.kind == ITEM_FUNCTION
@@ -166,7 +177,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			return math.pow(float(self.lines+1), 0.3) * 5.0
 
 	def getHeight(self):
-		h = max(self.fontSize.height(), self.getRadius() * 2)
+		h = max(self.fontSize.height() + self.commentSize.height(), self.getRadius() * 2)
 		if self.isFunction():
 			h = max(h, self.customData['callerR'] / 0.8, self.customData['calleeR'] / 0.8)
 		return h
@@ -212,7 +223,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 
 		selectedOrHover = self.isSelected() or self.isHover
 		if selectedOrHover:
-			pen = QtGui.QPen(QtGui.QBrush(QtGui.QColor(255,255,0,255)), 20.0)#, QtCore.Qt.SolidLine, QtCore.Qt.SquareCap, QtCore.Qt.RoundJoin)
+			pen = QtGui.QPen(QtGui.QBrush(QtGui.QColor(255,157,38,255)), 20.0)#, QtCore.Qt.SolidLine, QtCore.Qt.SquareCap, QtCore.Qt.RoundJoin)
 			painter.setPen(pen)
 			self.drawShape(painter)
 
@@ -244,9 +255,9 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			painter.setFont(self.titleFont)
 			#rect = QtCore.QRectF(self.fontSize.width() * -0.5, self.fontSize.height() * -0.5, self.fontSize.width(), self.fontSize.height())
 			if self.kind == ITEM_VARIABLE:
-				rect = QtCore.QRectF(r, self.fontSize.height() * -0.5, self.fontSize.width(), self.fontSize.height())
+				rect = QtCore.QRectF(r, self.lineHeight*-0.5, self.fontSize.width(), self.fontSize.height())
 			else:
-				rect = QtCore.QRectF(0, self.fontSize.height() * -0.5, self.fontSize.width(), self.fontSize.height())
+				rect = QtCore.QRectF(0, self.lineHeight*-0.5, self.fontSize.width(), self.fontSize.height())
 
 			# dx = 1.1
 			# painter.setPen(QtGui.QPen(QtGui.QColor(255,255,255)))
@@ -262,14 +273,14 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			painter.setPen(QtGui.QPen(QtGui.QColor(255,255,255)))
 			angle = -20
 			#painter.rotate(angle)
-			painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter, self.displayName)
+			painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop, self.displayName)
 			#painter.rotate(-1.0 * angle)
 
 			scene = self.scene()
 			commentData = scene.itemDataDict.get(self.uniqueName, {}).get('comment')
 			if commentData:
 				painter.setPen(QtGui.QPen(QtGui.QColor(0,255,0)))
-				rect.moveTop(rect.bottom() - 8)
+				rect.moveTop(rect.bottom() - 3)
 				rect.setSize(QtCore.QSizeF(100,500))
 				painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, commentData)
 

@@ -36,8 +36,10 @@ class SymbolWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 
 		self.forbiddenList.clear()
 		#print('update forbidden', forbidden)
-		for uname, name in forbidden.items():
-			self.forbiddenList.addItem(ForbiddenItem(uname, name))
+		itemList = [ForbiddenItem(uname, name) for uname, name in forbidden.items()]
+		itemList.sort(key = lambda item: item.text())
+		for item in itemList:
+			self.forbiddenList.addItem(item)
 
 
 	def onDeleteForbidden(self):

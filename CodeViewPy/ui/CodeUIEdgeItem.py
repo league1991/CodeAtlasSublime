@@ -149,7 +149,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		isReverse = srcPos.x() > tarPos.x()
 		isHighLight = False
 		if self.isSelected() or self.isHover:
-			clr = QtGui.QColor(255,255,0)
+			clr = QtGui.QColor(255,157,38,255)
 			isHighLight = True
 		# elif self.isConnectedToFocusNode:
 		# 	clr = QtGui.QColor(200,200,200,255)

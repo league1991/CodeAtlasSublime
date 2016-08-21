@@ -20,7 +20,6 @@ class SceneUpdateThread(QtCore.QThread):
 		self.scene = scene
 		self.lock = lock
 		self.isActive = True
-
 		self.itemSet = set()
 		self.edgeNum = 0
 		print(self.updateSignal)
@@ -40,9 +39,10 @@ class SceneUpdateThread(QtCore.QThread):
 				self.scene.acquireLock()
 				#print('update thread begin -----------------------------------------')
 				#self.updatePos()
-				if self.itemSet != set(self.scene.itemDict.keys()) or self.edgeNum != len(self.scene.edgeDict):
+				if self.itemSet != set(self.scene.itemDict.keys()) or self.edgeNum != len(self.scene.edgeDict) or self.scene.isLayoutDirty:
 					#print('before update layout')
 					self.updateLayeredLayoutWithComp()
+					self.scene.isLayoutDirty = False
 				#print('before move items')
 				self.moveItems()
 				#print('before call order')
@@ -246,7 +246,7 @@ class SceneUpdateThread(QtCore.QThread):
 				vtx.view = VtxView(w, height)
 				V.append(vtx) 
  
-			E = []   
+			E = []
 			for edgeKey in edgeList:
 				if vtxList[edgeKey[0]].comp == ithComp:
 					E.append(Edge(V[vtxList[edgeKey[0]].compIdx], V[vtxList[edgeKey[1]].compIdx]))
@@ -278,7 +278,7 @@ class SceneUpdateThread(QtCore.QThread):
 			#print('bbox', minPnt, maxPnt)
 			for v in g.C[0].sV:
 				oldV = vtxList[v.data]
-				newPos = (oldV.pos[0]-minPnt[0]+offset[0], oldV.pos[1]-minPnt[1]+offset[1])
+				newPos = (oldV.pos[0]-minPnt[0]+offset[0], oldV.pos[1]-minPnt[1]+offset[1]-oldV.height*0.5+oldV.radius)
 				self.scene.itemDict[oldV.name].setTargetPos(QtCore.QPointF(newPos[0], newPos[1]))
 				bboxMin[0] = min(bboxMin[0], newPos[0])
 				bboxMin[1] = min(bboxMin[1], newPos[1])
@@ -458,10 +458,9 @@ class CodeScene(QtGui.QGraphicsScene):
 
 		self.itemLruQueue = []
 		self.lruMaxLength = 50
+		self.isLayoutDirty = False
 
 		self.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex)
-		#self.lock = threading.RLock()
-		#self.lock = QtCore.QSemaphore(1)
 		self.lock = RecursiveLock()
 		self.updateThread = SceneUpdateThread(self, self.lock)
 		self.updateThread.start()
@@ -599,7 +598,6 @@ class CodeScene(QtGui.QGraphicsScene):
 				if edge:
 					edge.schemeColorList.append(schemeColor)
 
-
 	# 添加不显示的符号
 	def addForbiddenSymbol(self):
 		for itemKey, item in self.itemDict.items():
@@ -633,11 +631,11 @@ class CodeScene(QtGui.QGraphicsScene):
 			self.lock.acquire()
 			# stop item
 			self.stopItem = sceneData.get('stopItem',{})
+			self.itemDataDict = sceneData.get('codeData',{})
 			# latest layout
 			codeItemList = sceneData.get('codeItem',[])
 			for uname in codeItemList:
 				self.addCodeItem(uname)
-			self.itemDataDict = sceneData.get('codeData',{})
 
 			for edgeData in sceneData.get('edgeData', []):
 				self.edgeDataDict[(edgeData[0], edgeData[1])] = edgeData[2]
@@ -1481,12 +1479,14 @@ class CodeScene(QtGui.QGraphicsScene):
 		from ui.CodeUIItem import CodeUIItem
 		from ui.CodeUIEdgeItem import CodeUIEdgeItem
 
+		self.acquireLock()
 		if len(itemList) == 1:
 			item = itemList[0]
 			if isinstance(item, CodeUIItem):
 				itemData = self.itemDataDict.get(item.uniqueName, {})
 				itemData['comment'] = comment
 				self.itemDataDict[item.uniqueName] = itemData
+				item.buildCommentSize(comment)
 			elif isinstance(item, CodeUIEdgeItem):
 				srcItem = self.itemDict.get(item.srcUniqueName)
 				tarItem = self.itemDict.get(item.tarUniqueName)
@@ -1494,3 +1494,7 @@ class CodeScene(QtGui.QGraphicsScene):
 					edgeData = self.edgeDataDict.get((item.srcUniqueName, item.tarUniqueName), {})
 					edgeData['comment'] = comment
 					self.edgeDataDict[(item.srcUniqueName, item.tarUniqueName)] = edgeData
+
+			self.isLayoutDirty = True
+
+		self.releaseLock()
