@@ -136,8 +136,8 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.displayName = self.displayName.strip()
 		nLine = self.displayName.count('\n')+1
 		self.fontSize = fontMetrics.size(QtCore.Qt.TextSingleLine, self.name)
-		self.lineHeight = fontMetrics.lineSpacing()*1.67
-		self.fontSize.setHeight(fontMetrics.lineSpacing()*nLine*1.67)
+		self.lineHeight = fontMetrics.height()
+		self.fontSize.setHeight((fontMetrics.lineSpacing()*nLine - fontMetrics.leading()))
 		#print('disp name:\n', self.displayName,'---')
 
 	def buildCommentSize(self, comment):
@@ -149,7 +149,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		lineHeight = fontMetrics.lineSpacing()
 		width = fontMetrics.width(comment)
 		lines = math.ceil(width/100)
-		self.commentSize = QtCore.QSize(100, lineHeight * lines*1.67)
+		self.commentSize = QtCore.QSize(100, (fontMetrics.lineSpacing()*lines - fontMetrics.leading()))
 
 	def isFunction(self):
 		return self.kind == ITEM_FUNCTION
@@ -177,7 +177,8 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			return math.pow(float(self.lines+1), 0.3) * 5.0
 
 	def getHeight(self):
-		h = max(self.fontSize.height() + self.commentSize.height(), self.getRadius() * 2)
+		r = self.getRadius()
+		h = max((self.fontSize.height() + self.commentSize.height())*1.67, r) + r
 		if self.isFunction():
 			h = max(h, self.customData['callerR'] / 0.8, self.customData['calleeR'] / 0.8)
 		return h
@@ -280,7 +281,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			commentData = scene.itemDataDict.get(self.uniqueName, {}).get('comment')
 			if commentData:
 				painter.setPen(QtGui.QPen(QtGui.QColor(0,255,0)))
-				rect.moveTop(rect.bottom() - 3)
+				rect.moveTop(rect.bottom())
 				rect.setSize(QtCore.QSizeF(100,500))
 				painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, commentData)
 
