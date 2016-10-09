@@ -178,7 +178,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 
 	def getHeight(self):
 		r = self.getRadius()
-		h = max((self.fontSize.height() + self.commentSize.height())*1.67, r) + r
+		h = max((self.fontSize.height() + self.commentSize.height())*1.67, r)
 		if self.isFunction():
 			h = max(h, self.customData['callerR'] / 0.8, self.customData['calleeR'] / 0.8)
 		return h

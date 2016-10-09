@@ -144,7 +144,7 @@ class SceneUpdateThread(QtCore.QThread):
 				self.pos = None
 				self.radius = radius
 				self.fontHeight = height
-				self.height = max(radius*2, height)
+				self.height = radius + max(radius, height)
 				self.firstKey = 0.0
 				self.secondKey = 0.0
 				self.thirdKey = 0.0
@@ -221,7 +221,7 @@ class SceneUpdateThread(QtCore.QThread):
 			# 增加一个连通分量
 			compList.append(compMap)
 
-		#print('comp list', compList)
+		print('comp list', compList)
 		from grandalf.graphs import Vertex, Edge, Graph
 		class VtxView(object):
 			def __init__(self, w, h):
@@ -260,9 +260,9 @@ class SceneUpdateThread(QtCore.QThread):
 			sug = SugiyamaLayout(g.C[0])
 			sug.xspace = packSpace
 			sug.yspace = packSpace
-			sug.order_iter = 16
+			sug.order_iter = 32
 			sug.init_all()
-			sug.draw(5)
+			sug.draw(10)
 
 			# 统计包围盒
 			for v in g.C[0].sV:
