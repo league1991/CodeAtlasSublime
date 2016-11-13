@@ -40,6 +40,8 @@ class CodeView(QtGui.QGraphicsView):
 		self.scale(0.6,0.6)
 		self.brushRadius = 8
 		self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(50,50,50)))
+		self.hudFont = QtGui.QFont('tahoma', 8)
+		self.hudFontMetric = QtGui.QFontMetrics(self.hudFont)
 
 	@QtCore.pyqtSlot()
 	def updateView(self):
@@ -70,23 +72,23 @@ class CodeView(QtGui.QGraphicsView):
 			elif event.key() == QtCore.Qt.Key_Right:
 				mainUI.goToRight()
 			elif event.key() == QtCore.Qt.Key_1:
-				mainUI.showScheme([1])
+				mainUI.showScheme([1, True])
 			elif event.key() == QtCore.Qt.Key_2:
-				mainUI.showScheme([2])
+				mainUI.showScheme([2, True])
 			elif event.key() == QtCore.Qt.Key_3:
-				mainUI.showScheme([3])
+				mainUI.showScheme([3, True])
 			elif event.key() == QtCore.Qt.Key_4:
-				mainUI.showScheme([4])
+				mainUI.showScheme([4, True])
 			elif event.key() == QtCore.Qt.Key_5:
-				mainUI.showScheme([5])
+				mainUI.showScheme([5, True])
 			elif event.key() == QtCore.Qt.Key_6:
-				mainUI.showScheme([6])
+				mainUI.showScheme([6, True])
 			elif event.key() == QtCore.Qt.Key_7:
-				mainUI.showScheme([7])
+				mainUI.showScheme([7, True])
 			elif event.key() == QtCore.Qt.Key_8:
-				mainUI.showScheme([8])
+				mainUI.showScheme([8, True])
 			elif event.key() == QtCore.Qt.Key_9:
-				mainUI.showScheme([9])
+				mainUI.showScheme([9, True])
 		elif event.key() == QtCore.Qt.Key_Control:
 			#print('ctrl pressed')
 			self.isBrushSelectMode = True
@@ -208,33 +210,45 @@ class CodeView(QtGui.QGraphicsView):
 		#return True
 
 	def drawScheme(self, painter, rectF):
-		painter.setTransform(QtGui.QTransform())
-		painter.setFont(QtGui.QFont('tahoma', 8))
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
 		schemeList = scene.getCurrentSchemeList()
+		nScheme = len(schemeList)
+		if not nScheme:
+			return
+		painter.setTransform(QtGui.QTransform())
+		painter.setFont(self.hudFont)
 		colorList = scene.getCurrentSchemeColorList()
 		#print('schemelist', schemeList)
 		cw = 10
 		y  = 10
-		for ithScheme, schemeName in enumerate(schemeList):
-			painter.setPen(QtCore.Qt.NoPen)
-			painter.setBrush(QtGui.QBrush(QtGui.QColor(200,200,200,100)))
-			painter.drawRect(QtCore.QRect(35,y,40,cw+1))
 
+		maxWidth = 0
+		for ithScheme, schemeName in enumerate(schemeList):
+			schemeSize = self.hudFontMetric.size(QtCore.Qt.TextSingleLine, schemeName)
+			maxWidth = max(maxWidth, schemeSize.width())
+
+		painter.setCompositionMode(QtGui.QPainter.CompositionMode_Multiply)
+		painter.setPen(QtCore.Qt.NoPen)
+		painter.setBrush(QtGui.QColor(0,0,0,150))
+		painter.drawRect(5,5, 80 + maxWidth, nScheme * cw + (nScheme-1)*2 + 10)
+
+		painter.setCompositionMode(QtGui.QPainter.CompositionMode_Source)
+		for ithScheme, schemeName in enumerate(schemeList):
 			painter.setPen(QtCore.Qt.NoPen)
 			painter.setBrush(QtGui.QBrush(colorList[ithScheme]))
 			painter.drawRect(QtCore.QRect(10,y+5,20,2))
 
-
-			painter.setPen(QtCore.Qt.white)
-			painter.drawText(39, y+cw, 'Alt + %s   %s' % (ithScheme+1, schemeName))
+			painter.setPen(QtGui.QPen(QtGui.QColor(255,157,38,255),1))
+			painter.drawText(39, y+cw, 'Alt + %s' % (ithScheme+1,))
+			painter.setPen(QtGui.QPen(QtGui.QColor(255,255,255,255),1))
+			painter.drawText(QtCore.QRect(80,y-1,maxWidth,cw+1), QtCore.Qt.AlignRight, schemeName)
 			y += cw + 2
 
 
 	def drawLegend(self, painter, rectF):
 		painter.setTransform(QtGui.QTransform())
-		painter.setFont(QtGui.QFont('tahoma', 8))
+		painter.setFont(self.hudFont)
 
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
@@ -247,14 +261,27 @@ class CodeView(QtGui.QGraphicsView):
 					cname = '[global function]'
 				classNameDict[cname] = item.getColor()
 
+		maxWidth = 0
 		cw = 10
+		nClasses = len(classNameDict)
+		for className in classNameDict.keys():
+			classSize = self.hudFontMetric.size(QtCore.Qt.TextSingleLine, className)
+			maxWidth = max(maxWidth, classSize.width())
+
+		painter.setCompositionMode(QtGui.QPainter.CompositionMode_Multiply)
+		painter.setPen(QtCore.Qt.NoPen)
+		painter.setBrush(QtGui.QColor(0,0,0,150))
+		interiorHeight = nClasses * cw + (nClasses-1)*2
+		painter.drawRect(5,self.height()-15-interiorHeight, 22 + maxWidth, interiorHeight + 10)
+
+		painter.setCompositionMode(QtGui.QPainter.CompositionMode_Source)
 		y = self.height() - 20
 		for cname, clr in classNameDict.items():
 			painter.setPen(QtCore.Qt.NoPen)
 			painter.setBrush(QtGui.QBrush(clr))
 			painter.drawRect(QtCore.QRect(10,y,cw,cw))
 
-			painter.setPen(QtCore.Qt.white)
+			painter.setPen(QtGui.QPen(QtGui.QColor(255,255,255,255),1))
 			painter.drawText(cw+12, y+cw, cname)
 			y -= cw + 2
 

@@ -221,7 +221,7 @@ class SceneUpdateThread(QtCore.QThread):
 			# 增加一个连通分量
 			compList.append(compMap)
 
-		print('comp list', compList)
+		# print('comp list', compList)
 		from grandalf.graphs import Vertex, Edge, Graph
 		class VtxView(object):
 			def __init__(self, w, h):
@@ -311,10 +311,22 @@ class SceneUpdateThread(QtCore.QThread):
 			node.isConnectedToFocusNode = False
 
 		item = self.scene.selectedItems()
-		#print('item', item)
 		if not item:
 			return
 		item = item[0]
+		self.updateCallOrderByItem(item)
+
+		if isinstance(item, ui.CodeUIItem.CodeUIItem) and item.isFunction():
+			caller = []
+			for key, edge in self.scene.edgeDict.items():
+				if key[1] == item.getUniqueName() and self.scene.itemDict[key[0]].isFunction():
+					caller.append(self.scene.itemDict[key[0]])
+			if len(caller) == 1:
+				self.updateCallOrderByItem(caller[0])
+
+	def updateCallOrderByItem(self, item):
+		import ui.CodeUIItem
+		import ui.CodeUIEdgeItem
 		isEdgeSelected = False
 		if isinstance(item, ui.CodeUIEdgeItem.CodeUIEdgeItem):
 			#print('not ui item')
@@ -421,12 +433,8 @@ class SceneUpdateThread(QtCore.QThread):
 					view.centerPnt = view.mapToScene(view.rect().center())
 					continue
 				pos = self.scene.getSelectedCenter()
-				posView = view.mapFromScene(pos)
-				xRatio = float(posView.x()) / view.width()
-				yRatio = float(posView.y()) / view.height()
 				# print('xratio', xRatio, yRatio)
-				isInSafeRegion = xRatio > 0.3 and xRatio < 0.7 and yRatio > 0.2 and yRatio < 0.8
-				if getattr(view, 'centerPnt', None) is not None and not isInSafeRegion:
+				if getattr(view, 'centerPnt', None) is not None:
 					#print('view center', view.centerPnt)
 					view.centerPnt = view.centerPnt * 0.97 + pos * 0.03
 				view.centerOn(view.centerPnt)
@@ -549,11 +557,11 @@ class CodeScene(QtGui.QGraphicsScene):
 				if edge:
 					edge.setSelected(True)
 
-	def showIthScheme(self, ithScheme):
+	def showIthScheme(self, ithScheme, isSelected = False):
 		if ithScheme < 0 or ithScheme >= len(self.curValidScheme):
 			return
 		name = self.curValidScheme[ithScheme]
-		self.showScheme(name, False)
+		self.showScheme(name, isSelected)
 
 	def getCurrentSchemeList(self):
 		return self.curValidScheme
@@ -954,6 +962,25 @@ class CodeScene(QtGui.QGraphicsScene):
 				if addToStop:
 					self.stopItem[item.getUniqueName()] = item.name
 
+		lastFunction = None
+		if len(itemList) == 1 and self.itemDict[itemList[0]].isFunction():
+			funItem = self.itemDict[itemList[0]]
+			callEdgeKey = None
+			callEdge = None
+			order = None
+			for edgeKey, edge in self.edgeDict.items():
+				if edgeKey[1] == funItem.getUniqueName():
+					callEdgeKey = edgeKey
+					callEdge = edge
+					order = callEdge.getCallOrder()
+					break
+
+			if callEdgeKey and callEdge and order:
+				for edgeKey, edge in self.edgeDict.items():
+					if edgeKey[0] == callEdgeKey[0] and edge.getCallOrder() == order-1:
+						lastFunction = self.itemDict[edgeKey[1]]
+						break
+
 		if itemList:
 			#print('do delete code item')
 			for itemKey in itemList:
@@ -969,7 +996,10 @@ class CodeScene(QtGui.QGraphicsScene):
 				edgeList.append(itemKey)
 		for edgeKey in edgeList:
 			self._doDeleteCodeEdgeItem(edgeKey)
-		if lastPos:
+
+		if lastFunction:
+			self.selectOneItem(lastFunction)
+		elif lastPos:
 			#print('select nearest item')
 			self.selectNearestItem(QtCore.QPointF(lastPos.x(), lastPos.y()))
 
@@ -1225,7 +1255,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		# 	minItem = minItemUnedged
 
 	def selectOneItem(self, item):
-		print('select on item')
+		# print('select on item')
 		if not item:
 			return False
 		item.setSelected(True)

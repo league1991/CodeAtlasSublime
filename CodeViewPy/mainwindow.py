@@ -289,10 +289,13 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 
 	def showScheme(self, param):
 		ithScheme = param[0]-1
+		isSelected = False
+		if len(param) >= 2:
+			isSelected = param[1]
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
 		if scene:
-			scene.showIthScheme(ithScheme)
+			scene.showIthScheme(ithScheme, isSelected)
 
 	def showInAtlas(self, param):
 		#name = param.get('n','')

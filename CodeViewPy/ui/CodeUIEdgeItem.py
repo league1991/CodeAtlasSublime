@@ -170,7 +170,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		# 	pass
 		# else:
 		# 	penStyle = QtCore.Qt.DotLine
-		pen = QtGui.QPen(clr, penWidth, penStyle)
+		pen = QtGui.QPen(clr, penWidth, penStyle, QtCore.Qt.FlatCap)
 
 		# srcPos, tarPos = self.getNodePos()
 		# #midPos = (srcPos + tarPos) * 0.5
@@ -222,6 +222,11 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 			textFont = QtGui.QFont('tahoma', 12)
 			painter.setFont(textFont)
 			painter.drawText(rect, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter, '%s' % order)
+
+	def getCallOrder(self):
+		if self.orderData:
+			return self.orderData[0]
+		return None
 
 	def hoverLeaveEvent(self, QGraphicsSceneHoverEvent):
 		super(CodeUIEdgeItem, self).hoverLeaveEvent(QGraphicsSceneHoverEvent)
