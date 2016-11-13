@@ -436,7 +436,7 @@ class SceneUpdateThread(QtCore.QThread):
 				# print('xratio', xRatio, yRatio)
 				if getattr(view, 'centerPnt', None) is not None:
 					#print('view center', view.centerPnt)
-					view.centerPnt = view.centerPnt * 0.97 + pos * 0.03
+					view.centerPnt = view.centerPnt * 0.9 + pos * 0.1
 				view.centerOn(view.centerPnt)
 			else:
 				view.centerPnt = view.mapToScene(view.rect().center())
@@ -1061,10 +1061,8 @@ class CodeScene(QtGui.QGraphicsScene):
 
 		if math.fabs(mainDirection[0]) > 0.8:			
 			if proj > 0.1 and tarNode:
-				print('tar node----------------')
 				return tarNode
 			elif proj < -0.1 and srcNode:
-				print('src node---------------')
 				return srcNode
 
 		# 找出最近的边

@@ -59,45 +59,47 @@ class CodeView(QtGui.QGraphicsView):
 		#print('update view end ')
 
 	def keyPressEvent(self, event):
+		from UIManager import UIManager
+		mainUI = UIManager.instance().getMainUI()
 		self.setCursor(QtCore.Qt.ArrowCursor)
-		if event.modifiers() == QtCore.Qt.AltModifier:
-			from UIManager import UIManager
-			mainUI = UIManager.instance().getMainUI()
-			if event.key() == QtCore.Qt.Key_Up:
-				mainUI.goToUp()
-			elif event.key() == QtCore.Qt.Key_Down:
-				mainUI.goToDown()
-			elif event.key() == QtCore.Qt.Key_Left:
-				mainUI.goToLeft()
-			elif event.key() == QtCore.Qt.Key_Right:
-				mainUI.goToRight()
-			elif event.key() == QtCore.Qt.Key_1:
-				mainUI.showScheme([1, True])
-			elif event.key() == QtCore.Qt.Key_2:
-				mainUI.showScheme([2, True])
-			elif event.key() == QtCore.Qt.Key_3:
-				mainUI.showScheme([3, True])
-			elif event.key() == QtCore.Qt.Key_4:
-				mainUI.showScheme([4, True])
-			elif event.key() == QtCore.Qt.Key_5:
-				mainUI.showScheme([5, True])
-			elif event.key() == QtCore.Qt.Key_6:
-				mainUI.showScheme([6, True])
-			elif event.key() == QtCore.Qt.Key_7:
-				mainUI.showScheme([7, True])
-			elif event.key() == QtCore.Qt.Key_8:
-				mainUI.showScheme([8, True])
-			elif event.key() == QtCore.Qt.Key_9:
-				mainUI.showScheme([9, True])
-		elif event.key() == QtCore.Qt.Key_Control:
-			#print('ctrl pressed')
-			self.isBrushSelectMode = True
-			self.setCursor(QtCore.Qt.BlankCursor)
-		elif event.key() == QtCore.Qt.Key_Shift:
-			self.isBrushDeselectMode = True
-			self.setCursor(QtCore.Qt.BlankCursor)
+		# if event.modifiers() == QtCore.Qt.AltModifier:
+		if event.key() == QtCore.Qt.Key_Up:
+			mainUI.goToUp()
+		elif event.key() == QtCore.Qt.Key_Down:
+			mainUI.goToDown()
+		elif event.key() == QtCore.Qt.Key_Left:
+			mainUI.goToLeft()
+		elif event.key() == QtCore.Qt.Key_Right:
+			mainUI.goToRight()
+		elif event.key() == QtCore.Qt.Key_1:
+			mainUI.showScheme([1, True])
+		elif event.key() == QtCore.Qt.Key_2:
+			mainUI.showScheme([2, True])
+		elif event.key() == QtCore.Qt.Key_3:
+			mainUI.showScheme([3, True])
+		elif event.key() == QtCore.Qt.Key_4:
+			mainUI.showScheme([4, True])
+		elif event.key() == QtCore.Qt.Key_5:
+			mainUI.showScheme([5, True])
+		elif event.key() == QtCore.Qt.Key_6:
+			mainUI.showScheme([6, True])
+		elif event.key() == QtCore.Qt.Key_7:
+			mainUI.showScheme([7, True])
+		elif event.key() == QtCore.Qt.Key_8:
+			mainUI.showScheme([8, True])
+		elif event.key() == QtCore.Qt.Key_9:
+			mainUI.showScheme([9, True])
 		else:
 			super(CodeView, self).keyPressEvent(event)
+		# elif event.key() == QtCore.Qt.Key_Control:
+		# 	#print('ctrl pressed')
+		# 	self.isBrushSelectMode = True
+		# 	self.setCursor(QtCore.Qt.BlankCursor)
+		# elif event.key() == QtCore.Qt.Key_Shift:
+		# 	self.isBrushDeselectMode = True
+		# 	self.setCursor(QtCore.Qt.BlankCursor)
+		# 	else:
+		# 		super(CodeView, self).keyPressEvent(event)
 		self.viewport().update()
 
 	def keyReleaseEvent(self, event):
@@ -264,6 +266,9 @@ class CodeView(QtGui.QGraphicsView):
 		maxWidth = 0
 		cw = 10
 		nClasses = len(classNameDict)
+		if not nClasses:
+			return
+
 		for className in classNameDict.keys():
 			classSize = self.hudFontMetric.size(QtCore.Qt.TextSingleLine, className)
 			maxWidth = max(maxWidth, classSize.width())
