@@ -144,10 +144,31 @@ class SceneUpdateThread(QtCore.QThread):
 				self.pos = None
 				self.radius = radius
 				self.fontHeight = height
-				self.height = radius + max(radius, height)
+				self.height = max(radius, height)
 				self.firstKey = 0.0
 				self.secondKey = 0.0
 				self.thirdKey = 0.0
+
+			def getLayoutHeight(self):
+				return self.height + self.radius
+
+			def setLayoutPos(self,x,y):
+				self.pos = (x, y-0.5*(self.height - self.radius))
+
+			def getMinX(self):
+				return self.pos[0] - self.radius
+
+			def getMaxX(self):
+				return self.pos[0] + self.radius
+
+			def getMinY(self):
+				return self.pos[1] - self.radius
+
+			def getMaxY(self):
+				return self.pos[1] + self.height
+
+			def getPos(self):
+				return self.pos
 
 		if len(self.scene.itemDict) == 0:
 			return
@@ -161,14 +182,14 @@ class SceneUpdateThread(QtCore.QThread):
 			vtxList.append(v)
 			vtxName2Id[name] = ithVtx
 
-		for edgeKey, edge in self.scene.edgeDict.items():
-			v1 = self.scene.itemDict[edgeKey[0]]
-			v2 = self.scene.itemDict[edgeKey[1]]
-			if v1.isFunction() and v2.isFunction():
-				vtx2 = vtxList[vtxName2Id[edgeKey[1]]]
-				vtx2.firstKey = hash(edge.file)
-				vtx2.secondKey = edge.line
-				vtx2.thirdKey = edge.column
+		# for edgeKey, edge in self.scene.edgeDict.items():
+		# 	v1 = self.scene.itemDict[edgeKey[0]]
+		# 	v2 = self.scene.itemDict[edgeKey[1]]
+		# 	if v1.isFunction() and v2.isFunction():
+		# 		vtx2 = vtxList[vtxName2Id[edgeKey[1]]]
+		# 		vtx2.firstKey = hash(edge.file)
+		# 		vtx2.secondKey = edge.line
+		# 		vtx2.thirdKey = edge.column
 
 		for edgeKey, edge in self.scene.edgeDict.items():
 			v1 = vtxName2Id[edgeKey[0]]
@@ -239,7 +260,7 @@ class SceneUpdateThread(QtCore.QThread):
 			# 构造图数据并布局
 			V = []
 			for oldId in compMap:
-				w = vtxList[oldId].height
+				w = vtxList[oldId].getLayoutHeight()
 				vtx = Vertex(oldId)
 				height = 170#len(vtxList[oldId].name) * 1.0 + 1
 				#print('height--------', height)
@@ -269,16 +290,18 @@ class SceneUpdateThread(QtCore.QThread):
 				oldV = vtxList[v.data]
 				x= v.view.xy[1]
 				y= v.view.xy[0]
-				oldV.pos = (x,y)
-				minPnt[0] = min(minPnt[0],x)
-				minPnt[1] = min(minPnt[1],y-oldV.height*0.5)
-				maxPnt[0] = max(maxPnt[0],x)
-				maxPnt[1] = max(maxPnt[1],y+oldV.height*0.5)
+				oldV.setLayoutPos(x,y)
+
+				minPnt[0] = min(minPnt[0],oldV.getMinX())
+				minPnt[1] = min(minPnt[1],oldV.getMinY())
+				maxPnt[0] = max(maxPnt[0],oldV.getMaxX())
+				maxPnt[1] = max(maxPnt[1],oldV.getMaxY())
 
 			#print('bbox', minPnt, maxPnt)
 			for v in g.C[0].sV:
 				oldV = vtxList[v.data]
-				newPos = (oldV.pos[0]-minPnt[0]+offset[0], oldV.pos[1]-minPnt[1]+offset[1]-oldV.height*0.5+oldV.radius)
+				posInComp = oldV.getPos()
+				newPos = (posInComp[0]-minPnt[0]+offset[0], posInComp[1]-minPnt[1]+offset[1])
 				self.scene.itemDict[oldV.name].setTargetPos(QtCore.QPointF(newPos[0], newPos[1]))
 				bboxMin[0] = min(bboxMin[0], newPos[0])
 				bboxMin[1] = min(bboxMin[1], newPos[1])
@@ -465,7 +488,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.itemDataDict = {}	# 存放需要保存的点用户数据
 
 		self.itemLruQueue = []
-		self.lruMaxLength = 50
+		self.lruMaxLength = 100
 		self.isLayoutDirty = False
 
 		self.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex)
@@ -485,7 +508,15 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.connect(self, QtCore.SIGNAL('selectionChanged()'), self, QtCore.SLOT('onSelectItems()'))
 
 	# 添加或修改call graph
+	def addOrReplaceIthScheme(self, ithScheme):
+		if ithScheme < 0 or ithScheme >= len(self.curValidScheme):
+			return
+		name = self.curValidScheme[ithScheme]
+		self.addOrReplaceScheme(name)
+		self.showScheme(name, True)
+
 	def addOrReplaceScheme(self, name):
+		print('add or replace scheme', name)
 		nodes = [uname for uname, item in self.itemDict.items() if item.isSelected()]
 		if not nodes:
 			return
@@ -922,19 +953,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		if len(self.itemLruQueue) <= 0:
 			return
 
-		#print('clear old item ------ begin')
 		self.lock.acquire()
-		#print('lock ------------------')
-		# deleteList = []
-		# for itemKey, item in self.itemDict.items():
-		# 	item.displayScore -= 1
-		# 	if item.displayScore <= 0:
-		# 		deleteList.append(itemKey)
-
-		# print('delete list', deleteList)
-		# for deleteName in deleteList:
-		# 	self._doDeleteCodeItem(deleteName)
-		# self.deleteLRU(deleteList)
 
 		lastItem = self.itemLruQueue[-1]
 		lastPos = self.itemDict[lastItem].pos()
@@ -977,8 +996,8 @@ class CodeScene(QtGui.QGraphicsScene):
 
 			if callEdgeKey and callEdge and order:
 				for edgeKey, edge in self.edgeDict.items():
-					if edgeKey[0] == callEdgeKey[0] and edge.getCallOrder() == order-1:
-						lastFunction = self.itemDict[edgeKey[1]]
+					if edgeKey[0] == callEdgeKey[0] and edge.getCallOrder() == order+1:
+						lastFunction = edge
 						break
 
 		if itemList:

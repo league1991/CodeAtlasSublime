@@ -71,24 +71,44 @@ class CodeView(QtGui.QGraphicsView):
 			mainUI.goToLeft()
 		elif event.key() == QtCore.Qt.Key_Right:
 			mainUI.goToRight()
-		elif event.key() == QtCore.Qt.Key_1:
-			mainUI.showScheme([1, True])
-		elif event.key() == QtCore.Qt.Key_2:
-			mainUI.showScheme([2, True])
-		elif event.key() == QtCore.Qt.Key_3:
-			mainUI.showScheme([3, True])
-		elif event.key() == QtCore.Qt.Key_4:
-			mainUI.showScheme([4, True])
-		elif event.key() == QtCore.Qt.Key_5:
-			mainUI.showScheme([5, True])
-		elif event.key() == QtCore.Qt.Key_6:
-			mainUI.showScheme([6, True])
-		elif event.key() == QtCore.Qt.Key_7:
-			mainUI.showScheme([7, True])
-		elif event.key() == QtCore.Qt.Key_8:
-			mainUI.showScheme([8, True])
-		elif event.key() == QtCore.Qt.Key_9:
-			mainUI.showScheme([9, True])
+		elif event.modifiers() == QtCore.Qt.AltModifier:
+			if event.key() == QtCore.Qt.Key_1:
+				mainUI.showScheme([1, True])
+			elif event.key() == QtCore.Qt.Key_2:
+				mainUI.showScheme([2, True])
+			elif event.key() == QtCore.Qt.Key_3:
+				mainUI.showScheme([3, True])
+			elif event.key() == QtCore.Qt.Key_4:
+				mainUI.showScheme([4, True])
+			elif event.key() == QtCore.Qt.Key_5:
+				mainUI.showScheme([5, True])
+			elif event.key() == QtCore.Qt.Key_6:
+				mainUI.showScheme([6, True])
+			elif event.key() == QtCore.Qt.Key_7:
+				mainUI.showScheme([7, True])
+			elif event.key() == QtCore.Qt.Key_8:
+				mainUI.showScheme([8, True])
+			elif event.key() == QtCore.Qt.Key_9:
+				mainUI.showScheme([9, True])
+		elif event.modifiers() == QtCore.Qt.ControlModifier:
+			if event.key() == QtCore.Qt.Key_1:
+				mainUI.addScheme([1, True])
+			elif event.key() == QtCore.Qt.Key_2:
+				mainUI.addScheme([2, True])
+			elif event.key() == QtCore.Qt.Key_3:
+				mainUI.addScheme([3, True])
+			elif event.key() == QtCore.Qt.Key_4:
+				mainUI.addScheme([4, True])
+			elif event.key() == QtCore.Qt.Key_5:
+				mainUI.addScheme([5, True])
+			elif event.key() == QtCore.Qt.Key_6:
+				mainUI.addScheme([6, True])
+			elif event.key() == QtCore.Qt.Key_7:
+				mainUI.addScheme([7, True])
+			elif event.key() == QtCore.Qt.Key_8:
+				mainUI.addScheme([8, True])
+			elif event.key() == QtCore.Qt.Key_9:
+				mainUI.addScheme([9, True])
 		else:
 			super(CodeView, self).keyPressEvent(event)
 		# elif event.key() == QtCore.Qt.Key_Control:
@@ -120,8 +140,15 @@ class CodeView(QtGui.QGraphicsView):
 		#print('is frame select', self.isFrameSelectMode)
 		# if item:
 		# 	item.mousePressEvent(event)
+
+		modifiers = QtGui.QApplication.keyboardModifiers()
 		if not self.isBrushSelectMode and not self.isBrushDeselectMode:
-			super(CodeView, self).mousePressEvent(event)
+			if item:
+				item.setSelected(not item.isSelected())
+			if modifiers == QtCore.Qt.ControlModifier or modifiers == QtCore.Qt.ShiftModifier:
+				pass
+			else:
+				super(CodeView, self).mousePressEvent(event)
 		else:
 			x = event.pos().x()
 			y = event.pos().y()
@@ -157,9 +184,15 @@ class CodeView(QtGui.QGraphicsView):
 			self.isFrameSelectMode = False
 			itemList = self.items(topLeftX, topLeftY, width, height)
 
-			self.scene().clearSelection()
-			for item in itemList:
-				item.setSelected(True)
+			modifiers = QtGui.QApplication.keyboardModifiers()
+			if modifiers == QtCore.Qt.ShiftModifier:
+				for item in itemList:
+					item.setSelected(False)
+			else:
+				if modifiers != QtCore.Qt.ControlModifier:
+					self.scene().clearSelection()
+				for item in itemList:
+					item.setSelected(True)
 
 		super(CodeView, self).mouseReleaseEvent(event)
 
@@ -244,7 +277,7 @@ class CodeView(QtGui.QGraphicsView):
 			painter.setPen(QtGui.QPen(QtGui.QColor(255,157,38,255),1))
 			painter.drawText(39, y+cw, 'Alt + %s' % (ithScheme+1,))
 			painter.setPen(QtGui.QPen(QtGui.QColor(255,255,255,255),1))
-			painter.drawText(QtCore.QRect(80,y-1,maxWidth,cw+1), QtCore.Qt.AlignRight, schemeName)
+			painter.drawText(QtCore.QRect(80,y-1,maxWidth,cw+3), QtCore.Qt.AlignRight | QtCore.Qt.AlignTop, schemeName)
 			y += cw + 2
 
 

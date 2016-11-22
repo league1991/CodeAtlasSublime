@@ -171,16 +171,15 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		return DBManager.instance().getDB().searchFromUniqueName(self.uniqueName)
 
 	def getRadius(self):
-		if self.kind == ITEM_VARIABLE:
-			return 8
-		else:
-			return math.pow(float(self.lines+1), 0.3) * 5.0
+		r = 8
+		if self.kind != ITEM_VARIABLE:
+			r = math.pow(float(self.lines+1), 0.3) * 5.0
+		if self.isFunction():
+			r = max(r, self.customData['callerR'] / 0.8, self.customData['calleeR'] / 0.8)
+		return r
 
 	def getHeight(self):
-		r = self.getRadius()
-		h = max((self.fontSize.height() + self.commentSize.height())*1.67, r)
-		if self.isFunction():
-			h = max(h, self.customData['callerR'] / 0.8, self.customData['calleeR'] / 0.8)
+		h = (self.fontSize.height() + self.commentSize.height())*1.67
 		return h
 
 	def getLeftSlotPos(self):

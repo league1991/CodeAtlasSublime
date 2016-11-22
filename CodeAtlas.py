@@ -86,16 +86,25 @@ class Show_in_atlas_Command(TextCommand):
 		for sel in self.view.sel():
 			print('--------------------------------------')
 			pnt = sel.a
-			region = self.view.word(pnt)
+			region = self.view.word(sel)
 
 			name = self.view.substr(region)
+			if self.view.substr(self.view.word(region.a-1)) == '::':
+				className = self.view.substr(self.view.word(region.a-2))
+				if className:
+					name = className + '::' + name
+			elif self.view.substr(self.view.word(region.b+1)) == '::':
+				funcName = self.view.substr(self.view.word(region.b+2))
+				if funcName:
+					name = name + '::' + funcName
+
 			scope = self.view.scope_name(pnt)
 			line = self.view.rowcol(region.a)[0]+1
-			#print(name)
-			#print(scope)
  
 			kind = '*'
-			if scope.find('function') != -1:
+			if scope.find('variable') != -1:
+				kind = 'variable'
+			elif scope.find('function') != -1:
 				kind = 'function'
 			elif scope.find('class') != -1:
 				kind = 'class'

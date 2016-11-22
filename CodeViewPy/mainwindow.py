@@ -235,7 +235,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.findRefs('call','function, method', True)
 
 	def onFindMembers(self):
-		self.findRefs('declare,define','function, variable, object', True)
+		self.findRefs('declare,define','variable, object', True)
 
 	def onFindBases(self):
 		self.findRefs('base','class',False)
@@ -296,6 +296,14 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		scene = UIManager.instance().getScene()
 		if scene:
 			scene.showIthScheme(ithScheme, isSelected)
+
+	def addScheme(self, param):
+		print('add scheme', param)
+		ithScheme = param[0]-1
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		if scene:
+			scene.addOrReplaceIthScheme(ithScheme)
 
 	def showInAtlas(self, param):
 		#name = param.get('n','')
