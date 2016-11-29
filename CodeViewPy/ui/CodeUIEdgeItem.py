@@ -83,6 +83,9 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 			return rect
 		return QtCore.QRectF()
 
+	def pointAtPercent(self, t):
+		return self.curve.pointAtPercent(t)
+
 	def buildPath(self):
 		srcPos, tarPos = self.getNodePos()
 		if self.pathPnt and (self.pathPnt[0]-srcPos).manhattanLength() < 0.05 and (self.pathPnt[1]-tarPos).manhattanLength() < 0.05:
@@ -125,7 +128,20 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 			else:
 				maxT = midT
 				maxPnt = midPnt
+			if abs(minPnt.y() - maxPnt.y()) < 0.1:
+				break
 		return (minPnt.y() + maxPnt.y()) * 0.5
+
+	def isXBetween(self, x):
+		if not self.pathPnt:
+			return False
+		if not self.curve:
+			minX = min(self.pathPnt[0].x(), self.pathPnt[1].x())
+			maxX = max(self.pathPnt[0].x(), self.pathPnt[1].x())
+			return x > minX and x < maxX
+		minPnt = self.curve.pointAtPercent(0)
+		maxPnt = self.curve.pointAtPercent(1)
+		return x > min(minPnt.x(), maxPnt.x()) and x < max(minPnt.x(), maxPnt.x())
 
 	def shape(self):
 		#srcPos, tarPos = self.getNodePos()

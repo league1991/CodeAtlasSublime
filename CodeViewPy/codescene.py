@@ -314,7 +314,7 @@ class SceneUpdateThread(QtCore.QThread):
 
 		# 设置四个角的item
 		cornerList = self.scene.cornerItem
-		mar = 300
+		mar = 2000
 		cornerList[0].setPos(bboxMin[0]-mar, bboxMin[1]-mar)
 		cornerList[1].setPos(bboxMin[0]-mar, bboxMax[1]+mar)
 		cornerList[2].setPos(bboxMax[0]+mar, bboxMin[1]-mar)
@@ -911,6 +911,8 @@ class CodeScene(QtGui.QGraphicsScene):
 			self.addCodeItem(entUname)
 			if self.edgeDict.get((uname, entUname)) or self.edgeDict.get((entUname, uname)):
 				continue
+			if uname == entUname:
+				continue
 			self.addCustomEdge(uname, entUname)
 
 	def _doAddCodeEdgeItem(self, srcUniqueName, tarUniqueName, dataObj):
@@ -1107,7 +1109,20 @@ class CodeScene(QtGui.QGraphicsScene):
 						return edge
 				return None
 
-		centerPos = centerItem.getMiddlePos()
+		nCommonIn = 0
+		nCommonOut= 0
+		for edgeKey, edge in self.edgeDict.items():
+			if edgeKey[0] == centerItem.srcUniqueName:
+				nCommonIn += 1
+			if edgeKey[1] == centerItem.tarUniqueName:
+				nCommonOut += 1
+
+		percent = 0.5
+		if nCommonIn == 1 and nCommonOut != 1:
+			percent = 0.95
+		elif nCommonIn != 1 and nCommonOut == 1:
+			percent = 0.05
+		centerPos = centerItem.pointAtPercent(percent)
 
 		srcPos, tarPos = centerItem.getNodePos()
 		edgeDir = tarPos - srcPos
@@ -1126,10 +1141,17 @@ class CodeScene(QtGui.QGraphicsScene):
 		# 找出最近的边
 		minEdgeVal = 1.0e12
 		minEdge = None
+		centerKey = (centerItem.srcUniqueName, centerItem.tarUniqueName)
 		for edgeKey, item in self.edgeDict.items():
 			if item is centerItem:
 				continue
-			dPos = item.getMiddlePos() - centerPos
+			if not (edgeKey[0] in centerKey or edgeKey[1] in centerKey):
+				continue
+
+			if not item.isXBetween(centerPos.x()):
+				continue
+			y = item.findCurveYPos(centerPos.x())
+			dPos = QtCore.QPointF(centerPos.x(), y) - centerPos
 			cosVal = (dPos.x() * mainDirection[0] + dPos.y() * mainDirection[1]) / \
 					 math.sqrt(dPos.x()*dPos.x() + dPos.y()*dPos.y()+1e-5)
 			#print('cosVal', cosVal, item.getMiddlePos(), dPos)
@@ -1144,7 +1166,9 @@ class CodeScene(QtGui.QGraphicsScene):
 				minEdgeVal = dist
 				minEdge = item
 
-		print('min edge val', minEdgeVal, minEdge)
+		if minEdge:
+			return minEdge
+
 		# 找出最近的节点
 		minNodeValConnected = 1.0e12
 		minNodeConnected = None
