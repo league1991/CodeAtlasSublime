@@ -157,7 +157,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 			if isReverse:
 				clr = QtGui.QColor(159,49,52,200)
 			else:
-				clr = QtGui.QColor(150,150,150,180)
+				clr = QtGui.QColor(100,100,100,255)
 			#clr = QtGui.QColor(230,230,230,255)
 
 		from UIManager import UIManager

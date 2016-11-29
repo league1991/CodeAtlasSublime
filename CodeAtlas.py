@@ -103,7 +103,7 @@ class Show_in_atlas_Command(TextCommand):
  
 			kind = '*'
 			if scope.find('variable') != -1:
-				kind = 'variable'
+				kind = 'variable, member'
 			elif scope.find('function') != -1:
 				kind = 'function'
 			elif scope.find('class') != -1:
@@ -135,6 +135,16 @@ class Find_uses_Command(TextCommand):
 	def run(self, edit):
 		socket = DataManager.instance().getSocket()
 		socket.remoteCall('onFindUses', None)
+
+class Find_overrides_Command(TextCommand):
+	def run(self, edit): 
+		socket = DataManager.instance().getSocket()
+		socket.remoteCall('onFindOverrides', None)
+
+class Find_similar_function_Command(TextCommand):
+	def run(self, edit): 
+		socket = DataManager.instance().getSocket()
+		socket.remoteCall('onAddSimilarCodeItem', None)
 
 class Go_to_right_Command(TextCommand):
 	def run(self, edit):

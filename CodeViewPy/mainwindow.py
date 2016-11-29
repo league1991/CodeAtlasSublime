@@ -35,6 +35,8 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.actionFindMembers.triggered.connect(self.onFindMembers)
 		self.actionFindBases.triggered.connect(self.onFindBases)
 		self.actionFindUses.triggered.connect(self.onFindUses)
+		self.actionFindOverrides.triggered.connect(self.onFindOverrides)
+		self.actionFindSimilarItem.triggered.connect(self.onAddSimilarCodeItem)
 		self.actionGoToEditor.triggered.connect(self.goToEditor)
 		self.actionDeleteOldestItem.triggered.connect(self.onClearOldestItem)
 		self.actionToggleFocus.triggered.connect(self.onToggleFocus)
@@ -237,6 +239,10 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 	def onFindMembers(self):
 		self.findRefs('declare,define','variable, object', True)
 
+	def onFindOverrides(self):
+		self.findRefs('overrides', 'function, method', False)
+		self.findRefs('overriddenby', 'function, method', True)
+
 	def onFindBases(self):
 		self.findRefs('base','class',False)
 		self.findRefs('derive','class',True)
@@ -248,6 +254,11 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
 		scene.addRefs(refStr, entStr, inverseEdge)
+
+	def onAddSimilarCodeItem(self):
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		scene.addSimilarCodeItem()
 
 	def onDeleteSelectedItems(self):
 		from UIManager import UIManager
@@ -332,6 +343,8 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		sw.onSearch()
 		print('add to scene')
 		sw.onAddToScene()
+
+
 
 	def goToEditor(self):
 		#print('go to editor')

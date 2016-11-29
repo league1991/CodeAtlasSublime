@@ -69,7 +69,13 @@
         "keys": [
             "alt+o"
         ],
-        "command": "delete_oldest_items_"
+        "command": "find_overrides_"
+    },
+    {
+        "keys": [
+            "alt+s"
+        ],
+        "command": "find_similar_function_"
     },
     {
         "keys": [

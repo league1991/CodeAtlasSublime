@@ -48,7 +48,7 @@
      <x>0</x>
      <y>0</y>
      <width>347</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -68,6 +68,8 @@
     <addaction name="actionFindMembers"/>
     <addaction name="actionFindBases"/>
     <addaction name="actionFindUses"/>
+    <addaction name="actionFindOverrides"/>
+    <addaction name="actionFindSimilarItem"/>
     <addaction name="separator"/>
     <addaction name="actionGoToEditor"/>
    </widget>
@@ -299,6 +301,25 @@
    </property>
    <property name="shortcut">
     <string>Alt+I</string>
+   </property>
+  </action>
+  <action name="actionFindOverrides">
+   <property name="text">
+    <string>Find Overrides</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+O</string>
+   </property>
+  </action>
+  <action name="actionFindSimilarItem">
+   <property name="text">
+    <string>Find Similar Function</string>
+   </property>
+   <property name="toolTip">
+    <string>Find Similar Function</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+S</string>
    </property>
   </action>
  </widget>

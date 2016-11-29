@@ -14,8 +14,7 @@ def name2color(name):
 	h = (hashVal & 0xff) / 255.0
 	s = ((hashVal >> 8) & 0xff) / 255.0
 	l = ((hashVal >> 16)& 0xff) / 255.0
-	#return QtGui.QColor.fromHslF(h,s * 0.3 + 0.4,l * 0.4 + 0.5)
-	return QtGui.QColor.fromHslF(h, 0.6+s*0.3, 0.22+l*0.2)
+	return QtGui.QColor.fromHslF(h, 0.35+s*0.3, 0.4+l*0.15)
 
 def getFunctionColor(ent):
 	defineList = ent.refs('definein')
@@ -175,7 +174,13 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		if self.kind != ITEM_VARIABLE:
 			r = math.pow(float(self.lines+1), 0.3) * 5.0
 		if self.isFunction():
-			r = max(r, self.customData['callerR'] / 0.8, self.customData['calleeR'] / 0.8)
+			r = max(r, self.customData['callerR'] * 0.4, self.customData['calleeR'] * 0.4)
+		return r
+
+	def getBodyRadius(self):
+		r = 8
+		if self.kind != ITEM_VARIABLE:
+			r = math.pow(float(self.lines+1), 0.3) * 5.0
 		return r
 
 	def getHeight(self):
@@ -183,40 +188,39 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		return h
 
 	def getLeftSlotPos(self):
-		l = self.getRadius()
+		l = self.getBodyRadius()
 		if self.isFunction():
 			l += self.customData['callerR']
 		return self.pos() + QtCore.QPointF(-l, 0)
 
 	def getRightSlotPos(self):
-		l = self.getRadius()
+		l = self.getBodyRadius()
 		if self.isFunction():
 			l += self.customData['calleeR']
 		return self.pos() + QtCore.QPointF(l, 0)
 
 	def boundingRect(self):
-		r = self.getRadius()
+		r = self.getBodyRadius()
 		adj = r * 2 # 10
 		if self.isFunction():
 			adj = max(self.customData['callerR'], self.customData['calleeR'], adj)
 		return QtCore.QRectF(-r-adj, -r-adj, r*2 + adj*2, r*2 + adj*2)
 
 	def shape(self):
-		r = self.getRadius()
+		r = self.getBodyRadius()
 		path = QtGui.QPainterPath()
 		path.addEllipse(-r,-r,r*2,r*2)
 		return path
 
 	def getCallerRadius(self, num):
-		#return math.sqrt(float(num)) * 5.0
-		return math.log2(float(num+1.0)) * 3.0
+		return math.log2(float(num+1.0)) * 5.0
 
 	def paint(self, painter, styleOptionGraphicsItem, widget_widget=None):
 		#super(CodeUIItem, self).paint(painter, styleOptionGraphicsItem, widget_widget)
 
 		painter.setRenderHint(QtGui.QPainter.Antialiasing)
 		painter.setRenderHint(QtGui.QPainter.TextAntialiasing)
-		r = self.getRadius()
+		r = self.getBodyRadius()
  
 		trans = painter.worldTransform()
 		lod = QtGui.QStyleOptionGraphicsItem().levelOfDetailFromTransform(trans)
@@ -255,9 +259,9 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			painter.setFont(self.titleFont)
 			#rect = QtCore.QRectF(self.fontSize.width() * -0.5, self.fontSize.height() * -0.5, self.fontSize.width(), self.fontSize.height())
 			if self.kind == ITEM_VARIABLE:
-				rect = QtCore.QRectF(r, self.lineHeight*-0.5, self.fontSize.width(), self.fontSize.height())
+				rect = QtCore.QRectF(r, self.fontSize.height()*-0.5, self.fontSize.width(), self.fontSize.height())
 			else:
-				rect = QtCore.QRectF(0, self.lineHeight*-0.5, self.fontSize.width(), self.fontSize.height())
+				rect = QtCore.QRectF(0, 0, self.fontSize.width(), self.fontSize.height())
 
 			# dx = 1.1
 			# painter.setPen(QtGui.QPen(QtGui.QColor(255,255,255)))
@@ -270,7 +274,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			# rect0 = rect.translated(-dx,-dx)
 			# painter.drawText(rect0, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter, self.name)
 
-			painter.setPen(QtGui.QPen(QtGui.QColor(255,255,255)))
+			painter.setPen(QtGui.QPen(QtGui.QColor(255,239,183)))
 			angle = -20
 			#painter.rotate(angle)
 			painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop, self.displayName)
@@ -279,7 +283,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			scene = self.scene()
 			commentData = scene.itemDataDict.get(self.uniqueName, {}).get('comment')
 			if commentData:
-				painter.setPen(QtGui.QPen(QtGui.QColor(0,255,0)))
+				painter.setPen(QtGui.QPen(QtGui.QColor(166,241,27)))
 				rect.moveTop(rect.bottom())
 				rect.setSize(QtCore.QSizeF(100,500))
 				painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, commentData)
@@ -287,7 +291,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 
 
 	def drawShape(self, painter):
-		r = self.getRadius()
+		r = self.getBodyRadius()
 		if self.kind == ITEM_FUNCTION:
 			painter.drawEllipse(-r,-r,r*2,r*2)
 		elif self.kind == ITEM_VARIABLE:

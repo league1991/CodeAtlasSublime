@@ -262,7 +262,7 @@ class SceneUpdateThread(QtCore.QThread):
 			for oldId in compMap:
 				w = vtxList[oldId].getLayoutHeight()
 				vtx = Vertex(oldId)
-				height = 170#len(vtxList[oldId].name) * 1.0 + 1
+				height = 200
 				#print('height--------', height)
 				vtx.view = VtxView(w, height)
 				V.append(vtx) 
@@ -281,7 +281,8 @@ class SceneUpdateThread(QtCore.QThread):
 			sug = SugiyamaLayout(g.C[0])
 			sug.xspace = packSpace
 			sug.yspace = packSpace
-			sug.order_iter = 32
+			#sug.order_iter = 32
+			sug.dirvh = 3
 			sug.init_all()
 			sug.draw(10)
 
@@ -410,7 +411,7 @@ class SceneUpdateThread(QtCore.QThread):
 				y = edge.findCurveYPos(x)
 				edge.orderData = (i+1, QtCore.QPointF(x,y))
 			else:
-				x = basePos + padding + stepSize * int((nEdge-i-1) / levelSize)
+				x = basePos + padding# + stepSize * int((nEdge-i-1) / levelSize)
 				y = edge.findCurveYPos(x)
 				edge.orderData = (i+1, QtCore.QPointF(x,y))
 		#print('update call end')
@@ -878,6 +879,40 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.lock.release()
 		return res, item
 
+	def addSimilarCodeItem(self):
+		itemList = self.selectedItems()
+		if not itemList:
+			return
+		item = itemList[0]
+
+		from ui.CodeUIItem import CodeUIItem
+		from ui.CodeUIEdgeItem import CodeUIEdgeItem
+		from db.DBManager import DBManager
+
+		if not isinstance(item, CodeUIItem):
+			return
+
+		db = DBManager.instance().getDB()
+		name = item.name
+		uname = item.getUniqueName()
+		if not db or not name or not item.isFunction():
+			return
+		ents = db.search(name, 'function')
+
+		bestEntList = []
+		if not ents:
+			return
+		for ent in ents:
+			if ent and ent.name() == name:
+				bestEntList.append(ent)
+
+		for ent in bestEntList:
+			entUname = ent.uniquename()
+			self.addCodeItem(entUname)
+			if self.edgeDict.get((uname, entUname)) or self.edgeDict.get((entUname, uname)):
+				continue
+			self.addCustomEdge(uname, entUname)
+
 	def _doAddCodeEdgeItem(self, srcUniqueName, tarUniqueName, dataObj):
 		key = (srcUniqueName, tarUniqueName)
 		if self.edgeDict.get(key, None):
@@ -1016,11 +1051,15 @@ class CodeScene(QtGui.QGraphicsScene):
 		for edgeKey in edgeList:
 			self._doDeleteCodeEdgeItem(edgeKey)
 
+		res = None
 		if lastFunction:
-			self.selectOneItem(lastFunction)
+			res = self.selectOneItem(lastFunction)
 		elif lastPos:
 			#print('select nearest item')
-			self.selectNearestItem(QtCore.QPointF(lastPos.x(), lastPos.y()))
+			res = self.selectNearestItem(QtCore.QPointF(lastPos.x(), lastPos.y()))
+
+		if res:
+			self.showInEditor()
 
 		#print('before release')
 		self.lock.release()
@@ -1319,6 +1358,12 @@ class CodeScene(QtGui.QGraphicsScene):
 			refs = entity.refs('definein')
 			# for r in refs:
 			# 	print('r:', r.kindname(), r.ent().name(), r.ent().kindname())
+			if not refs:
+				refs = entity.refs('declarein')
+			if not refs:
+				refs = entity.refs('callby')
+			if not refs:
+				refs = entity.refs('useby')
 			if not refs:
 				return
 
