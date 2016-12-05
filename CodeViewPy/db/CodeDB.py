@@ -126,7 +126,7 @@ class CodeDB(QtCore.QObject):
 
 				# 找出调用的所有entity
 				if self.ent:					
-					refList = self.ent.refs('call', 'function, method', True)
+					refList = self.ent.refs('call, overriddenby', 'function, method', True)
 					self.adjNameList = [(refObj.ent().uniquename(), refObj) for refObj in refList]
 
 		vtxDict = {srcUniqueName: Vtx(srcUniqueName)}	# 存储访问过的节点

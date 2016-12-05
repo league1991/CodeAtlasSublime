@@ -75,7 +75,7 @@ class SocketThread(threading.Thread):
 		import sublime
 		window = sublime.active_window()
 		if window:
-			window.open_file('%s:%s:%s'% (param[0], param[1], param[2]), sublime.ENCODED_POSITION)
+			window.open_file('%s:%s:%s'% (param[0], param[1], param[2]+1), sublime.ENCODED_POSITION)
 
 if __name__ == "__main__":
 	add1 = ('127.0.0.1', 12345)

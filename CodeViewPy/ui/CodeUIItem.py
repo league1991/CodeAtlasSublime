@@ -42,7 +42,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		entity = DBManager.instance().getDB().searchFromUniqueName(self.uniqueName)
 		self.name = ''
 		self.displayName = ''
-		self.lines = 1
+		self.lines = 0
 		self.kindName = ''
 		self.kind = ITEM_UNKNOWN
 		self.titleFont = QtGui.QFont('tahoma', 8)
@@ -58,9 +58,9 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			self.buildCommentSize(comment)
 			self.kindName = entity.kindname()
 			metricRes = entity.metric(('CountLine',))
-			self.lines = metricRes.get('CountLine',1)
-			if not self.lines:
-				self.lines = 1
+			metricLine = metricRes.get('CountLine',1)
+			if metricLine:
+				self.lines = metricLine
 
 		kindStr = self.kindName.lower()
 		# 自定义数据
@@ -155,6 +155,9 @@ class CodeUIItem(QtGui.QGraphicsItem):
 
 	def setTargetPos(self, pos):
 		self.targetPos = pos
+
+	def dispToTarget(self):
+		return self.targetPos - self.pos()
 
 	def moveToTarget(self, ratio):
 		self.setPos(self.pos()* (1.0-ratio) + self.targetPos * ratio)
@@ -253,13 +256,19 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			painter.setBrush(clr)
 			self.drawShape(painter)
 
+			if self.lines == 0 and self.kind == ITEM_FUNCTION:
+				painter.setBrush(QtGui.QColor(50,50,50,255))
+				painter.setPen(QtCore.Qt.NoPen)
+				painter.drawEllipse(QtCore.QPointF(0,0),2.5,2.5)
+
+
 		if r * lod > 3 or selectedOrHover:
 			painter.scale(1.0/lod, 1.0/lod)
 			painter.setPen(QtGui.QPen()) 
 			painter.setFont(self.titleFont)
 			#rect = QtCore.QRectF(self.fontSize.width() * -0.5, self.fontSize.height() * -0.5, self.fontSize.width(), self.fontSize.height())
 			if self.kind == ITEM_VARIABLE:
-				rect = QtCore.QRectF(r, self.fontSize.height()*-0.5, self.fontSize.width(), self.fontSize.height())
+				rect = QtCore.QRectF(r, self.lineHeight*-0.5, self.fontSize.width(), self.fontSize.height())
 			else:
 				rect = QtCore.QRectF(0, 0, self.fontSize.width(), self.fontSize.height())
 

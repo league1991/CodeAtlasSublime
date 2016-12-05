@@ -248,7 +248,8 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.findRefs('derive','class',True)
 
 	def onFindUses(self):
-		self.findRefs('declarein,definein,useby', 'function,class')
+		self.findRefs('declarein,definein,useby', 'function,class', False)
+		self.findRefs('use', 'variable, object', True)
 
 	def findRefs(self, refStr, entStr, inverseEdge = False):
 		from UIManager import UIManager
