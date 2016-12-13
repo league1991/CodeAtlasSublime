@@ -82,6 +82,7 @@
     <addaction name="actionDeleteSelectedItems"/>
     <addaction name="actionDeleteOldestItem"/>
     <addaction name="actionDeleteAndIgnoreSelectedItems"/>
+    <addaction name="actionDeleteNearbyItems"/>
     <addaction name="actionToggleFocus"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
@@ -320,6 +321,14 @@
    </property>
    <property name="shortcut">
     <string>Alt+S</string>
+   </property>
+  </action>
+  <action name="actionDeleteNearbyItems">
+   <property name="text">
+    <string>Delete Nearby Items</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+D</string>
    </property>
   </action>
  </widget>

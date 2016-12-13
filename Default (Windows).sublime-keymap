@@ -67,6 +67,12 @@
     },
     {
         "keys": [
+            "alt+d"
+        ],
+        "command": "delete_nearby_items_"
+    },
+    {
+        "keys": [
             "alt+o"
         ],
         "command": "find_overrides_"

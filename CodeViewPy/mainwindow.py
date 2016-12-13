@@ -50,6 +50,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.actionDeleteOldItems.triggered.connect(self.onDeleteOldItems)
 		self.actionDeleteSelectedItems.triggered.connect(self.onDeleteSelectedItems)
 		self.actionDeleteAndIgnoreSelectedItems.triggered.connect(self.onDeleteSelectedItemsAndAddToStop)
+		self.actionDeleteNearbyItems.triggered.connect(self.onDeleteNearbyItems)
 		self.actionShowSymbolWindow.triggered.connect(self.onActionShowSymbolWindow)
 		self.actionShowSearchWindow.triggered.connect(self.onActionShowSearchWindow)
 		self.actionBuildSymbolScene.triggered.connect(self.onBuildSymbolScene)
@@ -238,6 +239,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 
 	def onFindMembers(self):
 		self.findRefs('declare,define','variable, object', True)
+		self.findRefs('declarein,definein', 'function,class', False)
 
 	def onFindOverrides(self):
 		self.findRefs('overrides', 'function, method', False)
@@ -248,7 +250,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.findRefs('derive','class',True)
 
 	def onFindUses(self):
-		self.findRefs('declarein,definein,useby', 'function,class', False)
+		self.findRefs('useby', 'function,class', False)
 		self.findRefs('use', 'variable, object', True)
 
 	def findRefs(self, refStr, entStr, inverseEdge = False):
@@ -266,6 +268,12 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		scene = UIManager.instance().getScene()
 		if scene:
 			scene.deleteSelectedItems(False)
+
+	def onDeleteNearbyItems(self):
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		if scene:
+			scene.deleteNearbyItems()
 
 	def onDeleteSelectedItemsAndAddToStop(self):
 		from UIManager import UIManager

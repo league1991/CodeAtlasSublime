@@ -50,4 +50,9 @@
         "args": {},
         "caption": "Find Bases"
     },
+    {
+        "command": "delete_nearby_items_",
+        "args": {},
+        "caption": "Delete Nearby Items"
+    },
 ]

@@ -569,12 +569,15 @@ class CodeScene(QtGui.QGraphicsScene):
 				if edge.isSelected():
 					selectedEdge.append(uname)
 
-		self.clearSelection()
 		from db.DBManager import DBManager
 		dbObj = DBManager.instance().getDB()
 		codeItemList = self.scheme[name].get('node',[])
 		for uname in codeItemList:
 			res, item = self.addCodeItem(uname)
+
+		self.clearSelection()
+		for uname in codeItemList:
+			item = self.itemDict.get(uname)
 			if item and selectScheme:
 				item.setSelected(True)
 
@@ -919,12 +922,15 @@ class CodeScene(QtGui.QGraphicsScene):
 
 		for ent in bestEntList:
 			entUname = ent.uniquename()
-			self.addCodeItem(entUname)
+			res, entItem = self.addCodeItem(entUname)
 			if self.edgeDict.get((uname, entUname)) or self.edgeDict.get((entUname, uname)):
 				continue
 			if uname == entUname:
 				continue
-			self.addCustomEdge(uname, entUname)
+			if not entItem.customData.get('hasDef'):
+				self.addCustomEdge(entUname, uname)
+			else:
+				self.addCustomEdge(uname, entUname)
 
 	def _doAddCodeEdgeItem(self, srcUniqueName, tarUniqueName, dataObj):
 		key = (srcUniqueName, tarUniqueName)
@@ -994,7 +1000,6 @@ class CodeScene(QtGui.QGraphicsScene):
 
 		self.deleteLRU(deleteList)
 
-		self.itemLruQueue
 		self.lock.release()
 
 	def clearOldItem(self):
@@ -1015,6 +1020,37 @@ class CodeScene(QtGui.QGraphicsScene):
 		if lastPos:
 			self.selectNearestItem(lastPos)
 
+	def deleteNearbyItems(self):
+		minScoreList =[]
+		for edgeKey, edge in self.edgeDict.items():
+			srcItem = self.itemDict.get(edgeKey[0])
+			tarItem = self.itemDict.get(edgeKey[1])
+			if not srcItem or not tarItem or srcItem.isSelected() == tarItem.isSelected():
+				continue
+			if srcItem.isSelected():
+				minScoreList.append((tarItem.selectCounter, tarItem.getUniqueName()))
+			else:
+				minScoreList.append((srcItem.selectCounter, srcItem.getUniqueName()))
+
+		if not minScoreList:
+			return
+
+		minScoreList.sort(key = lambda item: item[0])
+		deleteList = []
+		deleteScore = minScoreList[0][0]
+		for item in minScoreList:
+			if item[0] == deleteScore:
+				deleteList.append(item[1])
+
+		self.lock.acquire()
+
+		for deleteName in deleteList:
+			self._doDeleteCodeItem(deleteName)
+
+		self.deleteLRU(deleteList)
+
+		self.lock.release()
+
 	def deleteSelectedItems(self, addToStop = True):
 		self.lock.acquire()
 
@@ -1029,24 +1065,30 @@ class CodeScene(QtGui.QGraphicsScene):
 				if addToStop:
 					self.stopItem[item.getUniqueName()] = item.name
 
-		lastFunction = None
-		if len(itemList) == 1 and self.itemDict[itemList[0]].isFunction():
-			funItem = self.itemDict[itemList[0]]
-			callEdgeKey = None
-			callEdge = None
-			order = None
-			for edgeKey, edge in self.edgeDict.items():
-				if edgeKey[1] == funItem.getUniqueName():
-					callEdgeKey = edgeKey
-					callEdge = edge
-					order = callEdge.getCallOrder()
-					break
+		for edgeKey, edge in self.edgeDict.items():
+			if edge.isSelected():
+				srcItem = self.itemDict[edgeKey[0]]
+				lastPos = srcItem.pos()
+				break
 
-			if callEdgeKey and callEdge and order:
-				for edgeKey, edge in self.edgeDict.items():
-					if edgeKey[0] == callEdgeKey[0] and edge.getCallOrder() == order+1:
-						lastFunction = edge
-						break
+		lastFunction = None
+		# if len(itemList) == 1 and self.itemDict[itemList[0]].isFunction():
+		# 	funItem = self.itemDict[itemList[0]]
+		# 	callEdgeKey = None
+		# 	callEdge = None
+		# 	order = None
+		# 	for edgeKey, edge in self.edgeDict.items():
+		# 		if edgeKey[1] == funItem.getUniqueName():
+		# 			callEdgeKey = edgeKey
+		# 			callEdge = edge
+		# 			order = callEdge.getCallOrder()
+		# 			break
+
+		# 	if callEdgeKey and callEdge and order:
+		# 		for edgeKey, edge in self.edgeDict.items():
+		# 			if edgeKey[0] == callEdgeKey[0] and edge.getCallOrder() == order+1:
+		# 				lastFunction = edge
+		# 				break
 
 		if itemList:
 			#print('do delete code item')
@@ -1576,6 +1618,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		for item in itemList:
 			if not isinstance(item, CodeUIItem):
 				continue
+			item.selectCounter += 1
 			uniqueName = item.getUniqueName()
 			self.updateLRU([uniqueName])
 

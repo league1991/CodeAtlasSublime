@@ -93,8 +93,11 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			else:
 				defineList = entity.refs('definein')
 				name = ''
+				hasDefinition = True
 				if not defineList:
 					defineList = entity.refs('declarein')
+					hasDefinition = False
+				self.customData['hasDef'] = hasDefinition
 				if defineList:
 					ref = defineList[0]
 					declareEnt = ref.ent()
@@ -110,6 +113,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.displayScore = 0
 		self.targetPos = self.pos()	# 用于动画目标
 		self.isHover = False
+		self.selectCounter = 0
 
 	def getColor(self):
 		return self.color
@@ -229,13 +233,27 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		lod = QtGui.QStyleOptionGraphicsItem().levelOfDetailFromTransform(trans)
 
 		selectedOrHover = self.isSelected() or self.isHover
-		if selectedOrHover:
-			pen = QtGui.QPen(QtGui.QBrush(QtGui.QColor(255,157,38,255)), 20.0)#, QtCore.Qt.SolidLine, QtCore.Qt.SquareCap, QtCore.Qt.RoundJoin)
-			painter.setPen(pen)
-			self.drawShape(painter)
 
-		painter.setPen(QtCore.Qt.NoPen)
 		if r * lod > 1.0:
+			# if self.selectCounter > 0:
+			# 	gradR = r * 2
+			# 	gradient = QtGui.QRadialGradient(0,0,gradR,0,0);
+			# 	gradient.setColorAt(1.0/3.0, QtGui.QColor(255,233,155,100))
+			# 	gradient.setColorAt(1,       QtGui.QColor(255,233,155,0))
+			# 	#painter.setBrush(QtGui.QBrush(gradient))
+			# 	bright = min(255, math.log2(float(self.selectCounter+1.0)) * 20.0)
+			# 	print('bright', bright, self.selectCounter)
+			# 	painter.setBrush(QtGui.QBrush(QtGui.QColor(255,233,155,bright)))
+			# 	painter.setPen(QtCore.Qt.NoPen)
+			# 	painter.drawEllipse(QtCore.QPointF(0,0),gradR,gradR)
+
+			if selectedOrHover:
+				pen = QtGui.QPen(QtGui.QBrush(QtGui.QColor(255,157,38,255)), 20.0)#, QtCore.Qt.SolidLine, QtCore.Qt.SquareCap, QtCore.Qt.RoundJoin)
+				painter.setPen(pen)
+				self.drawShape(painter)
+
+			painter.setPen(QtCore.Qt.NoPen)
+
 			clr = self.color
 			if self.isFunction():
 				#clr = clr.lighter(130)
@@ -261,33 +279,22 @@ class CodeUIItem(QtGui.QGraphicsItem):
 				painter.setPen(QtCore.Qt.NoPen)
 				painter.drawEllipse(QtCore.QPointF(0,0),2.5,2.5)
 
-
 		if r * lod > 3 or selectedOrHover:
 			painter.scale(1.0/lod, 1.0/lod)
 			painter.setPen(QtGui.QPen()) 
 			painter.setFont(self.titleFont)
-			#rect = QtCore.QRectF(self.fontSize.width() * -0.5, self.fontSize.height() * -0.5, self.fontSize.width(), self.fontSize.height())
 			if self.kind == ITEM_VARIABLE:
 				rect = QtCore.QRectF(r, self.lineHeight*-0.5, self.fontSize.width(), self.fontSize.height())
 			else:
 				rect = QtCore.QRectF(0, 0, self.fontSize.width(), self.fontSize.height())
 
-			# dx = 1.1
-			# painter.setPen(QtGui.QPen(QtGui.QColor(255,255,255)))
-			# rect0 = rect.translated(dx,dx)
-			# painter.drawText(rect0, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter, self.name)
-			# rect0 = rect.translated(dx,-dx)
-			# painter.drawText(rect0, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter, self.name)
-			# rect0 = rect.translated(-dx,dx)
-			# painter.drawText(rect0, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter, self.name)
-			# rect0 = rect.translated(-dx,-dx)
-			# painter.drawText(rect0, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter, self.name)
+			dx = 1.0
+			painter.setPen(QtGui.QPen(QtGui.QColor(50,50,50)))
+			rect0 = rect.translated(dx,dx)
+			painter.drawText(rect0, QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop, self.displayName)
 
 			painter.setPen(QtGui.QPen(QtGui.QColor(255,239,183)))
-			angle = -20
-			#painter.rotate(angle)
 			painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop, self.displayName)
-			#painter.rotate(-1.0 * angle)
 
 			scene = self.scene()
 			commentData = scene.itemDataDict.get(self.uniqueName, {}).get('comment')
