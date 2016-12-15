@@ -15,6 +15,7 @@ class SocketThread(threading.Thread):
 		self.myAddress = myAddress
 		self.remoteAddress = remoteAddress
 		self.socketObj = None
+		self.windowID = 1
 
 	def isListening(self):
 		return self.socketObj is not None
@@ -74,6 +75,9 @@ class SocketThread(threading.Thread):
 		print('go to page', param)
 		import sublime
 		window = sublime.active_window()
+		for win in sublime.windows():
+			if win.id() == self.windowID:
+				window = win
 		if window:
 			window.open_file('%s:%s:%s'% (param[0], param[1], param[2]+1), sublime.ENCODED_POSITION)
 

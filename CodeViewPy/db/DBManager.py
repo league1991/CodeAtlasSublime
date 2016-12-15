@@ -2,11 +2,12 @@ import db.CodeDB as CodeDB
 
 class DBManager(object):
 	dbMgr = None
-
+	atlasPort = 12346
+	sublimePort = 12345
 	def __init__(self):
 		self.db = CodeDB.CodeDB()
 		from SocketThread import SocketThread
-		self.socket = SocketThread(('127.0.0.1', 12345),('127.0.0.1', 12346))
+		self.socket = SocketThread(('127.0.0.1', self.atlasPort),('127.0.0.1', self.sublimePort))
 
 	@staticmethod
 	def instance():
