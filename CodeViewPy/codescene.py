@@ -800,28 +800,17 @@ class CodeScene(QtGui.QGraphicsScene):
 				queueLength = len(self.itemLruQueue)
 				if queueLength > self.lruMaxLength:
 					pass
-					# lastIdx = len(self.itemLruQueue)-1
-					# deleteKeyList.append(self.itemLruQueue[lastIdx])
-					# del self.itemLruQueue[lastIdx]
 			else:
 				# 已有的项
 				del self.itemLruQueue[idx]
 
 			self.itemLruQueue.insert(0, itemKey)
-		# print('------------- update lru -------------')
-		# for i, key in enumerate(self.itemLruQueue):
-		# 	print(i, self.itemDict[key].name)
-		# print('--------------------------------------')
 		return []#deleteKeyList
 
 	def removeItemLRU(self):
 		self.disconnectSignals()
-		#print('remove item lru', len(self.itemLruQueue))
-		# for idx, itemName in enumerate(self.itemLruQueue):
-		# 	print('item:', idx, self.itemDict[self.itemLruQueue[idx]].name)
 
 		queueLength = len(self.itemLruQueue)
-		#print ('remove item lru', queueLength, self.lruMaxLength)
 
 		if queueLength > self.lruMaxLength:
 			for i in range(self.lruMaxLength, queueLength):
@@ -829,12 +818,6 @@ class CodeScene(QtGui.QGraphicsScene):
 
 			self.itemLruQueue = self.itemLruQueue[0:self.lruMaxLength]
 
-		# for idx, itemName in enumerate(self.itemLruQueue):
-		# 	item = self.itemDict.get(itemName, None)
-			# if item:
-			# 	opacity = 1.0 - float(idx) / self.lruMaxLength
-			# 	item.setOpacity(opacity)
-				#print(idx, item, opacity)
 
 		self.connectSignals()
 
@@ -994,7 +977,6 @@ class CodeScene(QtGui.QGraphicsScene):
 			if item.displayScore <= 0:
 				deleteList.append(itemKey)
 
-		#print('delete list', deleteList)
 		for deleteName in deleteList:
 			self._doDeleteCodeItem(deleteName)
 
@@ -1072,23 +1054,23 @@ class CodeScene(QtGui.QGraphicsScene):
 				break
 
 		lastFunction = None
-		# if len(itemList) == 1 and self.itemDict[itemList[0]].isFunction():
-		# 	funItem = self.itemDict[itemList[0]]
-		# 	callEdgeKey = None
-		# 	callEdge = None
-		# 	order = None
-		# 	for edgeKey, edge in self.edgeDict.items():
-		# 		if edgeKey[1] == funItem.getUniqueName():
-		# 			callEdgeKey = edgeKey
-		# 			callEdge = edge
-		# 			order = callEdge.getCallOrder()
-		# 			break
+		if len(itemList) == 1 and self.itemDict[itemList[0]].isFunction():
+			funItem = self.itemDict[itemList[0]]
+			callEdgeKey = None
+			callEdge = None
+			order = None
+			for edgeKey, edge in self.edgeDict.items():
+				if edgeKey[1] == funItem.getUniqueName():
+					callEdgeKey = edgeKey
+					callEdge = edge
+					order = callEdge.getCallOrder()
+					break
 
-		# 	if callEdgeKey and callEdge and order:
-		# 		for edgeKey, edge in self.edgeDict.items():
-		# 			if edgeKey[0] == callEdgeKey[0] and edge.getCallOrder() == order+1:
-		# 				lastFunction = edge
-		# 				break
+			if callEdgeKey and callEdge and order:
+				for edgeKey, edge in self.edgeDict.items():
+					if edgeKey[0] == callEdgeKey[0] and edge.getCallOrder() == order+1:
+						lastFunction = edge
+						break
 
 		if itemList:
 			#print('do delete code item')
@@ -1186,9 +1168,9 @@ class CodeScene(QtGui.QGraphicsScene):
 		tarNode = self.getNode(centerItem.tarUniqueName)
 
 		if math.fabs(mainDirection[0]) > 0.8:			
-			if proj > 0.1 and tarNode:
+			if proj > 0.0 and tarNode:
 				return tarNode
-			elif proj < -0.1 and srcNode:
+			elif proj < 0.0 and srcNode:
 				return srcNode
 
 		# 找出最近的边
