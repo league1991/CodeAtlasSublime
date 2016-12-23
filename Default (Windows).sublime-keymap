@@ -116,19 +116,23 @@
         "command": "show_scheme_5_"
     },
     {
-        "keys": ["alt+6"],
-        "command": "show_scheme_6_"
+        "keys": ["ctrl+1"],
+        "command": "toggle_scheme_1_"
     },
     {
-        "keys": ["alt+7"],
-        "command": "show_scheme_7_"
+        "keys": ["ctrl+2"],
+        "command": "toggle_scheme_2_"
     },
     {
-        "keys": ["alt+8"],
-        "command": "show_scheme_8_"
+        "keys": ["ctrl+3"],
+        "command": "toggle_scheme_3_"
     },
     {
-        "keys": ["alt+9"],
-        "command": "show_scheme_9_"
+        "keys": ["ctrl+4"],
+        "command": "toggle_scheme_4_"
+    },
+    {
+        "keys": ["ctrl+5"],
+        "command": "toggle_scheme_5_"
     },
 ]

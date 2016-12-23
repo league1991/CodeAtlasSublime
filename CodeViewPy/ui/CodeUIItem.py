@@ -114,6 +114,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.targetPos = self.pos()	# 用于动画目标
 		self.isHover = False
 		self.selectCounter = 0
+		self.selectTimeStamp = 0
 
 	def getColor(self):
 		return self.color

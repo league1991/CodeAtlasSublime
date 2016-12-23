@@ -33,6 +33,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		self.isConnectedToFocusNode = False
 		self.schemeColorList = []
 		self.customEdge = edgeData.get('customEdge', False)
+		self.isCandidate = False
 
 	def getNodePos(self):
 		from UIManager import UIManager
@@ -180,7 +181,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		scene = UIManager.instance().getScene()
 		# srcNode = scene.getNode(self.srcUniqueName)
 		# tarNode = scene.getNode(self.tarUniqueName)
-		penStyle = QtCore.Qt.DashLine if self.customEdge and not isHighLight else QtCore.Qt.SolidLine
+		penStyle = QtCore.Qt.SolidLine
 		penWidth = 3.0
 		# if srcNode and tarNode and srcNode.isFunction() and tarNode.isFunction():
 		# 	pass
@@ -210,6 +211,12 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 				pen.setWidthF(9.0)
 				painter.setPen(pen)
 				painter.drawPath(self.path)
+			elif self.isCandidate:
+				pen.setColor(QtGui.QColor(183,101,0,200))
+				pen.setWidthF(9.0)
+				pen.setStyle(QtCore.Qt.SolidLine)
+				painter.setPen(pen)
+				painter.drawPath(self.path)
 			dash = 5
 			pen = QtGui.QPen(clr, 3.0, QtCore.Qt.CustomDashLine, QtCore.Qt.FlatCap)
 			pen.setDashPattern([dash, dash*(len(self.schemeColorList)-1)])
@@ -221,18 +228,19 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		else:
 			if isHighLight:
 				pen.setWidthF(9.0)
+			elif self.isCandidate:
+				pen.setColor(QtGui.QColor(183,101,0,200))
+				pen.setWidthF(9.0)
+				pen.setStyle(QtCore.Qt.SolidLine)
 			painter.setPen(pen)
 			painter.drawPath(self.path)
 
 		if self.orderData is not None:
-			#print('order data', self.orderData)
-			#print('target pnt ', tarPos)
 			order = self.orderData[0]
 			rect = self.getNumberRect()
 			painter.setBrush(clr)
 			painter.setPen(QtCore.Qt.NoPen)
 			painter.drawEllipse(rect)
-			#painter.drawRect(rect)
 			painter.setPen(QtGui.QPen(QtGui.QColor(0,0,0), 2.0))
 
 			textFont = QtGui.QFont('tahoma', 12)

@@ -61,6 +61,7 @@ class SocketThread(threading.Thread):
 		_async_raise(self.ident, SystemExit)
 		# 关闭socket
 		self.socketObj.close()
+		self.socketObj = None
 
 	def send(self, data):
 		if self.socketObj:

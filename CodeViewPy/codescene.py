@@ -49,6 +49,7 @@ class SceneUpdateThread(QtCore.QThread):
 				#print('before call order')
 				self.updateCallOrder()
 				self.scene.updateCurrentValidScheme()
+				self.scene.updateCandidateEdge()
 				#print('before invalidate scene')
 				#self.scene.invalidate()
 				#print('before update scene')
@@ -254,6 +255,7 @@ class SceneUpdateThread(QtCore.QThread):
 		offset = (0,0)
 		bboxMin = [1e6,1e6]
 		bboxMax = [-1e6,-1e6]
+		self.scene.boxTest = []
 		for ithComp, compMap in enumerate(compList):
 			minPnt = [1e6,1e6]
 			maxPnt = [-1e6,-1e6]
@@ -303,7 +305,7 @@ class SceneUpdateThread(QtCore.QThread):
 			for v in g.C[0].sV:
 				oldV = vtxList[v.data]
 				posInComp = oldV.getPos()
-				newPos = (posInComp[0]-minPnt[0]+offset[0], posInComp[1]-minPnt[1]+offset[1])
+				newPos = (posInComp[0], posInComp[1]-minPnt[1]+offset[1])
 				self.scene.itemDict[oldV.name].setTargetPos(QtCore.QPointF(newPos[0], newPos[1]))
 				bboxMin[0] = min(bboxMin[0], newPos[0])
 				bboxMin[1] = min(bboxMin[1], newPos[1])
@@ -498,6 +500,8 @@ class CodeScene(QtGui.QGraphicsScene):
 								# {'schemeName': {'node':[node1, node2,...], 'edge':{(node3, node5):{'customEdge':True}, ...}}, ...}
 		self.curValidScheme = []# 选中物体有关的scheme
 		self.curValidSchemeColor = []
+		self.candidateEdge = [] # candidate edge up/down/left/right will select
+		self.isSourceCandidate = True
 		self.edgeDataDict = {}  # 存放需要保存的边用户数据
 		self.itemDataDict = {}	# 存放需要保存的点用户数据
 
@@ -513,6 +517,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.cornerItem = []
 		self.autoFocus = True
 		self.autoFocusToggle = True
+		self.selectTimeStamp = 0
 		for i in range(4):
 			item = QtGui.QGraphicsRectItem(0,0,5,5)
 			item.setPen(QtGui.QPen(QtGui.QColor(0,0,0,0)))
@@ -528,6 +533,43 @@ class CodeScene(QtGui.QGraphicsScene):
 		name = self.curValidScheme[ithScheme]
 		self.addOrReplaceScheme(name)
 		self.showScheme(name, True)
+
+	def toggleSelectedEdgeToScheme(self, ithScheme):
+		if ithScheme < 0 or ithScheme >= len(self.curValidScheme):
+			return
+		self.acquireLock()
+		name = self.curValidScheme[ithScheme]
+		schemeNodeSet = set(self.scheme[name]['node'])
+		schemeEdgeDict = self.scheme[name]['edge']
+
+		newItems = set()
+		newEdges = set()
+		for edgeName, edge in self.edgeDict.items():
+			if edge.isSelected():
+				isAdd = True
+				if edgeName in schemeEdgeDict:
+					isAdd = False
+
+				if isAdd:
+					schemeEdgeDict[edgeName] = {}
+					schemeNodeSet.add(edge.srcUniqueName)
+					schemeNodeSet.add(edge.tarUniqueName)
+				else:
+					del schemeEdgeDict[edgeName]
+					isSrcNodeDelete = edge.srcUniqueName in schemeNodeSet
+					isTarNodeDelete = edge.tarUniqueName in schemeNodeSet
+					for edgePair, edgeData in schemeEdgeDict.items():
+						if edge.srcUniqueName in edgePair:
+							isSrcNodeDelete = False
+						if edge.tarUniqueName in edgePair:
+							isTarNodeDelete = False
+					if isSrcNodeDelete:
+						schemeNodeSet.remove(edge.srcUniqueName)
+					if isTarNodeDelete:
+						schemeNodeSet.remove(edge.tarUniqueName)
+
+		self.scheme[name] = {'node': list(schemeNodeSet), 'edge':schemeEdgeDict}
+		self.releaseLock()
 
 	def addOrReplaceScheme(self, name):
 		print('add or replace scheme', name)
@@ -619,18 +661,31 @@ class CodeScene(QtGui.QGraphicsScene):
 
 	def updateCurrentValidScheme(self):
 		schemeNameSet = set()
-		for uname, item in self.itemDict.items():
-			if item.isSelected():
-				for schemeName, schemeData in self.scheme.items():
-					if uname in schemeData['node']:
-						schemeNameSet.add(schemeName)
 
+		edgeSet = set()
+		nodeSet = set()
 		for uname, item in self.edgeDict.items():
 			item.schemeColorList = []
 			if item.isSelected():
-				for schemeName, schemeData in self.scheme.items():
-					if uname in schemeData['edge']:
-						schemeNameSet.add(schemeName)
+				edgeSet.add(uname)
+				nodeSet.add(item.srcUniqueName)
+				nodeSet.add(item.tarUniqueName)
+			elif self.itemDict[item.srcUniqueName].isSelected():
+				edgeSet.add(uname)
+				nodeSet.add(item.srcUniqueName)
+			elif self.itemDict[item.tarUniqueName].isSelected():
+				edgeSet.add(uname)
+				nodeSet.add(item.tarUniqueName)
+
+		for uname in nodeSet:
+			for schemeName, schemeData in self.scheme.items():
+				if uname in schemeData['node']:
+					schemeNameSet.add(schemeName)
+
+		for uname in edgeSet:
+			for schemeName, schemeData in self.scheme.items():
+				if uname in schemeData['edge']:
+					schemeNameSet.add(schemeName)
 
 		self.curValidScheme = list(schemeNameSet)
 		self.curValidScheme.sort()
@@ -1129,34 +1184,82 @@ class CodeScene(QtGui.QGraphicsScene):
 				#print('show in editor------')
 				self.showInEditor()
 
+	def updateCandidateEdge(self):
+		from ui.CodeUIItem import CodeUIItem
+		from ui.CodeUIEdgeItem import CodeUIEdgeItem
+
+		centerItem = None
+		for edgeKey, edge in self.edgeDict.items():
+			edge.isCandidate = False
+			if edge.isSelected():
+				centerItem = edge
+				break
+
+		if not centerItem:
+			return
+
+		# find edge set
+		self.candidateEdge = []
+		srcEdgeList = []
+		tarEdgeList = []
+		srcNode = self.getNode(centerItem.srcUniqueName)
+		tarNode = self.getNode(centerItem.tarUniqueName)
+		for edgeKey, edge in self.edgeDict.items():
+			if edge == centerItem:
+				continue
+			if edgeKey[0] == centerItem.srcUniqueName:
+				srcEdgeList.append(edgeKey)
+			elif edgeKey[1] == centerItem.tarUniqueName:
+				tarEdgeList.append(edgeKey)
+
+		self.isSourceCandidate = True
+		if len(tarEdgeList) == 0 and len(srcEdgeList) > 0:
+			self.candidateEdge = srcEdgeList
+		elif len(srcEdgeList) == 0 and len(tarEdgeList) > 0:
+			self.candidateEdge = tarEdgeList
+			self.isSourceCandidate = False
+		elif tarNode.selectTimeStamp > srcNode.selectTimeStamp:
+			self.candidateEdge = tarEdgeList
+			self.isSourceCandidate = False
+		else:
+			self.candidateEdge = srcEdgeList
+
+		for edgeKey in self.candidateEdge:
+			edge = self.edgeDict.get(edgeKey)
+			if edge:
+				edge.isCandidate = True
+
 	def findNeighbourForEdge(self, centerItem, mainDirection):
 		from ui.CodeUIItem import CodeUIItem
 		from ui.CodeUIEdgeItem import CodeUIEdgeItem
 
 		# 对于函数调用边，先找出其前后的调用
-		if centerItem.orderData and math.fabs(mainDirection[1]) > 0.8:
+		if self.isSourceCandidate and centerItem.orderData and math.fabs(mainDirection[1]) > 0.8:
 			srcItem = self.itemDict.get(centerItem.srcUniqueName)
 			tarItem = self.itemDict.get(centerItem.tarUniqueName)
 			if srcItem and tarItem and srcItem.isFunction() and tarItem.isFunction():
 				tarOrder = centerItem.orderData[0] - 1 if mainDirection[1] < 0 else centerItem.orderData[0] + 1
-				for edgeKey, edge in self.edgeDict.items():
-					if edge.srcUniqueName == centerItem.srcUniqueName and edge.orderData and edge.orderData[0] == tarOrder:
+				for edgeKey in self.candidateEdge:
+					edge = self.edgeDict.get(edgeKey)
+					if edge and edge.srcUniqueName == centerItem.srcUniqueName and edge.orderData and edge.orderData[0] == tarOrder:
 						return edge
-				return None
+			return None
 
+		srcNode = self.getNode(centerItem.srcUniqueName)
+		tarNode = self.getNode(centerItem.tarUniqueName)
 		nCommonIn = 0
 		nCommonOut= 0
-		for edgeKey, edge in self.edgeDict.items():
+		for edgeKey in self.candidateEdge:
 			if edgeKey[0] == centerItem.srcUniqueName:
 				nCommonIn += 1
 			if edgeKey[1] == centerItem.tarUniqueName:
 				nCommonOut += 1
 
 		percent = 0.5
-		if nCommonIn == 1 and nCommonOut != 1:
-			percent = 0.95
-		elif nCommonIn != 1 and nCommonOut == 1:
+		if self.isSourceCandidate:
 			percent = 0.05
+		else:
+			percent = 0.95
 		centerPos = centerItem.pointAtPercent(percent)
 
 		srcPos, tarPos = centerItem.getNodePos()
@@ -1164,10 +1267,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		edgeDir /= math.sqrt(edgeDir.x()*edgeDir.x() + edgeDir.y()*edgeDir.y() + 1e-5)
 		proj = mainDirection[0]*edgeDir.x() + mainDirection[1]*edgeDir.y()
  
-		srcNode = self.getNode(centerItem.srcUniqueName)
-		tarNode = self.getNode(centerItem.tarUniqueName)
-
-		if math.fabs(mainDirection[0]) > 0.8:			
+		if math.fabs(mainDirection[0]) > 0.8:
 			if proj > 0.0 and tarNode:
 				return tarNode
 			elif proj < 0.0 and srcNode:
@@ -1177,20 +1277,21 @@ class CodeScene(QtGui.QGraphicsScene):
 		minEdgeVal = 1.0e12
 		minEdge = None
 		centerKey = (centerItem.srcUniqueName, centerItem.tarUniqueName)
-		for edgeKey, item in self.edgeDict.items():
+		for edgeKey in self.candidateEdge:
+			item = self.edgeDict.get(edgeKey)
+			if not item:
+				continue
 			if item is centerItem:
 				continue
 			if not (edgeKey[0] in centerKey or edgeKey[1] in centerKey):
 				continue
-
-			if not item.isXBetween(centerPos.x()):
-				continue
+			# if not item.isXBetween(centerPos.x()):
+			# 	continue
 			y = item.findCurveYPos(centerPos.x())
 			dPos = QtCore.QPointF(centerPos.x(), y) - centerPos
 			cosVal = (dPos.x() * mainDirection[0] + dPos.y() * mainDirection[1]) / \
 					 math.sqrt(dPos.x()*dPos.x() + dPos.y()*dPos.y()+1e-5)
-			#print('cosVal', cosVal, item.getMiddlePos(), dPos)
-			if cosVal < 0.2:
+			if cosVal < 0.0:
 				continue
 			xProj = dPos.x()*mainDirection[0] + dPos.y()*mainDirection[1]
 			yProj = dPos.x()*mainDirection[1] - dPos.y()*mainDirection[0]
@@ -1209,34 +1310,34 @@ class CodeScene(QtGui.QGraphicsScene):
 		minNodeConnected = None
 		minNodeVal = 1.0e12
 		minNode = None
-		for uname, item in self.itemDict.items():
-			if item is centerItem:
-				continue
-			dPos = item.pos() - centerPos
-			cosVal = (dPos.x() * mainDirection[0] + dPos.y() * mainDirection[1]) / \
-					 math.sqrt(dPos.x()*dPos.x() + dPos.y()*dPos.y()+1e-5)
-			if cosVal < 0.6:
-				continue
+		# for uname, item in self.itemDict.items():
+		# 	if item is centerItem:
+		# 		continue
+		# 	dPos = item.pos() - centerPos
+		# 	cosVal = (dPos.x() * mainDirection[0] + dPos.y() * mainDirection[1]) / \
+		# 			 math.sqrt(dPos.x()*dPos.x() + dPos.y()*dPos.y()+1e-5)
+		# 	if cosVal < 0.6:
+		# 		continue
 
-			xProj = dPos.x()*mainDirection[0] + dPos.y()*mainDirection[1]
-			yProj = dPos.x()*mainDirection[1] - dPos.y()*mainDirection[0]
+		# 	xProj = dPos.x()*mainDirection[0] + dPos.y()*mainDirection[1]
+		# 	yProj = dPos.x()*mainDirection[1] - dPos.y()*mainDirection[0]
 
-			xProj /= 2.0
-			dist = xProj * xProj + yProj * yProj
+		# 	xProj /= 2.0
+		# 	dist = xProj * xProj + yProj * yProj
 
-			# 检查与当前边是否连接
-			isEdged = False
-			if item in (centerItem.srcUniqueName, centerItem.tarUniqueName):
-				isEdged = True
+		# 	# 检查与当前边是否连接
+		# 	isEdged = False
+		# 	if item in (centerItem.srcUniqueName, centerItem.tarUniqueName):
+		# 		isEdged = True
 
-			if isEdged:
-				if dist < minNodeValConnected:
-					minNodeValConnected = dist
-					minNodeConnected = item
-			else:
-				if dist < minNodeVal:
-					minNodeVal = dist
-					minNode = item
+		# 	if isEdged:
+		# 		if dist < minNodeValConnected:
+		# 			minNodeValConnected = dist
+		# 			minNodeConnected = item
+		# 	else:
+		# 		if dist < minNodeVal:
+		# 			minNodeVal = dist
+		# 			minNode = item
 
 		minEdgeVal *= 3
 		minNodeVal *= 2
@@ -1597,10 +1698,12 @@ class CodeScene(QtGui.QGraphicsScene):
 		from ui.CodeUIEdgeItem import CodeUIEdgeItem
 		itemList = self.selectedItems()
 		# update LRU
+		self.selectTimeStamp += 1
 		for item in itemList:
 			if not isinstance(item, CodeUIItem):
 				continue
 			item.selectCounter += 1
+			item.selectTimeStamp = self.selectTimeStamp
 			uniqueName = item.getUniqueName()
 			self.updateLRU([uniqueName])
 

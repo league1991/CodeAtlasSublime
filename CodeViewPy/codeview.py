@@ -92,23 +92,23 @@ class CodeView(QtGui.QGraphicsView):
 				mainUI.showScheme([9, True])
 		elif event.modifiers() == QtCore.Qt.ControlModifier:
 			if event.key() == QtCore.Qt.Key_1:
-				mainUI.addScheme([1, True])
+				mainUI.toggleSelectedEdgeToScheme([1, True])
 			elif event.key() == QtCore.Qt.Key_2:
-				mainUI.addScheme([2, True])
+				mainUI.toggleSelectedEdgeToScheme([2, True])
 			elif event.key() == QtCore.Qt.Key_3:
-				mainUI.addScheme([3, True])
+				mainUI.toggleSelectedEdgeToScheme([3, True])
 			elif event.key() == QtCore.Qt.Key_4:
-				mainUI.addScheme([4, True])
+				mainUI.toggleSelectedEdgeToScheme([4, True])
 			elif event.key() == QtCore.Qt.Key_5:
-				mainUI.addScheme([5, True])
+				mainUI.toggleSelectedEdgeToScheme([5, True])
 			elif event.key() == QtCore.Qt.Key_6:
-				mainUI.addScheme([6, True])
+				mainUI.toggleSelectedEdgeToScheme([6, True])
 			elif event.key() == QtCore.Qt.Key_7:
-				mainUI.addScheme([7, True])
+				mainUI.toggleSelectedEdgeToScheme([7, True])
 			elif event.key() == QtCore.Qt.Key_8:
-				mainUI.addScheme([8, True])
+				mainUI.toggleSelectedEdgeToScheme([8, True])
 			elif event.key() == QtCore.Qt.Key_9:
-				mainUI.addScheme([9, True])
+				mainUI.toggleSelectedEdgeToScheme([9, True])
 		else:
 			super(CodeView, self).keyPressEvent(event)
 		# elif event.key() == QtCore.Qt.Key_Control:
@@ -213,6 +213,7 @@ class CodeView(QtGui.QGraphicsView):
 	def drawForeground(self, painter, rectF):
 		#print('draw foregrpund begin ')
 		super(CodeView, self).drawForeground(painter, rectF)
+
 		if self.isFrameSelectMode:
 			if self.mousePressPnt and self.mouseCurPnt:
 				topLeftX = min(self.mousePressPnt.x(), self.mouseCurPnt.x())

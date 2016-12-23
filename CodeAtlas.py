@@ -61,25 +61,30 @@ class Show_scheme_5_Command(TextCommand):
 		socket = DataManager.instance().getSocket(self.view.window().id())
 		socket.remoteCall('showScheme',[5])
 
-class Show_scheme_6_Command(TextCommand):
+class Toggle_scheme_1_Command(TextCommand):
 	def run(self, edit):
 		socket = DataManager.instance().getSocket(self.view.window().id())
-		socket.remoteCall('showScheme',[6])
+		socket.remoteCall('toggleSelectedEdgeToScheme',[1])
 
-class Show_scheme_7_Command(TextCommand):
+class Toggle_scheme_2_Command(TextCommand):
 	def run(self, edit):
 		socket = DataManager.instance().getSocket(self.view.window().id())
-		socket.remoteCall('showScheme',[7])
+		socket.remoteCall('toggleSelectedEdgeToScheme',[2])
 
-class Show_scheme_8_Command(TextCommand):
+class Toggle_scheme_3_Command(TextCommand):
 	def run(self, edit):
 		socket = DataManager.instance().getSocket(self.view.window().id())
-		socket.remoteCall('showScheme',[8])
+		socket.remoteCall('toggleSelectedEdgeToScheme',[3])
 
-class Show_scheme_9_Command(TextCommand):
+class Toggle_scheme_4_Command(TextCommand):
 	def run(self, edit):
 		socket = DataManager.instance().getSocket(self.view.window().id())
-		socket.remoteCall('showScheme',[9])
+		socket.remoteCall('toggleSelectedEdgeToScheme',[4])
+
+class Toggle_scheme_5_Command(TextCommand):
+	def run(self, edit):
+		socket = DataManager.instance().getSocket(self.view.window().id())
+		socket.remoteCall('toggleSelectedEdgeToScheme',[5])
 
 class Show_in_atlas_Command(TextCommand):
 	def run(self, edit):

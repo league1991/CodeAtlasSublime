@@ -317,8 +317,14 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		if scene:
 			scene.showIthScheme(ithScheme, isSelected)
 
+	def toggleSelectedEdgeToScheme(self, param):
+		ithScheme = param[0]-1
+		from UIManager import UIManager
+		scene = UIManager.instance().getScene()
+		if scene:
+			scene.toggleSelectedEdgeToScheme(ithScheme)
+
 	def addScheme(self, param):
-		print('add scheme', param)
 		ithScheme = param[0]-1
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
@@ -326,10 +332,6 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 			scene.addOrReplaceIthScheme(ithScheme)
 
 	def showInAtlas(self, param):
-		#name = param.get('n','')
-		#kind = param.get('k','')
-		#fileName = param.get('f','')
-		#line = param.get('l',-1)
 		name = param[0]
 		kind = param[1]
 		fileName = param[2]
