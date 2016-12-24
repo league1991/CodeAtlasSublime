@@ -515,6 +515,10 @@ class  SugiyamaLayout(object):
     def setxy(self):
         self._edge_inverter()
         self._detect_alignment_conflicts()
+        self._compute_xy_coord()
+        self._edge_inverter()
+
+    def _compute_xy_coord(self):
         inf = float('infinity')
         # initialize vertex coordinates attributes:
         for l in self.layers:
@@ -533,6 +537,7 @@ class  SugiyamaLayout(object):
         self.dirvh = curvh # restore it
         # vertical coordinate assigment of all nodes:
         Y = 0
+        overlapped = False
         for l in self.layers:
             dY = max([v.view.h/2. for v in l])
             for v in l:
@@ -541,8 +546,47 @@ class  SugiyamaLayout(object):
                 avgm = (vx[1]+vx[2])/2.
                 # final xy-coordinates :
                 v.view.xy = (avgm,Y+dY)
+
+            if self._check_layer_overlapped(l):
+                # force directed resolve
+                x_list = [v.view.xy[0] for v in l]
+                hw_list = [v.view.w / 2.0 for v in l]
+                num_v = len(l)
+                for iter in range(5):
+                    resolved = True
+                    for i in range(num_v):
+                        for j in range(num_v):
+                            if i == j:
+                                continue
+                            dist = abs(x_list[i] - x_list[j]) - (hw_list[i] + hw_list[j] + self.xspace * 2)
+                            if dist > -0.5:
+                                continue
+                            sign = 1.0 if x_list[i] > x_list[j] else -1.0
+                            dist = abs(dist)
+                            x_list[i] += sign * dist * 0.4
+                            x_list[j] -= sign * dist * 0.4
+                            resolved = False
+                    if resolved:
+                        break
+
+                for ith_v, v in enumerate(l):
+                    v.view.xy = (x_list[ith_v], v.view.xy[1])
+
             Y += 2*dY+self.yspace
-        self._edge_inverter()
+
+        return not overlapped
+
+    def _check_layer_overlapped(self, l):
+        border_list = []
+        for v in l:
+            half_width = v.view.w / 2.0
+            border_list.append((0, v.view.xy[0]-half_width))
+            border_list.append((1, v.view.xy[0]+half_width))
+        border_list.sort(key = lambda edge: edge[1])
+        for i in range(0,len(border_list),2):
+            if border_list[i][0] != 0 or border_list[i+1][0] != 1:
+                return True
+        return False
 
     # mark conflicts between edges:
     # inner edges are edges between dummy nodes
