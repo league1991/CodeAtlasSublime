@@ -268,11 +268,16 @@ class SceneUpdateThread(QtCore.QThread):
 				height = 200
 				#print('height--------', height)
 				vtx.view = VtxView(w, height)
-				V.append(vtx) 
- 
+				V.append(vtx)
+
+			#for i, vtx in enumerate(V):
+			#	print("(%s,%s)," % (vtx.view.w, vtx.view.h))
+
 			E = []
+			# print("edge")
 			for edgeKey in edgeList:
 				if vtxList[edgeKey[0]].comp == ithComp:
+					# print("(%s,%s)," % (vtxList[edgeKey[0]].compIdx, vtxList[edgeKey[1]].compIdx))
 					E.append(Edge(V[vtxList[edgeKey[0]].compIdx], V[vtxList[edgeKey[1]].compIdx]))
 
 			#print('V', len(V))
@@ -292,6 +297,7 @@ class SceneUpdateThread(QtCore.QThread):
 			# 统计包围盒
 			for v in g.C[0].sV:
 				oldV = vtxList[v.data]
+				# print("pos:(%s,%s)" % (v.view.xy[0], v.view.xy[1]))
 				x= v.view.xy[1]
 				y= v.view.xy[0]
 				oldV.setLayoutPos(x,y)
@@ -1193,7 +1199,6 @@ class CodeScene(QtGui.QGraphicsScene):
 			edge.isCandidate = False
 			if edge.isSelected():
 				centerItem = edge
-				break
 
 		if not centerItem:
 			return

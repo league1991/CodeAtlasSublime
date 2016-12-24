@@ -212,8 +212,8 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 				painter.setPen(pen)
 				painter.drawPath(self.path)
 			elif self.isCandidate:
-				pen.setColor(QtGui.QColor(183,101,0,200))
-				pen.setWidthF(9.0)
+				pen.setColor(QtGui.QColor(183,101,0,120))
+				pen.setWidthF(6.0)
 				pen.setStyle(QtCore.Qt.SolidLine)
 				painter.setPen(pen)
 				painter.drawPath(self.path)
@@ -229,8 +229,8 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 			if isHighLight:
 				pen.setWidthF(9.0)
 			elif self.isCandidate:
-				pen.setColor(QtGui.QColor(183,101,0,200))
-				pen.setWidthF(9.0)
+				pen.setColor(QtGui.QColor(183,101,0,120))
+				pen.setWidthF(6.0)
 				pen.setStyle(QtCore.Qt.SolidLine)
 			painter.setPen(pen)
 			painter.drawPath(self.path)
