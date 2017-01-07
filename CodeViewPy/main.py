@@ -20,6 +20,4 @@ if __name__ == "__main__":
 	dbObj.startSocket()
 
 	w = uiObj.getMainUI()
-	#w.move(app.desktop().width() *0.8,0);
-
 	sys.exit(app.exec_())

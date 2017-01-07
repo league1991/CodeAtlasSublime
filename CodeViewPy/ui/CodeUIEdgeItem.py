@@ -1,13 +1,12 @@
 from PyQt4 import QtCore, QtGui, uic
 import math
+import time
 
 class CodeUIEdgeItem(QtGui.QGraphicsItem):
 	def __init__(self, srcUniqueName, tarUniqueName, edgeData = {}, parent = None, scene = None):
 		super(CodeUIEdgeItem, self).__init__(parent, scene)
-		#self.setFlag(QtGui.QGraphicsItem.ItemIsMovable)
 		self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable)
 		self.setAcceptHoverEvents(True)
-		#self.setFlag(QtGui.QGraphicsItem.ItemIsFocusable)
 		self.srcUniqueName = srcUniqueName
 		self.tarUniqueName = tarUniqueName
 		self.setZValue(-1)
@@ -44,12 +43,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 			return QtCore.QPointF(), QtCore.QPointF()
 		srcPos = srcNode.pos()
 		tarPos = tarNode.pos()
-		#sign = 1 if tarPos.x() > srcPos.x() else -1
 		return (srcNode.getRightSlotPos(), tarNode.getLeftSlotPos())
-		# if tarPos.x() > srcPos.x():
-		# 	return (srcNode.getRightSlotPos(), tarNode.getLeftSlotPos())
-		# else:
-		# 	return (srcNode.getLeftSlotPos(), tarNode.getRightSlotPos())
 
 	def getNodeCenterPos(self):
 		from UIManager import UIManager
@@ -71,7 +65,6 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 
 	def boundingRect(self):
 		srcPos, tarPos = self.getNodePos()
-		#print(srcPos, tarPos)
 		minPnt = (min(srcPos.x(), tarPos.x()), min(srcPos.y(), tarPos.y()))
 		maxPnt = (max(srcPos.x(), tarPos.x()), max(srcPos.y(), tarPos.y()))
 
@@ -90,8 +83,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 	def buildPath(self):
 		srcPos, tarPos = self.getNodePos()
 		if self.pathPnt and (self.pathPnt[0]-srcPos).manhattanLength() < 0.05 and (self.pathPnt[1]-tarPos).manhattanLength() < 0.05:
-			return self.path 
-		#print('build path', self.pathPnt, srcPos, tarPos)
+			return self.path
 		self.pathPnt = (srcPos, tarPos)
 		path = QtGui.QPainterPath()  
 		path.moveTo(srcPos)
@@ -168,44 +160,18 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		if self.isSelected() or self.isHover:
 			clr = QtGui.QColor(255,157,38,255)
 			isHighLight = True
-		# elif self.isConnectedToFocusNode:
-		# 	clr = QtGui.QColor(200,200,200,255)
 		else:
 			if isReverse:
 				clr = QtGui.QColor(159,49,52,200)
 			else:
 				clr = QtGui.QColor(150,150,150,100)
-			#clr = QtGui.QColor(230,230,230,255)
 
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
-		# srcNode = scene.getNode(self.srcUniqueName)
-		# tarNode = scene.getNode(self.tarUniqueName)
 		penStyle = QtCore.Qt.SolidLine
 		penWidth = 3.0
-		# if srcNode and tarNode and srcNode.isFunction() and tarNode.isFunction():
-		# 	pass
-		# else:
-		# 	penStyle = QtCore.Qt.DotLine
 		pen = QtGui.QPen(clr, penWidth, penStyle, QtCore.Qt.FlatCap)
 
-		# srcPos, tarPos = self.getNodePos()
-		# #midPos = (srcPos + tarPos) * 0.5
-		# midPos = tarPos
-		# #d = [tarPos.x() - srcPos.x(), tarPos.y() - srcPos.y()]
-		# d = [tarPos.x() - srcPos.x(), 0]
-		# dirLength = math.sqrt(d[0]*d[0] + d[1]*d[1])
-		# d[0] /= (dirLength + 1e-5)
-		# d[1] /= (dirLength + 1e-5)
-
-		# ld = (-d[1],d[0])
-		# back = -10
-		# side = 4
-		# leftPos  = QtCore.QPointF(midPos.x() + d[0]*back + ld[0]*side, midPos.y() + d[1]*back + ld[1]*side)
-		# rightPos = QtCore.QPointF(midPos.x() + d[0]*back + ld[0]*-side, midPos.y() + d[1]*back + ld[1]*-side)
-
-		#painter.drawLines([srcPos, tarPos, leftPos, midPos, rightPos, midPos])
-		#painter.drawLines([leftPos, midPos, rightPos, midPos])
 		if self.schemeColorList:
 			if isHighLight:
 				pen.setWidthF(9.0)
@@ -246,6 +212,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 			textFont = QtGui.QFont('tahoma', 12)
 			painter.setFont(textFont)
 			painter.drawText(rect, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter, '%s' % order)
+		endTime = time.time()
 
 	def getCallOrder(self):
 		if self.orderData:

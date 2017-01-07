@@ -34,20 +34,14 @@ class SymbolView(QtGui.QGraphicsView):
 
 		item = self.itemAt(self.mousePressPnt)
 		self.isFrameSelectMode = (not item)
-		#print('is frame select', self.isFrameSelectMode)
 		super(SymbolView, self).mousePressEvent(event)
 
 	def mouseMoveEvent(self, event):
-		#print('mouse move begin ')
 		if self.isFrameSelectMode:
-			#print('frame move')
 			self.mouseCurPnt = event.pos()
 
 		super(SymbolView,self).mouseMoveEvent(event)
-		#self.invalidateScene(self.scene().sceneRect())
-		#self.update()
 		self.viewport().update()
-		#print('mouse move end ')
 
 	def mouseReleaseEvent(self, event):
 		self.mouseCurPnt = event.pos()
@@ -66,7 +60,6 @@ class SymbolView(QtGui.QGraphicsView):
 		super(SymbolView, self).mouseReleaseEvent(event)
 
 	def wheelEvent(self, event):
-		#print('wheel begin ')
 		posScene = self.mapToScene(event.pos())
 		factor = 1.001 ** event.delta()
 		self.scale(factor, factor)
@@ -114,12 +107,7 @@ class SymbolView(QtGui.QGraphicsView):
 		scene.updateNodeVisibility(lod)
 
 		super(SymbolView, self).drawBackground(painter, rectF)
-		# painter.setTransform(QtGui.QTransform())
-
-		#painter.setPen(QtGui.QPen(QtGui.QColor(238,237,234,20),1))
 		lineList = scene.getLowPosList()
-		# for line in lineList:
-		# 	line.paint(painter,1)
 
 		t0 = time.clock()
 		lineList = scene.getNormalPosList()
@@ -132,5 +120,4 @@ class SymbolView(QtGui.QGraphicsView):
 
 
 		t1 = time.clock()
-		print("time is ", (t1-t0))
 

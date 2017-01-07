@@ -184,9 +184,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 			scene.acquireLock()
 			dbmgr.getDB().analyze()
 			#dbmgr.getDB().open(r'C:\Users\me\AppData\Roaming\Sublime Text 3\Packages\CodeAtlas\CodeAtlasSublime.udb')
-			print('before release')
 			scene.releaseLock()
-			print('after release')
 
 	def onOpen(self):
 		dialog = QtGui.QFileDialog()
@@ -194,13 +192,11 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		curPath = curDir.currentPath()
 		dbPath = dialog.getOpenFileName(self, 'Open Database', curDir.currentPath())
 		if dbPath:
-			print(dbPath)
 			dbmgr = DBManager.DBManager.instance()
 			dbmgr.getDB().open(dbPath)
 
 			from UIManager import UIManager
 			symScene = UIManager.instance().getSymbolScene()
-			#symScene.buildScene()
 
 	def onOpenPath(self, param):
 		dialog = QtGui.QFileDialog()
@@ -209,27 +205,19 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		if param and False:
 			curPath = param[0]
 		dbPath = dialog.getOpenFileName(self, 'Open Database', curPath)
-		#dbPath = r'I:/Programs/test/myTest1/test1.udb'
 		if dbPath:
-			print(dbPath)
 			dbmgr = DBManager.DBManager.instance()
 			dbmgr.getDB().open(dbPath)
 			from UIManager import UIManager
 			symScene = UIManager.instance().getSymbolScene()
-			#symScene.buildScene()
 
 	def onTest(self):
-		#import os
-		#defaultPath = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)) + r'\CodeAtlasSublime.udb'
-		#print(defaultPath)
 		dbmgr = DBManager.DBManager.instance()
 		defaultPath = r'C:\Users\me\AppData\Roaming\Sublime Text 3\Packages\CodeAtlas\CodeAtlasSublime.udb'
-		#defaultPath = r'I:\Programs\autodesk\rapidrt-master\rapidRT.udb'
 		dbmgr.getDB().open(defaultPath)
 
 		from UIManager import UIManager
 		symScene = UIManager.instance().getSymbolScene()
-		#symScene.buildScene()
 
 	def onFindCallers(self):
 		self.findRefs('callby','function, method')
@@ -293,16 +281,11 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 			scene.clearUnusedItems()
 
 	def onClearOldestItem(self):
-		print('on clear oldest item')
 		from UIManager import UIManager
-		print('import ui manager', UIManager)
 		from db.DBManager import DBManager
-		print('import db manager', DBManager)
 
 		scene = UIManager.instance().getScene()
-		print('scene', scene)
 		if scene:
-			print('clear old item')
 			scene.clearOldItem()
 
 	def getSearchWindow(self):
@@ -344,22 +327,16 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 			kind = '*'
 		if line == None:
 			line = -1
-		#print('show in atlas', param)
 		sw = self.getSearchWindow()
 		sw.inputEdit.setText(name)
 		sw.kindEdit.setText(kind)
 		sw.fileEdit.setText(fileName)
 		sw.lineBox.setValue(line)
 
-		print('search')
 		sw.onSearch()
-		print('add to scene')
 		sw.onAddToScene()
 
-
-
 	def goToEditor(self):
-		#print('go to editor')
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
 		if scene:

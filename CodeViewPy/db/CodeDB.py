@@ -20,7 +20,6 @@ class CodeDB(QtCore.QObject):
 		self._dbPath = path
 		self._db = understand.open(path)
 		self.onOpen()
-		print('open', self._db)
 
 	def getDBPath(self):
 		return self._dbPath
@@ -41,7 +40,6 @@ class CodeDB(QtCore.QObject):
 			self._db = None
 
 			cmdStr = r'und analyze "%s"' % self._dbPath
-			print(cmdStr)
 			workingPath = r'D:\Program Files (x86)\SciTools\bin\pc-win32'
 
 			#os.system(cmdStr)
@@ -49,7 +47,6 @@ class CodeDB(QtCore.QObject):
 			#p.wait()
 
 			print ('wait finish--------------------', self._dbPath)
-			#self._db = understand.open(self._dbPath)
 			self.reopenSignal.emit()
 			print('open finish')
 
@@ -82,7 +79,6 @@ class CodeDB(QtCore.QObject):
 
 		refList = ent.refs(refKindStr, entKindStr, isUnique)
 		entList = [refObj.ent().uniquename() for refObj in refList]
-		#print('entList', entList)
 		return entList, refList
 
 	def searchRefObj(self, srcUName, tarUName):
@@ -113,8 +109,6 @@ class CodeDB(QtCore.QObject):
 		if not srcUniqueName or not tarUniqueName or not self._db:
 			return [],[]
 
-		# print('src unique', srcUniqueName)
-		# print('tar unique', tarUniqueName)
 		db = self._db
 		class Vtx(object):
 			def __init__(self, name):
@@ -136,7 +130,6 @@ class CodeDB(QtCore.QObject):
 
 		while len(vtxStack) > 0:
 			topVtx = vtxDict[vtxStack[-1]]
-			#print('stack:', [vtxDict[v].ent.name() for v in vtxStack])
 
 			if topVtx.curAdjIdx >= len(topVtx.adjNameList):
 				# 没有相邻节点可以访问了，从栈弹出
@@ -145,15 +138,11 @@ class CodeDB(QtCore.QObject):
 				# 尝试访问相邻节点
 				adjName = topVtx.adjNameList[topVtx.curAdjIdx][0]
 				topVtx.curAdjIdx += 1
-				# print('adj:', adjName)
-				# print('tar:', tarUniqueName)
-				# print('is-----', adjName == tarUniqueName)
 
 				# 路径不含环
 				if adjName not in vtxStack:
 					if adjName == tarUniqueName or (adjName in vtxDict and vtxDict[adjName].isPathed):
 						# 到达已有路径,或到达终点，记录路径，加入新节点
-						#print('--- add node ---')
 						for v in vtxStack:
 							vObj = vtxDict[v]
 							vObj.isPathed = True
@@ -169,7 +158,6 @@ class CodeDB(QtCore.QObject):
 						# 由于当一个节点出发的所有相邻节点都遍历完后，这个节点才会被从栈删除，所以此时这个节点无须再次进栈遍历
 						pass
 
-		#print('search end', vtxSet, refSet)
 		vtxSet.discard(srcUniqueName)
 		return list(vtxSet), list(refSet)
 
@@ -178,7 +166,6 @@ class CodeDB(QtCore.QObject):
 			return
 
 		files = self._db.ents('file')
-		#print(files)
 
 		for fileEnt in files:
 			print(fileEnt.longname())
@@ -188,7 +175,6 @@ class CodeDB(QtCore.QObject):
 			return None, None
 
 		# list all global objects
-		#entList = self._db.ents('class,struct,function,method,variable,object,namespace')
 		entList = self._db.ents('class,struct,namespace,function')
 		symbolDict = {}
 		print (len(entList))
@@ -196,25 +182,14 @@ class CodeDB(QtCore.QObject):
 		for ent in entList:
 			if ent.kindname().lower().find('local') != -1:
 				continue
-			# refList = ent.refs('definein')
-			# if not refList:
-			# 	nNoDefine += 1
-			# 	continue
-			#print(ent.name(), ent.kindname())
 			symbol = SymbolNode(ent.uniquename(), ent.name(), ent)
 			symbolDict[ent.uniquename()] = symbol
-		print('n no define:', nNoDefine)
-		# for uname, sym in symbolDict.items():
-		# 	self._buildSymbolTreeRecursive(sym)
-
-		# return symbolDict
 		for uniname, symbol in symbolDict.items():
 			ent = self._db.lookup_uniquename(uniname)
 			if not ent:
 				continue
 			refList = ent.refs('declare,define')
 			for ref in refList:
-				#print('ref:', ref.ent().name(), ref.ent().kindname())
 				refSymbol = symbolDict.get(ref.ent().uniquename())
 				if not refSymbol:
 					continue
@@ -249,7 +224,6 @@ class CodeDB(QtCore.QObject):
 			return
 
 		refList = symbolEnt.refs('declare,define')
-		print(symbol.name, kindStr, 'ref:', len(refList))
 		for ref in refList:
 			ent = ref.ent()
 			childSymbol = SymbolNode(ent.uniquename(), ent.name(), ent)
@@ -257,7 +231,6 @@ class CodeDB(QtCore.QObject):
 
 
 def printSymbolDict(sym, indent = 0):
-	print('-' * indent + sym.name)
 	for uname, childSym in sym.childrenDict.items():
 		printSymbolDict(childSym, indent+1)
 
