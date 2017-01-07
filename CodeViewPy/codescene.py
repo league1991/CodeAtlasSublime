@@ -1589,7 +1589,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.removeItemLRU()
 		self.lock.release()
 
-	def _addRefs(self, refStr, entStr, inverseEdge = False):
+	def _addRefs(self, refStr, entStr, inverseEdge = False, maxCount = -1):
 		from db.DBManager import DBManager
 		from ui.CodeUIItem import CodeUIItem
 		dbObj = DBManager.instance().getDB()
@@ -1597,21 +1597,43 @@ class CodeScene(QtGui.QGraphicsScene):
 		itemList = self.selectedItems()
 
 		refNameList = []
-
-
 		for item in itemList:
 			if not isinstance(item, CodeUIItem):
 				continue
 			uniqueName = item.getUniqueName()
 			entNameList, refList = dbObj.searchRefEntity(uniqueName, refStr, entStr)
-			refNameList += entNameList
-			for ithRef, entName in enumerate(entNameList):
-				refObj = refList[ithRef]
+
+			# add to candidate
+			candidateList = []
+			for ithEnt, entName in enumerate(entNameList):
+				refObj = refList[ithEnt]
+				entObj = refObj.ent()
+				# get lines
+				metricRes = entObj.metric(('CountLine',))
+				metricLine = metricRes.get('CountLine',1)
+				line = metricLine if metricLine else 0
+				candidateList.append([entName, refObj, line])
+
+			# sort candidate
+			if maxCount > 0:
+				candidateList.sort(key = lambda element: element[2], reverse=True)
+
+			addedList = []
+			for ithRef, candidate in enumerate(candidateList):
+				entName = candidate[0]
+				refObj  = candidate[1]
 				res, refItem = scene._doAddCodeItem(entName)
+
+				if res:
+					addedList.append(entName)
 				if inverseEdge:
 					scene._doAddCodeEdgeItem(uniqueName, entName, {'dbRef':refObj})
 				else:
 					scene._doAddCodeEdgeItem(entName, uniqueName, {'dbRef':refObj})
+
+				if len(addedList) >= maxCount:
+					break
+			refNameList += addedList
 
 		# for uname, item in self.itemDict.items():
 		# 	# 再增加与现有节点的联系
@@ -1632,9 +1654,9 @@ class CodeScene(QtGui.QGraphicsScene):
 		return refNameList
 
 
-	def addRefs(self, refStr, entStr, inverseEdge = False):
+	def addRefs(self, refStr, entStr, inverseEdge = False, maxCount = -1):
 		self.lock.acquire()
-		refNameList = self._addRefs(refStr, entStr, inverseEdge)
+		refNameList = self._addRefs(refStr, entStr, inverseEdge, maxCount)
 		self.updateLRU(refNameList)
 		self.removeItemLRU()
 		self.lock.release()

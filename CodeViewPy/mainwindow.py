@@ -239,6 +239,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 
 	def onFindMembers(self):
 		self.findRefs('declare,define','variable, object', True)
+		self.findRefs('declare,define','function', True, 1)
 		self.findRefs('declarein,definein', 'function,class', False)
 
 	def onFindOverrides(self):
@@ -253,10 +254,10 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.findRefs('useby', 'function,class', False)
 		self.findRefs('use', 'variable, object', True)
 
-	def findRefs(self, refStr, entStr, inverseEdge = False):
+	def findRefs(self, refStr, entStr, inverseEdge = False, maxCount = -1):
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
-		scene.addRefs(refStr, entStr, inverseEdge)
+		scene.addRefs(refStr, entStr, inverseEdge, maxCount)
 
 	def onAddSimilarCodeItem(self):
 		from UIManager import UIManager
