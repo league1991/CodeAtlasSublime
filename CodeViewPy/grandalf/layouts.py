@@ -548,29 +548,6 @@ class  SugiyamaLayout(object):
                 v.view.xy = (avgm,Y+dY)
 
             if self._check_layer_overlapped(l):
-                # force directed resolve
-                # x_list = [v.view.xy[0] for v in l]
-                # hw_list = [v.view.w / 2.0 for v in l]
-                # num_v = len(l)
-                # for iter in range(5):
-                #     resolved = True
-                #     for i in range(num_v):
-                #         for j in range(num_v):
-                #             if i == j:
-                #                 continue
-                #             dist = abs(x_list[i] - x_list[j]) - (hw_list[i] + hw_list[j] + self.xspace * 2)
-                #             if dist > -0.5:
-                #                 continue
-                #             sign = 1.0 if x_list[i] > x_list[j] else -1.0
-                #             dist = abs(dist)
-                #             x_list[i] += sign * dist * 0.4
-                #             x_list[j] -= sign * dist * 0.4
-                #             resolved = False
-                #     if resolved:
-                #         break
-
-                # for ith_v, v in enumerate(l):
-                #     v.view.xy = (x_list[ith_v], v.view.xy[1])
                 self._solve_overlap(l)
 
             Y += 2*dY+self.yspace
@@ -579,57 +556,57 @@ class  SugiyamaLayout(object):
 
     def _check_layer_overlapped(self, l):
         border_list = []
+        half_space  = self.xspace * 0.4
         for v in l:
             half_width = v.view.w / 2.0
-            border_list.append((0, v.view.xy[0]-half_width))
-            border_list.append((1, v.view.xy[0]+half_width))
+            border_list.append((0, v.view.xy[0]-half_width-half_space, v))
+            border_list.append((1, v.view.xy[0]+half_width+half_space, v))
         border_list.sort(key = lambda edge: edge[1])
         for i in range(0,len(border_list),2):
-            if border_list[i][0] != 0 or border_list[i+1][0] != 1:
+            if border_list[i][0] != 0 or border_list[i+1][0] != 1 or\
+                border_list[i][2] != border_list[i+1][2]:
                 return True
         return False
 
     def _solve_overlap(self, l):
+        print("solve overlap")
         class Block:
             def __init__(self, x, w):
-                self.x = x
+                self.l = x - 0.5 * w
                 self.w = w
                 self.parent = -1
                 self.offset = 0
             def left(self):
-                return self.x - self.w * 0.5
+                return self.l
             def right(self):
-                return self.x + self.w * 0.5
+                return self.l + self.w
+            def x(self):
+                return self.l + 0.5 * self.w
 
         bl = [Block(v.view.xy[0], v.view.w + self.xspace) for v in l]
-        bl.sort(key = lambda block: block.x)
+        bl.sort(key = lambda block: block.left())
 
         # hierarchical layout
         begIdx = 0
         endIdx = len(bl)
         while begIdx < endIdx:
             # make parent identical with bl[begIdx]
-            bl[begIdx].offset = 0
             bl[begIdx].parent = len(bl)
-            bl.append(Block(bl[begIdx].x, bl[begIdx].w))
-            beg_x = bl[begIdx].x
+            bl.append(Block(bl[begIdx].x(), bl[begIdx].w))
 
             num_overlap = 0
             for i in range(begIdx+1, endIdx):
                 parent = len(bl)-1
-                if bl[i-1].right() > bl[i].left() + 0.01:
+                if bl[parent].right() > bl[i].left() + 0.01:
                     # update bl[i] and its parent
-                    bl[i].offset = bl[i-1].offset + bl[i-1].w
+                    bl[i].offset = bl[parent].w
                     bl[i].parent = len(bl)-1
                     bl[parent].w += bl[i].w
-                    bl[parent].x = (beg_x + bl[i].x) * 0.5
                     num_overlap += 1
                 else:
                     # make new parent identical with bl[i]
-                    bl[i].offset = 0
                     bl[i].parent = parent + 1
-                    bl.append(Block(bl[i].x, bl[i].w))
-                    beg_x = bl[i].x
+                    bl.append(Block(bl[i].x(), bl[i].w))
 
             if num_overlap == 0:
                 break
@@ -643,7 +620,7 @@ class  SugiyamaLayout(object):
             while bl[idx].parent != -1:
                 v_left += bl[idx].offset
                 idx = bl[idx].parent
-            v_left += bl[idx].x
+            v_left += bl[idx].x()
             v.view.xy = (v_left + (v.view.w + self.xspace) * 0.5, v.view.xy[1])
 
     # mark conflicts between edges:

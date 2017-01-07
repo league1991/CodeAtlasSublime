@@ -607,6 +607,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		if name not in self.scheme:
 			return False
 
+		self.acquireLock()
 		selectedNode = []
 		selectedEdge = []
 		if not selectScheme:
@@ -652,6 +653,8 @@ class CodeScene(QtGui.QGraphicsScene):
 				edge = self.edgeDict.get(uname)
 				if edge:
 					edge.setSelected(True)
+
+		self.releaseLock()
 
 	def showIthScheme(self, ithScheme, isSelected = False):
 		if ithScheme < 0 or ithScheme >= len(self.curValidScheme):
@@ -1262,9 +1265,9 @@ class CodeScene(QtGui.QGraphicsScene):
 
 		percent = 0.5
 		if self.isSourceCandidate:
-			percent = 0.05
+			percent = 0.2
 		else:
-			percent = 0.95
+			percent = 0.8
 		centerPos = centerItem.pointAtPercent(percent)
 
 		srcPos, tarPos = centerItem.getNodePos()
@@ -1631,7 +1634,7 @@ class CodeScene(QtGui.QGraphicsScene):
 				else:
 					scene._doAddCodeEdgeItem(entName, uniqueName, {'dbRef':refObj})
 
-				if len(addedList) >= maxCount:
+				if len(addedList) >= maxCount > 0:
 					break
 			refNameList += addedList
 

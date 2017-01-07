@@ -129,7 +129,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 			else:
 				maxT = midT
 				maxPnt = midPnt
-			if abs(minPnt.y() - maxPnt.y()) < 0.1:
+			if abs(minPnt.y() - maxPnt.y()) < 0.01:
 				break
 		return (minPnt.y() + maxPnt.y()) * 0.5
 
