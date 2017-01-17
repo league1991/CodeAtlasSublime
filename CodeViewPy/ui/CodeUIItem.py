@@ -66,7 +66,6 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		# 自定义数据
 		self.customData = {}
 
-		#print('kind str', kindStr)
 		if kindStr.find('function') != -1 or kindStr.find('method') != -1:
 			self.kind = ITEM_FUNCTION
 			# 找出调用者和被调用者数目
@@ -105,7 +104,6 @@ class CodeUIItem(QtGui.QGraphicsItem):
 						declareEnt.kindname().lower().find('struct') != -1:
 						name = declareEnt.name()
 						self.customData['className'] = name
-					# self.setToolTip(declareEnt.kindname() + "+" + name)
 				self.color = name2color(name)
 		elif self.kind == ITEM_CLASS:
 			self.color = name2color(self.name)
@@ -127,7 +125,6 @@ class CodeUIItem(QtGui.QGraphicsItem):
 	def buildDisplayName(self, name):
 		p = re.compile(r'([A-Z]*[a-z0-9]*_*~*)')
 		nameList = p.findall(name)
-		#print('disp name list', nameList)
 		partLength = 0
 		self.displayName = ''
 		fontMetrics = QtGui.QFontMetricsF(self.titleFont)
@@ -142,7 +139,6 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.fontSize = fontMetrics.size(QtCore.Qt.TextSingleLine, self.name)
 		self.lineHeight = fontMetrics.height()
 		self.fontSize.setHeight((fontMetrics.lineSpacing()*nLine - fontMetrics.leading()))
-		#print('disp name:\n', self.displayName,'---')
 
 	def buildCommentSize(self, comment):
 		if not comment:
@@ -236,18 +232,6 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		selectedOrHover = self.isSelected() or self.isHover
 
 		if r * lod > 1.0:
-			# if self.selectCounter > 0:
-			# 	gradR = r * 2
-			# 	gradient = QtGui.QRadialGradient(0,0,gradR,0,0);
-			# 	gradient.setColorAt(1.0/3.0, QtGui.QColor(255,233,155,100))
-			# 	gradient.setColorAt(1,       QtGui.QColor(255,233,155,0))
-			# 	#painter.setBrush(QtGui.QBrush(gradient))
-			# 	bright = min(255, math.log2(float(self.selectCounter+1.0)) * 20.0)
-			# 	print('bright', bright, self.selectCounter)
-			# 	painter.setBrush(QtGui.QBrush(QtGui.QColor(255,233,155,bright)))
-			# 	painter.setPen(QtCore.Qt.NoPen)
-			# 	painter.drawEllipse(QtCore.QPointF(0,0),gradR,gradR)
-
 			if selectedOrHover:
 				pen = QtGui.QPen(QtGui.QBrush(QtGui.QColor(255,157,38,255)), 20.0)#, QtCore.Qt.SolidLine, QtCore.Qt.SquareCap, QtCore.Qt.RoundJoin)
 				painter.setPen(pen)
@@ -257,11 +241,9 @@ class CodeUIItem(QtGui.QGraphicsItem):
 
 			clr = self.color
 			if self.isFunction():
-				#clr = clr.lighter(130)
 				painter.setBrush(clr)
 				nCaller = self.customData.get('nCaller', 0)
 				nCallee = self.customData.get('nCallee', 0)
-				# print('ncall', nCaller, nCallee)
 				if nCaller > 0:
 					cr = self.customData['callerR']
 					painter.drawPie(-r-cr, -cr, cr*2, cr*2, 160*16, 40*16)
@@ -270,8 +252,6 @@ class CodeUIItem(QtGui.QGraphicsItem):
 					painter.drawPie(r-cr, -cr, cr*2, cr*2, -20*16, 40*16)
 
 			clr = self.color
-			# if selectedOrHover:
-			# 	clr = clr.darker(130)
 			painter.setBrush(clr)
 			self.drawShape(painter)
 
@@ -305,8 +285,6 @@ class CodeUIItem(QtGui.QGraphicsItem):
 				rect.setSize(QtCore.QSizeF(100,500))
 				painter.drawText(rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, commentData)
 
-
-
 	def drawShape(self, painter):
 		r = self.getBodyRadius()
 		if self.kind == ITEM_FUNCTION:
@@ -315,14 +293,11 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			painter.drawPolygon(QtCore.QPoint(-r,0), QtCore.QPoint(r,-r), QtCore.QPoint(r,r))
 		elif self.kind == ITEM_CLASS:
 			painter.drawRect(-r,-r,r*2,r*2)
+		else:
+			painter.drawEllipse(-r,-r,r*2,r*2)
 
 	def contextMenuEvent(self, event):
-		#print ('context menu')
-
 		from UIManager import UIManager
-		#UIManager.instance().getScene().clearSelection()
-		#self.setSelected(True)
-
 		itemMenu = UIManager.instance().getMainUI().getItemMenu()
 		itemMenu.exec(event.screenPos())
 
@@ -346,7 +321,6 @@ class CodeUIItem(QtGui.QGraphicsItem):
 
 		# if event.button() == QtCore.Qt.MidButton:
 		# 	self.setCursor(QtCore.Qt.OpenHandCursor)
-
 
 	def mouseDoubleClickEvent(self, event):
 		super(CodeUIItem, self).mouseDoubleClickEvent(event)
@@ -380,7 +354,6 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.isHover = True
 
 	def dragEnterEvent(self, event):
-		#print('drag', event, event.source())
 		event.setAccepted(True)
 
 	def dropEvent(self, event):
@@ -396,7 +369,6 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			srcItem = scene.getNode(srcName)
 			if not srcItem:
 				return
-			#print('src is function', srcItem.isFunction() , self.isFunction())
 			if not srcItem.isFunction() or not self.isFunction():
 				return
 			scene.addCallPaths(srcName, self.uniqueName)
