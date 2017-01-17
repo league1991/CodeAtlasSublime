@@ -49,11 +49,11 @@ class SceneUpdateThread(QtCore.QThread):
 				self.updateSignal.emit()
 				t6 = time.time() * 1000
 				self.scene.releaseLock()
-				print('time %.0f %.0f %.0f %.0f %.0f %.0f' % (t1-t0,t2-t1,t3-t2,t4-t3,t5-t4,t6-t5))
+				# print('time %.0f %.0f %.0f %.0f %.0f %.0f' % (t1-t0,t2-t1,t3-t2,t4-t3,t5-t4,t6-t5))
 
 			duration = time.time() - begTime
 			remainTime = self.sleepTime - duration * 1000
-			print('remain time: %.0f' % remainTime)
+			# print('remain time: %.0f' % remainTime)
 			if remainTime > 0:
 				self.msleep(remainTime)
 

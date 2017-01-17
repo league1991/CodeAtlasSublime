@@ -571,57 +571,56 @@ class  SugiyamaLayout(object):
     def _solve_overlap(self, l):
         print("solve overlap")
         class Block:
-            def __init__(self, x, w):
-                self.l = x - 0.5 * w
+            def __init__(self, x, w, v = None):
+                self.x = x
                 self.w = w
-                self.parent = -1
+                self.parent = None
                 self.offset = 0
+                self.num = 1
+                self.v = v
             def left(self):
-                return self.l
+                return self.x - 0.5 * self.w
             def right(self):
-                return self.l + self.w
-            def x(self):
-                return self.l + 0.5 * self.w
+                return self.x + 0.5 * self.w
 
-        bl = [Block(v.view.xy[0], v.view.w + self.xspace) for v in l]
-        bl.sort(key = lambda block: block.left())
+        bl = [Block(v.view.xy[0], v.view.w + self.xspace, v) for v in l]
+        this_layer = bl
+        while True:
+            this_layer.sort(key = lambda block: block.x)
+            parent = Block(this_layer[0].x, this_layer[0].w)
+            this_layer[0].parent = parent
+            parent_layer = [parent]
 
-        # hierarchical layout
-        begIdx = 0
-        endIdx = len(bl)
-        while begIdx < endIdx:
-            # make parent identical with bl[begIdx]
-            bl[begIdx].parent = len(bl)
-            bl.append(Block(bl[begIdx].x(), bl[begIdx].w))
-
-            num_overlap = 0
-            for i in range(begIdx+1, endIdx):
-                parent = len(bl)-1
-                if bl[parent].right() > bl[i].left() + 0.01:
-                    # update bl[i] and its parent
-                    bl[i].offset = bl[parent].w
-                    bl[i].parent = len(bl)-1
-                    bl[parent].w += bl[i].w
-                    num_overlap += 1
+            overlapped = 0
+            for i in range(1, len(this_layer)):
+                if this_layer[i].left() < this_layer[i-1].right():
+                    # overlap
+                    this_layer[i].parent = parent
+                    this_layer[i].offset = parent.w
+                    parent.x = (parent.x * parent.num + this_layer[i].x) / (parent.num+1)
+                    parent.w += this_layer[i].w
+                    parent.num += 1
+                    overlapped += 1
                 else:
-                    # make new parent identical with bl[i]
-                    bl[i].parent = parent + 1
-                    bl.append(Block(bl[i].x(), bl[i].w))
+                    parent = Block(this_layer[i].x, this_layer[i].w)
+                    this_layer[i].parent = parent
+                    parent_layer.append(parent)
 
-            if num_overlap == 0:
+            print("iteration overlap", overlapped)
+            if overlapped == 0:
                 break
-            begIdx = endIdx
-            endIdx = len(bl)
+            this_layer = parent_layer
 
         # traverse layout tree and set coordinate
-        for i, v in enumerate(l):
-            v_left = 0
-            idx = i
-            while bl[idx].parent != -1:
-                v_left += bl[idx].offset
-                idx = bl[idx].parent
-            v_left += bl[idx].x()
-            v.view.xy = (v_left + (v.view.w + self.xspace) * 0.5, v.view.xy[1])
+        for i, block in enumerate(bl):
+            offset = 0
+            v = block.v
+            hw = block.w * 0.5
+            while block.parent != None:
+                offset += block.offset
+                block = block.parent
+            pos = block.left() + offset + hw
+            v.view.xy = (pos, v.view.xy[1])
 
     # mark conflicts between edges:
     # inner edges are edges between dummy nodes
