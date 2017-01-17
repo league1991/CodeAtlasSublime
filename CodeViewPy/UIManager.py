@@ -7,14 +7,10 @@ from SymbolScene import SymbolScene
 class UIManager(object):
 	uiMgr = None
 	def __init__(self):
-		#print('init ui manager')
-		# import traceback
-		# traceback.print_stack()
 		self.scene = CodeScene()
 		self.symScene = SymbolScene()
 		self.mainUI = None
 		self.uiSetting = UISettings()
-		#print(self)
 
 	@staticmethod
 	def instance():

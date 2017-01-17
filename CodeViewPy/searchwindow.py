@@ -28,7 +28,6 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 
 
 	def onSearch(self):
-		print('on search')
 		searchWord = self.inputEdit.text()
 		searchKind = self.kindEdit.text() 
 		searchFile = self.fileEdit.text()
@@ -36,25 +35,17 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 		db = DBManager.instance().getDB()
 		if not db:
 			return
-		print('db search', searchWord, searchKind, searchFile, searchLine)
 		ents = db.search(searchWord, searchKind)
 
-		print('before take item')
-		# while self.resultList.count() > 0:
-		# 	print('item count', self.resultList.count())
-		# 	self.resultList.takeItem(0)
 		self.resultList.clear()
 
 		bestEntList = []
 		if not ents:
 			return
-		print('ents')
 		for ent in ents:
 			if ent and ent.name() == searchWord:
 				bestEntList.append(ent)
-			#print('ent', ent.name(), ent.longname(), searchWord, type(ent.name), type(searchWord))
- 
-		print('best ent list 1')
+
 		if searchFile and len(ents) < 100:
 			entList = bestEntList
 			bestEntList = []
@@ -74,12 +65,10 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 					fileNameSet.add(fileEnt.longname())
 					lineDist = min(lineDist, math.fabs(line - searchLine))
 
-				#print('searchfile', searchFile, 'fileNameSet', fileNameSet)
 				if searchFile in fileNameSet:
 					bestEntList.append(ent)
 					bestEntDist.append(lineDist)
 
-			print('best ent list before line')
 			if searchLine > -1:
 				minDist = 10000000
 				bestEnt = None
@@ -88,10 +77,8 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 						minDist = bestEntDist[i]
 						bestEnt = bestEntList[i]
 				bestEntList = [bestEnt]
-				print('best ent list line', bestEntList)
 
 		bestItem = None
-		print('before add item')
 		for i, ent in enumerate(ents):
 			if i > 200:
 				break
@@ -99,16 +86,10 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 			if len(bestEntList) > 0 and ent == bestEntList[0]:
 				bestItem = resItem
 			self.resultList.addItem(resItem)
-		print('best item')
 		if bestItem:
 			self.resultList.setCurrentItem(bestItem)
 
-		print('end search')
-
 	def onAddToScene(self):
-		# if self.resultList.count() == 1:
-		# 	print('before set cur row')
-		# 	self.resultList.setCurrentRow(0)
 		item = self.resultList.currentItem()
 
 		from UIManager import UIManager
@@ -118,9 +99,7 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 			return
 
 		scene.acquireLock()
-		print('before code item')
 		res, codeItem = scene.addCodeItem(item.getUniqueName())
-		print('add code item')
 
 		if codeItem:
 			UIManager.instance().getScene().clearSelection()

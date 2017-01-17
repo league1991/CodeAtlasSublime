@@ -35,7 +35,6 @@ class SymbolWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 		forbidden = scene.getForbiddenSymbol()
 
 		self.forbiddenList.clear()
-		#print('update forbidden', forbidden)
 		itemList = [ForbiddenItem(uname, name) for uname, name in forbidden.items()]
 		itemList.sort(key = lambda item: item.text())
 		for item in itemList:
@@ -43,12 +42,10 @@ class SymbolWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 
 
 	def onDeleteForbidden(self):
-		print('delete forbidden')
 		item = self.forbiddenList.currentItem()
 
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
-		print('item', item)
 		if not item or not scene:
 			return
 

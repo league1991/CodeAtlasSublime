@@ -21,23 +21,17 @@ class SocketThread(QtCore.QThread):
 		return self.socketObj is not None
 
 	def run(self):
-		#print("begin to run")
 		from UIManager import UIManager
 		mainUI = UIManager.instance().getMainUI()
 		self.recvSignal.connect(mainUI.onSocketEvent, Qt.Qt.QueuedConnection)
-		#print("connect signal")
 
-		#print('run', self.name)
 		address = self.myAddress
 		self.socketObj = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.socketObj.bind(address)
-		#print("binded")
 
 		while True:
 			data, addr = self.socketObj.recvfrom(1024 * 5)
-			#print('recv data, addr')
 			dataStr = data.decode()
-			#print(dataStr)
 			self.recvSignal.emit(dataStr)
 
 		print ('close socket')
@@ -49,7 +43,6 @@ class SocketThread(QtCore.QThread):
 			if not inspect.isclass(exctype):
 				exctype = type(exctype)
 			res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(exctype))
-			print('terminate connection thread')
 
 			if res == 0:
 				raise ValueError("invalid thread id")

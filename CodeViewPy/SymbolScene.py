@@ -261,9 +261,7 @@ class SymbolScene(QtGui.QGraphicsScene):
 		begTheta = minTheta
 		childList = list(node.getChildDict().values())
 		childList.sort(key=lambda x:(x.defineFile, x.kind, x.getAttr(RefAttr.ATTR_REF).getCallerCalleeDiff()))
-		#print('-----------------------------------------------------')
 		for child in childList:
-			#print(child.defineFile)
 			childAttr = child.getAttr(UIAttr.ATTR_UI)
 			childAttr.maxR = nodeAttr.minR
 			newBegTheta = begTheta
@@ -319,15 +317,6 @@ class SymbolScene(QtGui.QGraphicsScene):
 
 	def updateNodeVisibility(self, lod):
 		t0 = time.clock()
-		# for uname, node in self.symbolDict.items():
-		# 	attr = node.getAttr(UIAttr.ATTR_UI)
-		# 	if not attr:
-		# 		continue
-		# 	item = attr.getUIItem()
-		# 	if not item:
-		# 		continue
-			#al = item.getMaxArcLength() * lod
-			#item.setVisible(al > 5)
 
 		r = self.baseRadius * lod
 		for item in self.items():
@@ -335,4 +324,3 @@ class SymbolScene(QtGui.QGraphicsScene):
 			item.setVisible(al > 2)
 
 		t1 = time.clock()
-		#print("time is ", (t1-t0))

@@ -4,18 +4,13 @@ import os
 from PyQt4 import QtCore, QtGui, uic, Qt
 import math
 import random
-import sys
-import traceback
-import threading
 import time
 import hashlib
 from json import *
 
-#class SceneUpdateThread(threading.Thread):
 class SceneUpdateThread(QtCore.QThread):
 	updateSignal = QtCore.pyqtSignal()
 	def __init__(self, scene, lock):
-		#threading.Thread.__init__(self)
 		super(SceneUpdateThread, self).__init__()
 		self.scene = scene
 		self.lock = lock
@@ -24,7 +19,7 @@ class SceneUpdateThread(QtCore.QThread):
 		self.edgeNum = 0
 		print(self.updateSignal)
 		self.updateSignal.connect(self.scene.update, Qt.Qt.QueuedConnection)
-		self.sleepTime = 60
+		self.sleepTime = 300
 
 	def setActive(self, isActive):
 		self.lock.acquire()
@@ -32,36 +27,35 @@ class SceneUpdateThread(QtCore.QThread):
 		self.lock.release()
 
 	def run(self):
-		#print('run qthread')
+		t0 = 0
 		while True:
+			begTime = time.time()
 			if self.isActive:
-				#print('acquire lock')
-				#self.lock.acquire()
+				#print('interval', time.time() - t0)
+				t0 = time.time() * 1000
 				self.scene.acquireLock()
-				#print('update thread begin -----------------------------------------')
-				#self.updatePos()
 				if self.itemSet != set(self.scene.itemDict.keys()) or self.edgeNum != len(self.scene.edgeDict) or self.scene.isLayoutDirty:
-					#print('before update layout')
 					self.updateLayeredLayoutWithComp()
 					self.scene.isLayoutDirty = False
-				#print('before move items')
+				t1 = time.time() * 1000
 				self.moveItems()
-				#print('before call order')
+				t2 = time.time() * 1000
 				self.updateCallOrder()
+				t3 = time.time() * 1000
 				self.scene.updateCurrentValidScheme()
+				t4 = time.time() * 1000
 				self.scene.updateCandidateEdge()
-				#print('before invalidate scene')
-				#self.scene.invalidate()
-				#print('before update scene')
-				#self.scene.update()
+				t5 = time.time() * 1000
 				self.updateSignal.emit()
-				#print('update thread end -----------------------------------------')
-				#self.lock.release()
+				t6 = time.time() * 1000
 				self.scene.releaseLock()
-				#print('lock release')
-			#time.sleep(0.08)
-			self.msleep(self.sleepTime)
-			#print('sleep')
+				print('time %.0f %.0f %.0f %.0f %.0f %.0f' % (t1-t0,t2-t1,t3-t2,t4-t3,t5-t4,t6-t5))
+
+			duration = time.time() - begTime
+			remainTime = self.sleepTime - duration * 1000
+			print('remain time: %.0f' % remainTime)
+			if remainTime > 0:
+				self.msleep(remainTime)
 
 	def updatePos(self): 
 		import ui.CodeUIItem as CodeUIItem
@@ -110,24 +104,8 @@ class SceneUpdateThread(QtCore.QThread):
 
 			force = dpLengthSq * 0.01
 			offset = dp * (1.0 / dpLength * min(force,1))
-			# if kindList[i] == CodeUIItem.ITEM_FUNCTION and kindList[j] == CodeUIItem.ITEM_VARIABLE:
-			# 	posList[j] = posJ + offset
-			# elif kindList[j] == CodeUIItem.ITEM_FUNCTION and kindList[i] == CodeUIItem.ITEM_VARIABLE:
-			# 	posList[i] = posJ + offset
-			# else:
 			posList[i] = posI - offset
 			posList[j] = posJ + offset
-
-		# for i in range(nPos):
-		# 	if kindList[i] == CodeUIItem.ITEM_FUNCTION and not isSourceItem[i]:
-		# 		posList[i] = posList[i] + QtCore.QPointF(1,0)
-
-		# i=0
-		# for itemName, item in self.scene.itemDict.items():
-		# 	#if not isSourceItem[i]:
-		# 	item.setPos(posList[i])
-		# 	#print(posList[i])
-		# 	i += 1
 
 		i=0
 		for itemName, item in self.scene.itemDict.items():
@@ -184,24 +162,12 @@ class SceneUpdateThread(QtCore.QThread):
 			vtxList.append(v)
 			vtxName2Id[name] = ithVtx
 
-		# for edgeKey, edge in self.scene.edgeDict.items():
-		# 	v1 = self.scene.itemDict[edgeKey[0]]
-		# 	v2 = self.scene.itemDict[edgeKey[1]]
-		# 	if v1.isFunction() and v2.isFunction():
-		# 		vtx2 = vtxList[vtxName2Id[edgeKey[1]]]
-		# 		vtx2.firstKey = hash(edge.file)
-		# 		vtx2.secondKey = edge.line
-		# 		vtx2.thirdKey = edge.column
-
 		for edgeKey, edge in self.scene.edgeDict.items():
 			v1 = vtxName2Id[edgeKey[0]]
 			v2 = vtxName2Id[edgeKey[1]]
 			vtxList[v1].outNodes.add(v2)
 			vtxList[v2].inNodes.add(v1)
 			edgeList.append((v1,v2))
-
-		#print('vtx list', vtxList)
-		#print('edge list', edgeList)
 
 		# 构造连通分量
 		remainSet = set([i for i in range(len(vtxList))])
@@ -234,17 +200,9 @@ class SceneUpdateThread(QtCore.QThread):
 					remainSet.discard(id)
 				ids = newIds
 
-			# 按节点被调用顺序排序, 没有用
-			# print('comp before sort', compMap)
-			# compMap.sort(key = lambda vid: vtxList[vid].secondKey + vtxList[vid].thirdKey / 200.0)
-			# for i, vid in enumerate(compMap):
-			# 	vtxList[vid].compIdx = i
-			# 	print(vtxList[vid].dispName, i)
-			# print('comp after sort', compMap)
 			# 增加一个连通分量
 			compList.append(compMap)
 
-		# print('comp list', compList)
 		from grandalf.graphs import Vertex, Edge, Graph
 		class VtxView(object):
 			def __init__(self, w, h):
@@ -266,22 +224,13 @@ class SceneUpdateThread(QtCore.QThread):
 				w = vtxList[oldId].getLayoutHeight()
 				vtx = Vertex(oldId)
 				height = 200
-				#print('height--------', height)
 				vtx.view = VtxView(w, height)
 				V.append(vtx)
 
-			#for i, vtx in enumerate(V):
-			#	print("(%s,%s)," % (vtx.view.w, vtx.view.h))
-
 			E = []
-			# print("edge")
 			for edgeKey in edgeList:
 				if vtxList[edgeKey[0]].comp == ithComp:
-					# print("(%s,%s)," % (vtxList[edgeKey[0]].compIdx, vtxList[edgeKey[1]].compIdx))
 					E.append(Edge(V[vtxList[edgeKey[0]].compIdx], V[vtxList[edgeKey[1]].compIdx]))
-
-			#print('V', len(V))
-			#print('E', E)
 
 			g = Graph(V,E)
 			from grandalf.layouts import SugiyamaLayout
@@ -297,7 +246,6 @@ class SceneUpdateThread(QtCore.QThread):
 			# 统计包围盒
 			for v in g.C[0].sV:
 				oldV = vtxList[v.data]
-				# print("pos:(%s,%s)" % (v.view.xy[0], v.view.xy[1]))
 				x= v.view.xy[1]
 				y= v.view.xy[0]
 				oldV.setLayoutPos(x,y)
@@ -307,7 +255,6 @@ class SceneUpdateThread(QtCore.QThread):
 				maxPnt[0] = max(maxPnt[0],oldV.getMaxX())
 				maxPnt[1] = max(maxPnt[1],oldV.getMaxY())
 
-			#print('bbox', minPnt, maxPnt)
 			for v in g.C[0].sV:
 				oldV = vtxList[v.data]
 				posInComp = oldV.getPos()
@@ -319,7 +266,6 @@ class SceneUpdateThread(QtCore.QThread):
 				bboxMax[1] = max(bboxMax[1], newPos[1])
 
 			offset = (offset[0], offset[1]+maxPnt[1]-minPnt[1]+packSpace)
-			#print('offset', offset)
 
 		# 设置四个角的item
 		cornerList = self.scene.cornerItem
@@ -336,7 +282,6 @@ class SceneUpdateThread(QtCore.QThread):
 	def updateCallOrder(self):
 		import ui.CodeUIItem
 		import ui.CodeUIEdgeItem
-		#print('update call order')
 		for key, edge in self.scene.edgeDict.items():
 			edge.orderData = None
 			edge.isConnectedToFocusNode = False
@@ -362,7 +307,6 @@ class SceneUpdateThread(QtCore.QThread):
 		import ui.CodeUIEdgeItem
 		isEdgeSelected = False
 		if isinstance(item, ui.CodeUIEdgeItem.CodeUIEdgeItem):
-			#print('not ui item')
 			srcItem = self.scene.itemDict.get(item.srcUniqueName, None)
 			dstItem = self.scene.itemDict.get(item.tarUniqueName, None)
 			isEdgeSelected = True
@@ -370,10 +314,8 @@ class SceneUpdateThread(QtCore.QThread):
 				srcItem.isConnectedToFocusNode = dstItem.isConnectedToFocusNode = True
 			item = srcItem
 		if not item or item.kind != ui.CodeUIItem.ITEM_FUNCTION:
-			#print('not function')
 			return
 
-		#print('edge list')
 		edgeList = []
 		xRange = [1e6, -1e6]
 		itemUniqueName = item.getUniqueName()
@@ -393,7 +335,6 @@ class SceneUpdateThread(QtCore.QThread):
 
 		if len(edgeList) <= 1:
 			return
-		#print('edge list2', edgeList)
 		basePos = 0
 		stepSize = 0
 		itemX = item.pos().x()
@@ -409,7 +350,6 @@ class SceneUpdateThread(QtCore.QThread):
 
 		edgeList.sort(key = lambda edge: edge.line - edge.column / 1000.0)
 
-		#print('edge item list', edgeList)
 		nEdge = len(edgeList)
 		levelSize = int(nEdge / 6) + 1
 		for i, edge in enumerate(edgeList):
@@ -423,10 +363,8 @@ class SceneUpdateThread(QtCore.QThread):
 				x = basePos + padding# + stepSize * int((nEdge-i-1) / levelSize)
 				y = edge.findCurveYPos(x)
 				edge.orderData = (i+1, QtCore.QPointF(x,y))
-		#print('update call end')
 
 	def moveItems(self):
-		#print('move items')
 		pos = QtCore.QPointF(0,0)
 		nSelected = 0
 		bboxMin = [1e6, 1e6]
@@ -445,8 +383,6 @@ class SceneUpdateThread(QtCore.QThread):
 			bboxMin[1] = min(bboxMin[1], newPos.y())
 			bboxMax[0] = max(bboxMax[0], newPos.x())
 			bboxMax[1] = max(bboxMax[1], newPos.y())
-			#print('offset', offset)
-
 
 		for name, item in self.scene.edgeDict.items():
 			item.buildPath()
@@ -471,9 +407,7 @@ class SceneUpdateThread(QtCore.QThread):
 					view.centerPnt = view.mapToScene(view.rect().center())
 					continue
 				pos = self.scene.getSelectedCenter()
-				# print('xratio', xRatio, yRatio)
 				if getattr(view, 'centerPnt', None) is not None:
-					#print('view center', view.centerPnt)
 					disp = view.centerPnt - pos
 					maxDisp = max(maxDisp, disp.manhattanLength() * moveRatio)
 					view.centerPnt = view.centerPnt * (1.0 - moveRatio) + pos * moveRatio
@@ -482,7 +416,7 @@ class SceneUpdateThread(QtCore.QThread):
 				view.centerPnt = view.mapToScene(view.rect().center())
 
 		if maxDisp > 0.1:
-			self.sleepTime = 10
+			self.sleepTime = 30
 		else:
 			self.sleepTime = 300
 
@@ -607,6 +541,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		if name not in self.scheme:
 			return False
 
+		self.acquireLock()
 		selectedNode = []
 		selectedEdge = []
 		if not selectScheme:
@@ -652,6 +587,8 @@ class CodeScene(QtGui.QGraphicsScene):
 				edge = self.edgeDict.get(uname)
 				if edge:
 					edge.setSelected(True)
+
+		self.releaseLock()
 
 	def showIthScheme(self, ithScheme, isSelected = False):
 		if ithScheme < 0 or ithScheme >= len(self.curValidScheme):
@@ -703,7 +640,6 @@ class CodeScene(QtGui.QGraphicsScene):
 			h = (hashVal & 0xff) / 255.0
 			s = ((hashVal >> 8) & 0xff) / 255.0
 			l = ((hashVal >> 16)& 0xff) / 255.0
-			#return QtGui.QColor.fromHslF(h,s * 0.3 + 0.4,l * 0.4 + 0.5)
 			return QtGui.QColor.fromHslF(h, 0.6+s*0.3, 0.3+l*0.2)
 
 		for schemeName in self.curValidScheme:
@@ -818,24 +754,18 @@ class CodeScene(QtGui.QGraphicsScene):
 		return self.autoFocus and self.autoFocusToggle
 
 	def event(self, eventObj):
-		#print('CodeScene. event', self, eventObj)
 		if getattr(self, 'lock', None):
 			self.lock.acquire()
-			#print('code scene locked')
 			res = super(CodeScene, self).event(eventObj)
 			self.lock.release()
-			#print('code scene unlocked')
 
 			return res
-		#print('super codescene event')
 		return super(CodeScene, self).event(eventObj)
 
 	def setAlphaFromLru(self):
 		ithItem = 0
 		for itemKey in self.itemLruQueue:
 			item = self.itemDict.get(itemKey, None)
-			# if item:
-			# 	item.setOpacity(1.0 - float(ithItem) / self.lruMaxLength)
 			ithItem += 1
 
 	def deleteLRU(self, itemKeyList):
@@ -998,7 +928,6 @@ class CodeScene(QtGui.QGraphicsScene):
 		if not node:
 			return
 
-		#print('do delete code item', node, node.name)
 		deleteEdges = []
 		for edgeKey in self.edgeDict.keys():
 			if edgeKey[0] == uniqueName or edgeKey[1] == uniqueName:
@@ -1054,11 +983,8 @@ class CodeScene(QtGui.QGraphicsScene):
 		lastItem = self.itemLruQueue[-1]
 		lastPos = self.itemDict[lastItem].pos()
 		self._doDeleteCodeItem(lastItem)
-		#print('delte code item end')
 		self.deleteLRU([lastItem])
-		#print('delete lru end ')
 		self.lock.release()
-		#print('clear old item end ----------')
 
 		if lastPos:
 			self.selectNearestItem(lastPos)
@@ -1097,8 +1023,6 @@ class CodeScene(QtGui.QGraphicsScene):
 	def deleteSelectedItems(self, addToStop = True):
 		self.lock.acquire()
 
-		#print('acquire lock -----------------------------------------', self.lock)
-
 		itemList = []
 		lastPos = None
 		for itemKey, item in self.itemDict.items():
@@ -1134,12 +1058,9 @@ class CodeScene(QtGui.QGraphicsScene):
 						break
 
 		if itemList:
-			#print('do delete code item')
 			for itemKey in itemList:
 				self._doDeleteCodeItem(itemKey)
-			#print('delete lru')
 			self.deleteLRU(itemList)
-			#print('remove item lru')
 			self.removeItemLRU()
 
 		edgeList = []
@@ -1153,25 +1074,19 @@ class CodeScene(QtGui.QGraphicsScene):
 		if lastFunction:
 			res = self.selectOneItem(lastFunction)
 		elif lastPos:
-			#print('select nearest item')
 			res = self.selectNearestItem(QtCore.QPointF(lastPos.x(), lastPos.y()))
 
 		if res:
 			self.showInEditor()
-
-		#print('before release')
 		self.lock.release()
-		#print('release lock -----------------------------------------', self.lock)
 
 	def getNode(self, uniqueName):
 		node = self.itemDict.get(uniqueName, None)
 		return node
 
 	def findNeighbour(self, mainDirection = (1.0,0.0)):
-		#print('find neighbour begin', mainDirection)
 		itemList = self.selectedItems()
 		if not itemList:
-			#print('no item', itemList)
 			return
 
 		from ui.CodeUIItem import CodeUIItem
@@ -1183,11 +1098,8 @@ class CodeScene(QtGui.QGraphicsScene):
 		else:
 			minItem = self.findNeighbourForEdge(centerItem, mainDirection)
 
-		#from UIManager import UIManager
-		#print('find nei', minItem)
 		if minItem:
 			if self.selectOneItem(minItem):
-				#print('show in editor------')
 				self.showInEditor()
 
 	def updateCandidateEdge(self):
@@ -1262,9 +1174,9 @@ class CodeScene(QtGui.QGraphicsScene):
 
 		percent = 0.5
 		if self.isSourceCandidate:
-			percent = 0.05
+			percent = 0.2
 		else:
-			percent = 0.95
+			percent = 0.8
 		centerPos = centerItem.pointAtPercent(percent)
 
 		srcPos, tarPos = centerItem.getNodePos()
@@ -1290,8 +1202,6 @@ class CodeScene(QtGui.QGraphicsScene):
 				continue
 			if not (edgeKey[0] in centerKey or edgeKey[1] in centerKey):
 				continue
-			# if not item.isXBetween(centerPos.x()):
-			# 	continue
 			y = item.findCurveYPos(centerPos.x())
 			dPos = QtCore.QPointF(centerPos.x(), y) - centerPos
 			cosVal = (dPos.x() * mainDirection[0] + dPos.y() * mainDirection[1]) / \
@@ -1315,35 +1225,6 @@ class CodeScene(QtGui.QGraphicsScene):
 		minNodeConnected = None
 		minNodeVal = 1.0e12
 		minNode = None
-		# for uname, item in self.itemDict.items():
-		# 	if item is centerItem:
-		# 		continue
-		# 	dPos = item.pos() - centerPos
-		# 	cosVal = (dPos.x() * mainDirection[0] + dPos.y() * mainDirection[1]) / \
-		# 			 math.sqrt(dPos.x()*dPos.x() + dPos.y()*dPos.y()+1e-5)
-		# 	if cosVal < 0.6:
-		# 		continue
-
-		# 	xProj = dPos.x()*mainDirection[0] + dPos.y()*mainDirection[1]
-		# 	yProj = dPos.x()*mainDirection[1] - dPos.y()*mainDirection[0]
-
-		# 	xProj /= 2.0
-		# 	dist = xProj * xProj + yProj * yProj
-
-		# 	# 检查与当前边是否连接
-		# 	isEdged = False
-		# 	if item in (centerItem.srcUniqueName, centerItem.tarUniqueName):
-		# 		isEdged = True
-
-		# 	if isEdged:
-		# 		if dist < minNodeValConnected:
-		# 			minNodeValConnected = dist
-		# 			minNodeConnected = item
-		# 	else:
-		# 		if dist < minNodeVal:
-		# 			minNodeVal = dist
-		# 			minNode = item
-
 		minEdgeVal *= 3
 		minNodeVal *= 2
 
@@ -1378,7 +1259,6 @@ class CodeScene(QtGui.QGraphicsScene):
 			dPos = item.getMiddlePos() - centerPos
 			cosVal = (dPos.x() * mainDirection[0] + dPos.y() * mainDirection[1]) / \
 					 math.sqrt(dPos.x()*dPos.x() + dPos.y()*dPos.y()+1e-5)
-			#print('cosVal', cosVal, item.getMiddlePos(), dPos)
 			if cosVal < 0.2:
 				continue
 			xProj = dPos.x()*mainDirection[0] + dPos.y()*mainDirection[1]
@@ -1395,7 +1275,6 @@ class CodeScene(QtGui.QGraphicsScene):
 					minEdgeVal = dist
 					minEdge = item
 
-		#print('min edge val', minEdgeVal, minEdge)
 		# 找出最近的节点
 		minNodeValConnected = 1.0e12
 		minNodeConnected = None
@@ -1466,17 +1345,8 @@ class CodeScene(QtGui.QGraphicsScene):
 				minItem = itemList[i]
 
 		return minItem
-		# if minEdge and minEdgeVal < min(minValEdged, minValUnedged):
-		# 	minItem = minEdge
-		# elif minItemEdged and minItemUnedged:
-		# 	minItem = minItemEdged if minValEdged < minValUnedged else minItemUnedged
-		# elif minItemEdged:
-		# 	minItem = minItemEdged
-		# elif minItemUnedged:
-		# 	minItem = minItemUnedged
 
 	def selectOneItem(self, item):
-		# print('select on item')
 		if not item:
 			return False
 		item.setSelected(True)
@@ -1487,10 +1357,6 @@ class CodeScene(QtGui.QGraphicsScene):
 		else:
 			item.setSelected(False)
 			return False
-
-		# for view in self.views():
-		# 	view.centerOn(item)
-		# 	view.invalidateScene()
 
 	def selectNearestItem(self, pos):
 		minDist = 1e12
@@ -1521,8 +1387,6 @@ class CodeScene(QtGui.QGraphicsScene):
 				return
 
 			refs = entity.refs('definein')
-			# for r in refs:
-			# 	print('r:', r.kindname(), r.ent().name(), r.ent().kindname())
 			if not refs:
 				refs = entity.refs('declarein')
 			if not refs:
@@ -1537,7 +1401,6 @@ class CodeScene(QtGui.QGraphicsScene):
 			line = ref.line()
 			column = ref.column()
 			fileName = fileEnt.longname()
-			#print('file ----', line, column, fileName, ref.kind(), ref.kindname())
 		elif isinstance(item, CodeUIEdgeItem):
 			line = item.line
 			column = item.column
@@ -1577,7 +1440,6 @@ class CodeScene(QtGui.QGraphicsScene):
 
 	def addCallPaths(self, srcName = '', tarName = ''):
 		self.lock.acquire()
-		#print('add call path', srcName, tarName)
 		if not srcName or not tarName:
 			itemList = self.selectedItems()
 			srcName, tarName = itemList[0].getUniqueName(), itemList[1].getUniqueName()
@@ -1589,7 +1451,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.removeItemLRU()
 		self.lock.release()
 
-	def _addRefs(self, refStr, entStr, inverseEdge = False):
+	def _addRefs(self, refStr, entStr, inverseEdge = False, maxCount = -1):
 		from db.DBManager import DBManager
 		from ui.CodeUIItem import CodeUIItem
 		dbObj = DBManager.instance().getDB()
@@ -1597,44 +1459,50 @@ class CodeScene(QtGui.QGraphicsScene):
 		itemList = self.selectedItems()
 
 		refNameList = []
-
-
 		for item in itemList:
 			if not isinstance(item, CodeUIItem):
 				continue
 			uniqueName = item.getUniqueName()
 			entNameList, refList = dbObj.searchRefEntity(uniqueName, refStr, entStr)
-			refNameList += entNameList
-			for ithRef, entName in enumerate(entNameList):
-				refObj = refList[ithRef]
+
+			# add to candidate
+			candidateList = []
+			for ithEnt, entName in enumerate(entNameList):
+				refObj = refList[ithEnt]
+				entObj = refObj.ent()
+				# get lines
+				metricRes = entObj.metric(('CountLine',))
+				metricLine = metricRes.get('CountLine',1)
+				line = metricLine if metricLine else 0
+				candidateList.append([entName, refObj, line])
+
+			# sort candidate
+			if maxCount > 0:
+				candidateList.sort(key = lambda element: element[2], reverse=True)
+
+			addedList = []
+			for ithRef, candidate in enumerate(candidateList):
+				entName = candidate[0]
+				refObj  = candidate[1]
 				res, refItem = scene._doAddCodeItem(entName)
+
+				if res:
+					addedList.append(entName)
 				if inverseEdge:
 					scene._doAddCodeEdgeItem(uniqueName, entName, {'dbRef':refObj})
 				else:
 					scene._doAddCodeEdgeItem(entName, uniqueName, {'dbRef':refObj})
 
-		# for uname, item in self.itemDict.items():
-		# 	# 再增加与现有节点的联系
-		# 	allEntNameList = dbObj.searchRefEntity(uname, '', '', True)
-		# 	for entName in allEntNameList:
-		# 		if entName not in self.itemDict:
-		# 			continue
-		# 		inEdgeDict = False
-		# 		for edgeKey in self.edgeDict.keys():
-		# 			if entName in edgeKey and uname in edgeKey:
-		# 				inEdgeDict = True
-		# 				break
-		# 		if inEdgeDict:
-		# 			continue
-		#
-		# 		scene._doAddCodeEdgeItem(entName, uname)
+				if len(addedList) >= maxCount > 0:
+					break
+			refNameList += addedList
 
 		return refNameList
 
 
-	def addRefs(self, refStr, entStr, inverseEdge = False):
+	def addRefs(self, refStr, entStr, inverseEdge = False, maxCount = -1):
 		self.lock.acquire()
-		refNameList = self._addRefs(refStr, entStr, inverseEdge)
+		refNameList = self._addRefs(refStr, entStr, inverseEdge, maxCount)
 		self.updateLRU(refNameList)
 		self.removeItemLRU()
 		self.lock.release()
@@ -1685,11 +1553,9 @@ class CodeScene(QtGui.QGraphicsScene):
 			posList[i] = posI - offset
 			posList[j] = posJ + offset
 
-		#print('-------- result -------- ')
 		i=0
 		for itemName, item in self.itemDict.items():
 			item.setPos(posList[i])
-			#print(posList[i])
 			i += 1
 
 

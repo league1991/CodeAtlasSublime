@@ -11,7 +11,6 @@ class CodeView(QtGui.QGraphicsView):
 		super(CodeView, self).__init__(*args)
 		from UIManager import UIManager
 		self.setScene(UIManager.instance().getScene())
-		#self.setInteractive(True)
 		self.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
 		self.setCacheMode(QtGui.QGraphicsView.CacheNone)
 		#self.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
@@ -32,10 +31,7 @@ class CodeView(QtGui.QGraphicsView):
  
 		self.updateTimer = QtCore.QTimer()
 		self.updateTimer.setInterval(70)
-		#print('connect')
 		self.connect(self.updateTimer, QtCore.SIGNAL('timeout()'), self, QtCore.SLOT('updateView()'))
-		#print('connect end')
-		#self.updateTimer.start()
 		self.centerPnt = QtCore.QPointF()
 		self.scale(0.6,0.6)
 		self.brushRadius = 8
@@ -45,18 +41,13 @@ class CodeView(QtGui.QGraphicsView):
 
 	@QtCore.pyqtSlot()
 	def updateView(self):
-		print('update view begin ')
 		scene = self.scene()
 		if scene:
-			#print('update view')
 			scene.acquireLock()
-
 			pos = scene.getSelectedCenter()
 			self.centerPnt = self.centerPnt * 0.97 + pos * 0.03
 			self.centerOn(self.centerPnt) 
 			scene.releaseLock()
-			#self.viewport().update()
-		#print('update view end ')
 
 	def keyPressEvent(self, event):
 		from UIManager import UIManager
@@ -111,22 +102,12 @@ class CodeView(QtGui.QGraphicsView):
 				mainUI.toggleSelectedEdgeToScheme([9, True])
 		else:
 			super(CodeView, self).keyPressEvent(event)
-		# elif event.key() == QtCore.Qt.Key_Control:
-		# 	#print('ctrl pressed')
-		# 	self.isBrushSelectMode = True
-		# 	self.setCursor(QtCore.Qt.BlankCursor)
-		# elif event.key() == QtCore.Qt.Key_Shift:
-		# 	self.isBrushDeselectMode = True
-		# 	self.setCursor(QtCore.Qt.BlankCursor)
-		# 	else:
-		# 		super(CodeView, self).keyPressEvent(event)
 		self.viewport().update()
 
 	def keyReleaseEvent(self, event):
 		self.setCursor(QtCore.Qt.ArrowCursor)
 		if event.key() == QtCore.Qt.Key_Control:
 			self.isBrushSelectMode = False
-			#print('ctrl release')
 		elif event.key() == QtCore.Qt.Key_Shift:
 			self.isBrushDeselectMode = False
 		else:
@@ -137,9 +118,6 @@ class CodeView(QtGui.QGraphicsView):
 		self.isMousePressed = True
 		item = self.itemAt(self.mousePressPnt)
 		self.isFrameSelectMode = (not item) and (not self.isBrushSelectMode) and (not self.isBrushDeselectMode)
-		#print('is frame select', self.isFrameSelectMode)
-		# if item:
-		# 	item.mousePressEvent(event)
 
 		modifiers = QtGui.QApplication.keyboardModifiers()
 		if not self.isBrushSelectMode and not self.isBrushDeselectMode:
@@ -171,7 +149,6 @@ class CodeView(QtGui.QGraphicsView):
 		#self.invalidateScene(self.scene().sceneRect())
 		#self.update()
 		self.viewport().update()
-		#print('mouse move end ')
 
 	def mouseReleaseEvent(self, event):
 		self.mouseCurPnt = event.pos()
@@ -197,7 +174,6 @@ class CodeView(QtGui.QGraphicsView):
 		super(CodeView, self).mouseReleaseEvent(event)
 
 	def wheelEvent(self, event):
-		#print('wheel begin ')
 		posScene = self.mapToScene(event.pos())
 		factor = 1.001 ** event.delta()
 		self.scale(factor, factor)
@@ -208,10 +184,8 @@ class CodeView(QtGui.QGraphicsView):
 		self.verticalScrollBar().setValue(mov.x() + self.verticalScrollBar().value())
 
 		self.centerPnt = self.mapToScene(self.viewport().rect().center())
-		#print('wheel end ')
 
 	def drawForeground(self, painter, rectF):
-		#print('draw foregrpund begin ')
 		super(CodeView, self).drawForeground(painter, rectF)
 
 		if self.isFrameSelectMode:
@@ -242,8 +216,6 @@ class CodeView(QtGui.QGraphicsView):
 
 		self.drawScheme(painter, rectF)
 		self.drawLegend(painter, rectF)
-		#print('draw foregrpund end')
-		#return True
 
 	def drawScheme(self, painter, rectF):
 		from UIManager import UIManager
@@ -255,7 +227,6 @@ class CodeView(QtGui.QGraphicsView):
 		painter.setTransform(QtGui.QTransform())
 		painter.setFont(self.hudFont)
 		colorList = scene.getCurrentSchemeColorList()
-		#print('schemelist', schemeList)
 		cw = 10
 		y  = 10
 
@@ -280,7 +251,6 @@ class CodeView(QtGui.QGraphicsView):
 			painter.setPen(QtGui.QPen(QtGui.QColor(255,255,255,255),1))
 			painter.drawText(QtCore.QRect(80,y-1,maxWidth,cw+3), QtCore.Qt.AlignRight | QtCore.Qt.AlignTop, schemeName)
 			y += cw + 2
-
 
 	def drawLegend(self, painter, rectF):
 		painter.setTransform(QtGui.QTransform())
@@ -333,13 +303,9 @@ class CodeView(QtGui.QGraphicsView):
 			if not item:
 				continue
 
-
-
-
 	def paintEvent(self, QPaintEvent):
-		#print('paint event begin ')
 		scene = self.scene()
 		scene.acquireLock()
+		t0 = time.time()
 		QtGui.QGraphicsView.paintEvent(self, QPaintEvent)
 		scene.releaseLock()
-		#print('paint event end ')
