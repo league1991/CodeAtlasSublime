@@ -538,7 +538,7 @@ class  SugiyamaLayout(object):
         # vertical coordinate assigment of all nodes:
         Y = 0
         overlapped = False
-        for l in self.layers:
+        for ith_layer, l in enumerate(self.layers):
             dY = max([v.view.h/2. for v in l])
             for v in l:
                 vx = sorted(self.grx[v].x)
@@ -606,7 +606,6 @@ class  SugiyamaLayout(object):
                     this_layer[i].parent = parent
                     parent_layer.append(parent)
 
-            print("iteration overlap", overlapped)
             if overlapped == 0:
                 break
             this_layer = parent_layer

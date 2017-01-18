@@ -1126,7 +1126,7 @@ class CodeScene(QtGui.QGraphicsScene):
 				continue
 			if edgeKey[0] == centerItem.srcUniqueName:
 				srcEdgeList.append(edgeKey)
-			elif edgeKey[1] == centerItem.tarUniqueName:
+			elif edgeKey[1] == centerItem.tarUniqueName and edgeKey[0] != centerItem.tarUniqueName:
 				tarEdgeList.append(edgeKey)
 
 		self.isSourceCandidate = True

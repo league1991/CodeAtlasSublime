@@ -43,7 +43,7 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 		if not ents:
 			return
 		for ent in ents:
-			if ent and ent.name() == searchWord:
+			if ent and searchWord in ent.longname():
 				bestEntList.append(ent)
 
 		if searchFile and len(ents) < 100:
@@ -83,7 +83,7 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 			if i > 200:
 				break
 			resItem = ResultItem(ent)
-			if len(bestEntList) > 0 and ent == bestEntList[0]:
+			if len(bestEntList) > 0 and ent == bestEntList[0] or len(bestEntList) == 1:
 				bestItem = resItem
 			self.resultList.addItem(resItem)
 		if bestItem:
