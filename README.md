@@ -18,19 +18,19 @@ Press `Alt+Up/Down/Left/Right` in Sublime Text to jump to neighbour items
 Find Callers/Callees
 --------------------
 
-Press `Alt+C/V` to find callers or callees
+Press `Alt+C/V` to find callers or callees.
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/call.gif)  
  
 Find Class Hierarchy
 --------------------
 
-Press `Alt+B` to find base and derived class
+Press `Alt+B` to find base and derived class.
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/class.gif)  
  
 Find Overloaded Functions
 -------------------------
 
-Press `Alt+O` to find overloaded functions
+Press `Alt+O` to find overloaded functions.
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/overload.gif)  
  
 Find Class Member
@@ -43,14 +43,14 @@ Press `Alt+M` several times to see smaller member functions.
 Find Variable Usage
 -------------------
 
-Press `Alt+U` to find all functions that use selected variable
+Press `Alt+U` to find all functions that use selected variable.
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/usage.gif)  
  
 Save / Load Relationship Graph
 ------------------------------
 
-Press `Alt+Num` to show relationship graph listed at the top left corner
-Press `Ctrl+Num` to add selected edge to a relationship graph
+Press `Alt+Num` to show relationship graph listed at the top left corner.
+Press `Ctrl+Num` to add selected edge to a relationship graph.
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/graph.gif)  
 
 #Setup
