@@ -13,7 +13,7 @@ Source code and detailed user manual in https://github.com/league1991/CodeAtlasS
 Navigate
 --------
 
-Press `Alt+Up/Down/Left/Right` in Sublime Text to jump to new functions
+Press `Alt+Up/Down/Left/Right` in Sublime Text to jump to neighbour items
 
 Find Callers/Callees
 --------------------
