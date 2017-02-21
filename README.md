@@ -51,7 +51,9 @@ Press Ctrl+Num to add selected edge to a relationship graph
 
 #Setup
 
-1.Install Understand (home page https://scitools.com)
+1.Install Dependencies
+
+  Install Understand (home page https://scitools.com)
 
   Install Sublime Text (home page http://www.sublimetext.com/)
   
