@@ -11,6 +11,7 @@ Using this plugin one can navigate the code easily.
 Source code and detailed user manual in https://github.com/league1991/CodeAtlasSublime .
  
 Find Callers/Callees
+--------------------
 Press Alt+C/V to find callers or callees
 Press Alt+Up/Down/Left/Right in Sublime Text to jump to new functions
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/call.gif)  
