@@ -52,8 +52,11 @@ Press Ctrl+Num to add selected edge to a relationship graph
 #Setup
 
 1.Install Understand (home page https://scitools.com)
+
   Install Sublime Text (home page http://www.sublimetext.com/)
+  
   Install Python 3.4 (https://www.python.org/ftp/python/3.4.0/python-3.4.0.msi)
+  
   Install PyQt (https://sourceforge.net/projects/pyqt/files/PyQt4/PyQt-4.11.4/PyQt4-4.11.4-gpl-Py3.4-Qt4.8.7-x32.exe/download)
 
 2.Check out the code
