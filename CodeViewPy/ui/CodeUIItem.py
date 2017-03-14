@@ -260,7 +260,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 				painter.setPen(QtCore.Qt.NoPen)
 				painter.drawEllipse(QtCore.QPointF(0,0),2.5,2.5)
 
-		if r * lod > 3 or selectedOrHover:
+		if r * lod > 2 or selectedOrHover:
 			painter.scale(1.0/lod, 1.0/lod)
 			painter.setPen(QtGui.QPen()) 
 			painter.setFont(self.titleFont)
@@ -306,8 +306,8 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.displayScore += 1
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
-		if scene:
-			scene.autoFocus = False
+		# if scene:
+		# 	scene.autoFocus = False
 
 		# if event.button() == QtCore.Qt.MidButton:
 		# 	self.setCursor(QtCore.Qt.ClosedHandCursor)
@@ -316,8 +316,8 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		super(CodeUIItem, self).mouseReleaseEvent(event)
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
-		if scene:
-			scene.autoFocus = True
+		# if scene:
+		# 	scene.autoFocus = True
 
 		# if event.button() == QtCore.Qt.MidButton:
 		# 	self.setCursor(QtCore.Qt.OpenHandCursor)

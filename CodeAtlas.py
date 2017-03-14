@@ -111,10 +111,13 @@ class Show_in_atlas_Command(TextCommand):
 			line = self.view.rowcol(region.a)[0]+1
  
 			kind = '*'
-			if scope.find('variable') != -1:
+			print('scope', scope)
+			if scope.find('variable.function') != -1:
+				kind = 'function, member'
+			elif scope.find('entity.name.function') != -1:
+				kind = 'function, member'
+			elif scope.find('variable.other') != -1:
 				kind = 'variable, member'
-			elif scope.find('function') != -1:
-				kind = 'function'
 			elif scope.find('class') != -1:
 				kind = 'class'
 			# socket.remoteCall('showInAtlas', {'n':name, 'f':fileName,'k':kind, 'l':line})

@@ -607,6 +607,10 @@ class CodeScene(QtGui.QGraphicsScene):
 
 		edgeSet = set()
 		nodeSet = set()
+		for uname, item in self.itemDict.items():
+			if item.isSelected():
+				nodeSet.add(uname)
+
 		for uname, item in self.edgeDict.items():
 			item.schemeColorList = []
 			if item.isSelected():

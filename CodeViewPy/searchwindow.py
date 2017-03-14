@@ -32,6 +32,9 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 		searchKind = self.kindEdit.text() 
 		searchFile = self.fileEdit.text()
 		searchLine = self.lineBox.value()
+		print('-----------------------------------------------------------')
+		print('search word', searchWord)
+		print('search', searchFile)
 		db = DBManager.instance().getDB()
 		if not db:
 			return
@@ -63,9 +66,14 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 					line = ref.line()
 					column = ref.column()
 					fileNameSet.add(fileEnt.longname())
-					lineDist = min(lineDist, math.fabs(line - searchLine))
+					if fileEnt.longname() == searchFile:
+						lineDist = min(lineDist, math.fabs(line - searchLine))
 
-				if searchFile in fileNameSet:
+				for filename in fileNameSet:
+					print('filename', filename)
+
+				if searchFile in fileNameSet and ent.name() in searchWord:
+					print('in filename', ent.longname(), ent.name(), lineDist)
 					bestEntList.append(ent)
 					bestEntDist.append(lineDist)
 
@@ -83,7 +91,7 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 			if i > 200:
 				break
 			resItem = ResultItem(ent)
-			if len(bestEntList) > 0 and ent == bestEntList[0] or len(bestEntList) == 1:
+			if len(bestEntList) > 0 and ent == bestEntList[0]:
 				bestItem = resItem
 			self.resultList.addItem(resItem)
 		if bestItem:
