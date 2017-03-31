@@ -12,6 +12,10 @@ Source code and detailed user manual in https://github.com/league1991/CodeAtlasS
 
 Overview
 --------
+* **square** is a class
+* **disc** is a function
+* **triangle** is a variable
+
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/overview.png)  
 
 Navigate
