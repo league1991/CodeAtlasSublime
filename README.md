@@ -10,6 +10,10 @@ You can view a complete introduction in http://www.cnblogs.com/dydx/p/5393802.ht
 Using this plugin one can navigate the code easily.
 Source code and detailed user manual in https://github.com/league1991/CodeAtlasSublime .
 
+Overview
+--------
+![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/overview.gif)  
+
 Navigate
 --------
 
@@ -53,7 +57,8 @@ Press `Alt+Num` to show relationship graph listed at the top left corner.
 Press `Ctrl+Num` to add selected edge to a relationship graph.
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/graph.gif)  
 
-#Setup
+
+# Setup
 
 1.Install Dependencies
 
