@@ -12,7 +12,7 @@ Source code and detailed user manual in https://github.com/league1991/CodeAtlasS
 
 Overview
 --------
-![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/overview.gif)  
+![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/overview.png)  
 
 Navigate
 --------
