@@ -12,9 +12,11 @@ Source code and detailed user manual in https://github.com/league1991/CodeAtlasS
 
 Overview
 --------
-* **square** is a class
-* **disc** is a function
-* **triangle** is a variable
+* **Square** is a class.
+* **Disc** is a function.
+* **Triangle** is a variable.
+* Colors for these shapes represent different classes, whose name can be seen at the bottom-left corner.
+* Colors for edges represent different graphs, whose name and key short-cut can be seen at the top-left corner.
 
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/overview.png)  
 
