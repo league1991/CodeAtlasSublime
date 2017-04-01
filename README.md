@@ -31,6 +31,12 @@ Find Callers/Callees
 Press `Alt+C/V` to find callers or callees.
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/call.gif)  
  
+Find Call Graph
+--------------------
+
+Press `Middle Mouse Button`, Drag mouse from a function to another, all call paths will be shown. 
+![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/callGraph.gif)  
+
 Find Class Hierarchy
 --------------------
 
