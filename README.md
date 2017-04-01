@@ -10,6 +10,16 @@ You can view a complete introduction in http://www.cnblogs.com/dydx/p/5393802.ht
 Using this plugin one can navigate the code easily.
 Source code and detailed user manual in https://github.com/league1991/CodeAtlasSublime .
 
+Overview
+--------
+* **Square** is a class.
+* **Disc** is a function.
+* **Triangle** is a variable.
+* Colors for these shapes represent different classes, whose name can be seen at the bottom-left corner.
+* Colors for edges represent different graphs, whose name and key short-cut can be seen at the top-left corner.
+
+![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/overview.png)  
+
 Navigate
 --------
 
@@ -53,7 +63,8 @@ Press `Alt+Num` to show relationship graph listed at the top left corner.
 Press `Ctrl+Num` to add selected edge to a relationship graph.
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/graph.gif)  
 
-#Setup
+
+# Setup
 
 1.Install Dependencies
 
