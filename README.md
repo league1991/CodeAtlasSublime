@@ -24,8 +24,9 @@ Overview
 
 Navigate
 --------
-Move cursor onto function/class/variable name in Sublime Text Editor, the press `Alt+G` to show it on CodeAtlas.
-Press `Alt+Up/Down/Left/Right` in Sublime Text to jump to neighbour items
+Move cursor onto function/class/variable name in Sublime Text Editor, then press `Alt+G` to show it on CodeAtlas.
+
+Press `Alt+Up/Down/Left/Right` in Sublime Text to jump to neighbour items.
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/navigate.gif)  
 
 Find Callers/Callees
