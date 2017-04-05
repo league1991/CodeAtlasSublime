@@ -71,6 +71,11 @@ Press `Alt+Num` to show relationship graph listed at the top left corner.
 Press `Ctrl+Num` to add selected edge to a relationship graph.
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/graph.gif)  
 
+Add comment
+------------------------------
+
+Input your comment for functions/classes/variables in Symbol panel.
+![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/comment.gif) 
 
 # Setup
 
