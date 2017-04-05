@@ -24,6 +24,7 @@ Overview
 
 Navigate
 --------
+
 Move cursor onto function/class/variable name in Sublime Text Editor, then press `Alt+G` to show it on CodeAtlas.
 
 Press `Alt+Up/Down/Left/Right` in Sublime Text to jump to neighbour items.
@@ -69,8 +70,10 @@ Press `Alt+U` to find all functions that use selected variable.
 Save / Load Relationship Graph
 ------------------------------
 
-Press `Alt+Num` to show relationship graph listed at the top left corner.
 Press `Ctrl+Num` to add selected edge to a relationship graph.
+![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/addGraph.gif)  
+
+Press `Alt+Num` to show relationship graph listed at the top left corner.
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/graph.gif)  
 
 Add Comment
