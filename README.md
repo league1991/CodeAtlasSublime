@@ -4,11 +4,13 @@ Call graph visualization plugin of sublime editor
 CodeAtlas is a plugin of SublimeText, which allows one to explore the call graph conveniently. The plugin uses the code analysis tool Understand (https://scitools.com) to perform symbol/reference query task.
 
 Supported languages(not limited): Python,C/C++,Java. 
-
-You can view a complete introduction in http://www.cnblogs.com/dydx/p/5393802.html or in the wiki page(https://github.com/league1991/CodeAtlasSublime/wiki).
-
 Using this plugin one can navigate the code easily.
-Source code and detailed user manual in https://github.com/league1991/CodeAtlasSublime .
+
+Here is my blog:
+http://www.cnblogs.com/dydx/p/6299927.html
+
+Here are some introduction videos:
+https://www.youtube.com/watch?v=FScdHyxdNFw&list=PLN16zMWJLkHLgHhTJUIkwp5chgnFz9_NH
 
 Overview
 --------
