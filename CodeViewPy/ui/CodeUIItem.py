@@ -334,7 +334,12 @@ class CodeUIItem(QtGui.QGraphicsItem):
 	def mouseMoveEvent(self, event):
 		super(CodeUIItem, self).mouseMoveEvent(event)
 		if self.isSelected():
-			self.targetPos = QtCore.QPointF(self.pos().x(), self.pos().y())
+			# update target positions of all dragging items
+			from UIManager import UIManager
+			scene = UIManager.instance().getScene()
+			for uname, node in scene.itemDict.items():
+				if node.isSelected():
+					node.targetPos = QtCore.QPointF(node.pos().x(), node.pos().y())
 
 		if event.buttons().__int__() & QtCore.Qt.MidButton or event.buttons().__int__() & QtCore.Qt.RightButton:
 			print('event button:', event.buttons().__int__())

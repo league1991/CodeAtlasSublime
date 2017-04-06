@@ -226,7 +226,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.findRefs('call','function, method', True)
 
 	def onFindMembers(self):
-		self.findRefs('declare,define','variable, object', True)
+		self.findRefs('declare,define','variable, object', True, 1)
 		self.findRefs('declare,define','function', True, 1)
 		self.findRefs('declarein,definein', 'function,class', False)
 

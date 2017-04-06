@@ -25,8 +25,6 @@ class CodeView(QtGui.QGraphicsView):
 		self.mousePressPnt = None
 		self.mouseCurPnt = None
 		self.isFrameSelectMode = False
-		self.isBrushSelectMode = False
-		self.isBrushDeselectMode = False
 		self.isMousePressed = False
  
 		self.updateTimer = QtCore.QTimer()
@@ -106,10 +104,8 @@ class CodeView(QtGui.QGraphicsView):
 
 	def keyReleaseEvent(self, event):
 		self.setCursor(QtCore.Qt.ArrowCursor)
-		if event.key() == QtCore.Qt.Key_Control:
-			self.isBrushSelectMode = False
-		elif event.key() == QtCore.Qt.Key_Shift:
-			self.isBrushDeselectMode = False
+		if event.key() == QtCore.Qt.Key_Control or event.key() == QtCore.Qt.Key_Shift:
+			pass
 		else:
 			super(CodeView, self).keyReleaseEvent(event)
 
@@ -117,34 +113,19 @@ class CodeView(QtGui.QGraphicsView):
 		self.mouseCurPnt = self.mousePressPnt = event.pos()
 		self.isMousePressed = True
 		item = self.itemAt(self.mousePressPnt)
-		self.isFrameSelectMode = (not item) and (not self.isBrushSelectMode) and (not self.isBrushDeselectMode)
+		self.isFrameSelectMode = (not item)
 
 		modifiers = QtGui.QApplication.keyboardModifiers()
-		if not self.isBrushSelectMode and not self.isBrushDeselectMode:
+		if modifiers == QtCore.Qt.ControlModifier or modifiers == QtCore.Qt.ShiftModifier:
 			if item:
 				item.setSelected(not item.isSelected())
-			if modifiers == QtCore.Qt.ControlModifier or modifiers == QtCore.Qt.ShiftModifier:
-				pass
-			else:
-				super(CodeView, self).mousePressEvent(event)
 		else:
-			x = event.pos().x()
-			y = event.pos().y()
-			itemList = self.items(x-self.brushRadius, y-self.brushRadius, self.brushRadius*2, self.brushRadius*2)
-			for item in itemList:
-				item.setSelected(self.isBrushSelectMode)
+			super(CodeView, self).mousePressEvent(event)
 
 	def mouseMoveEvent(self, event):
 		self.mouseCurPnt = event.pos()
 		if self.isFrameSelectMode:
 			pass
-		elif self.isBrushSelectMode or self.isBrushDeselectMode:
-			if self.isMousePressed:
-				x = event.pos().x()
-				y = event.pos().y()
-				itemList = self.items(x-self.brushRadius, y-self.brushRadius, self.brushRadius*2, self.brushRadius*2)
-				for item in itemList:
-					item.setSelected(self.isBrushSelectMode)
 		super(CodeView,self).mouseMoveEvent(event)
 		#self.invalidateScene(self.scene().sceneRect())
 		#self.update()
@@ -199,21 +180,6 @@ class CodeView(QtGui.QGraphicsView):
 				painter.setBrush(QtGui.QBrush(QtGui.QColor(100,164,230,100)))
 				painter.setTransform(QtGui.QTransform())
 				painter.drawRect(topLeftX, topLeftY, width, height)
-		elif self.isBrushSelectMode and self.mouseCurPnt:
-			painter.setPen(QtGui.QPen(QtGui.QColor(100,164,230),1.0))
-			painter.setBrush(QtGui.QBrush(QtGui.QColor(100,164,230,100)))
-			painter.setTransform(QtGui.QTransform())
-			x = self.mouseCurPnt.x()
-			y = self.mouseCurPnt.y()
-			painter.drawEllipse(x-self.brushRadius, y-self.brushRadius, self.brushRadius*2, self.brushRadius*2)
-		elif self.isBrushDeselectMode and self.mouseCurPnt:
-			painter.setPen(QtGui.QPen(QtGui.QColor(242,98,101),1.0))
-			painter.setBrush(QtGui.QBrush(QtGui.QColor(242,98,101,100)))
-			painter.setTransform(QtGui.QTransform())
-			x = self.mouseCurPnt.x()
-			y = self.mouseCurPnt.y()
-			painter.drawEllipse(x-self.brushRadius, y-self.brushRadius, self.brushRadius*2, self.brushRadius*2)
-
 		self.drawScheme(painter, rectF)
 		self.drawLegend(painter, rectF)
 
