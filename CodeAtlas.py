@@ -119,7 +119,7 @@ class Show_in_atlas_Command(TextCommand):
 			elif scope.find('variable.other') != -1:
 				kind = 'variable, member'
 			elif scope.find('class') != -1:
-				kind = 'class'
+				kind = 'class, struct'
 			# socket.remoteCall('showInAtlas', {'n':name, 'f':fileName,'k':kind, 'l':line})
 			socket.remoteCall('showInAtlas', [name, kind, fileName, line])
 
