@@ -21,6 +21,7 @@ Overview
 * Colors for edges represent different graphs, whose name and key short-cut can be seen at the top-left corner.
 
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/overview.png)  
+![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/overview2.png)  
 
 Navigate
 --------
@@ -125,4 +126,3 @@ Input your comment for functions/classes/variables in Symbol panel.
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/setup/7.png)  
 
 10.Now you can use the key shortcuts above to explore the code!
-
