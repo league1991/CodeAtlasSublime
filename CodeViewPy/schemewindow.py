@@ -23,6 +23,10 @@ class SchemeWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 		self.showSchemeButton.clicked.connect(self.onShowScheme)
 		self.deleteSchemeButton.clicked.connect(self.onDeleteScheme)
 		self.schemeList.currentItemChanged.connect(self.onSchemeChanged)
+		self.filterEdit.textEdited.connect(self.onTextEdited)
+
+	def onTextEdited(self):
+		self.updateScheme()
 
 	def onSchemeChanged(self, currentItem, prevItem):
 		if currentItem:
@@ -35,15 +39,26 @@ class SchemeWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
-		scene.addOrReplaceScheme(schemeName)
-		self.updateScheme()
+		schemeNameList = scene.getSchemeNameList()
+		isAdd = True
+		if schemeName in schemeNameList:
+			button = QtGui.QMessageBox.question(self, "Add Scheme",
+												"\"%s\" already exists. Replace it?" % schemeName,
+												QtGui.QMessageBox.Ok | QtGui.QMessageBox.No)
+			if button != QtGui.QMessageBox.Ok:
+				isAdd = False
+
+		if isAdd:
+			scene.addOrReplaceScheme(schemeName)
+			self.updateScheme()
 
 	def onShowScheme(self):
 		item = self.schemeList.currentItem()
-		schemeName = item.getUniqueName()
-		if not schemeName:
+		if not item:
+			QtGui.QMessageBox.warning(self, "Warning", "Please select an item to show.")
 			return
 
+		schemeName = item.getUniqueName()
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
 		scene.acquireLock()
@@ -54,6 +69,7 @@ class SchemeWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 	def onDeleteScheme(self):
 		item = self.schemeList.currentItem()
 		if not item:
+			QtGui.QMessageBox.warning(self, "Warning", "Please select an item to delete.")
 			return
 
 		from UIManager import UIManager
@@ -65,7 +81,9 @@ class SchemeWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
 		nameList = scene.getSchemeNameList()
+		filter = self.filterEdit.text().lower()
 
 		self.schemeList.clear()
 		for name in nameList:
-			self.schemeList.addItem(SchemeItem(name))
+			if filter in name.lower():
+				self.schemeList.addItem(SchemeItem(name))

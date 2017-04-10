@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>336</width>
-    <height>263</height>
+    <width>361</width>
+    <height>353</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,13 +21,23 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>334</width>
-     <height>261</height>
+     <width>359</width>
+     <height>351</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout">
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Name</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="nameEdit"/>
+      </item>
       <item>
        <widget class="QPushButton" name="addSchemeButton">
         <property name="text">
@@ -35,6 +45,10 @@
         </property>
        </widget>
       </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
        <widget class="QPushButton" name="showSchemeButton">
         <property name="text">
@@ -52,16 +66,16 @@
      </layout>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QLabel" name="label">
+       <widget class="QLabel" name="label_2">
         <property name="text">
-         <string>Scheme Name</string>
+         <string>Filter</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="nameEdit"/>
+       <widget class="QLineEdit" name="filterEdit"/>
       </item>
      </layout>
     </item>

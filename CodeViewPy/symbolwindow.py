@@ -22,6 +22,10 @@ class SymbolWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 		self.addForbidden.clicked.connect(self.onAddForbidden)
 		self.deleteForbidden.clicked.connect(self.onDeleteForbidden)
 		self.updateCommentButton.clicked.connect(self.updateComment)
+		self.filterEdit.textEdited.connect(self.onTextEdited)
+
+	def onTextEdited(self):
+		self.updateForbiddenSymbol()
 
 	def onAddForbidden(self):
 		from UIManager import UIManager
@@ -33,10 +37,11 @@ class SymbolWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
 		forbidden = scene.getForbiddenSymbol()
+		filter = self.filterEdit.text().lower()
 
 		self.forbiddenList.clear()
-		itemList = [ForbiddenItem(uname, name) for uname, name in forbidden.items()]
-		itemList.sort(key = lambda item: item.text())
+		itemList = [ForbiddenItem(uname, name) for uname, name in forbidden.items() if filter in name.lower()]
+		itemList.sort(key = lambda item: item.text().lower())
 		for item in itemList:
 			self.forbiddenList.addItem(item)
 
