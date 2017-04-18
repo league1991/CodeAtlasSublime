@@ -1178,9 +1178,9 @@ class CodeScene(QtGui.QGraphicsScene):
 
 		percent = 0.5
 		if self.isSourceCandidate:
-			percent = 0.2
+			percent = 0.3
 		else:
-			percent = 0.8
+			percent = 0.7
 		centerPos = centerItem.pointAtPercent(percent)
 
 		srcPos, tarPos = centerItem.getNodePos()
