@@ -160,9 +160,11 @@ class DoxygenDB(QtCore.QObject):
 		if not element:
 			return None
 		if element.nodeName == 'compounddef':
+			name = ''
+			kind = element.getAttribute('kind')
 			for elementChild in element.childNodes:
 				if elementChild.nodeName == 'compoundname':
-					pass
+					name = elementChild.childNodes[0].data
 		elif element.tagName == 'memberdef':
 			pass
 
@@ -236,16 +238,15 @@ def printSymbolDict(sym, indent = 0):
 
 if __name__ == "__main__":
 	db = DoxygenDB()
-	db.open('I:/Programs/masteringOpenCV/Chapter3_MarkerlessAR/doc/xml/')
-	element = db._getXmlElement('main_8cpp_1aff21477595f55398a44d72df24d4d6c5')
+	# db.open('I:/Programs/masteringOpenCV/Chapter3_MarkerlessAR/doc/xml/')
+	# element = db._getXmlElement('main_8cpp_1aff21477595f55398a44d72df24d4d6c5')
+	# db.search('ARDrawingContext', 'class')
+	# db.search('drawCoordinateAxis', 'function')
+	# db.search('m_windowName', 'variable')
 
-	db.search('ARDrawingContext', 'class')
-	db.search('drawCoordinateAxis', 'function')
-	db.search('m_windowName', 'variable')
-	#db.open('C:/Users/me/AppData/Roaming/Sublime Text 3/Packages/CodeAtlas/codeatlassublime.udb')
-	#db.listFiles()
-	#root = db.buildSymbolTree()
-
-	#printSymbolDict(root)
-	#db.close()
+	db.open('D:/Code/NewRapidRT/rapidrt/doxygen/xml')
+	element = db._getXmlElement('classcpplint_1_1___block_info_1a02a0b48995a599f6b2bbaa6f16cca98a')
+	db.search('AGeometry', 'class')
+	db.search('getOrCreateAccelStruct', 'function')
+	db.search('m_pUserData', 'variable')
 
