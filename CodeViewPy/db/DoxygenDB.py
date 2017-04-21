@@ -49,28 +49,30 @@ class IndexItem(object):
 
 # Used by public APIs of DoxygenDB
 class Entity(object):
-	def __init__(self, id, name, kind):
+	def __init__(self, id, name, longName, kindName, metric):
 		self.id = id
-		self.name = name
-		self.kind = kind
+		self.shortName = name
+		self.longName = longName
+		self.kindName = kindName
+		self.metric = metric
 
 	def name(self):
-		return ''
+		return self.shortName
 
 	def longname(self):
-		return ''
+		return self.longName
 
 	def uniquename(self):
-		return ''
+		return self.id
 
 	def kindname(self):
-		return ''
+		return self.kindName
 
 	def refs(self):
-		return ''
+		return None
 
 	def metric(self):
-		return {'CountLine':0}
+		return {'CountLine':0}#self.metric
 
 class Reference(object):
 	def __init__(self):
@@ -156,15 +158,30 @@ class DoxygenDB(QtCore.QObject):
 
 		return None
 
+	def _parseLocationDict(self, element):
+		file = element.getAttribute('file')
+		line = int(element.getAttribute('line'))
+		column = int(element.getAttribute('column'))
+		start = int(element.getAttribute('bodystart'))
+		end = int(element.getAttribute('bodyend'))
+		return {'file': file, 'line': line, 'column': column, 'CountLine': end - start+1}
+
 	def _parseXmlElement(self, element):
 		if not element:
 			return None
 		if element.nodeName == 'compounddef':
 			name = ''
+			longName = ''
 			kind = element.getAttribute('kind')
+			metric = None
+			id = element.getAttribute('id')
 			for elementChild in element.childNodes:
 				if elementChild.nodeName == 'compoundname':
 					name = elementChild.childNodes[0].data
+					longName = name
+				elif elementChild.nodeName == 'location':
+					metric = self._parseLocationDict(elementChild)
+			return Entity(id, name, longName, kind, metric)
 		elif element.tagName == 'memberdef':
 			pass
 
