@@ -74,9 +74,9 @@ class IndexRefItem(object):
 		'member' : 1,
 		}
 
-	def __init__(self, srcItem, dstItem, refKindStr):
-		self.srcItem = srcItem
-		self.dstItem = dstItem
+	def __init__(self, srcId, dstId, refKindStr):
+		self.srcId = srcId
+		self.dstId = dstId
 		self.kind = IndexRefItem.kindDict.get(refKindStr, 0)
 
 # Used by public APIs of DoxygenDB
@@ -201,7 +201,7 @@ class DoxygenDB(QtCore.QObject):
 						memberId = member.getAttribute('refid')
 						memberItem = self.idInfoDict.get(memberId)
 						if memberItem and compoundItem:
-							refItem = IndexRefItem(compoundItem, memberItem, 'member')
+							refItem = IndexRefItem(compoundId, memberId, 'member')
 							memberItem.addRefItem(refItem)
 							compoundItem.addRefItem(refItem)
 
@@ -218,18 +218,19 @@ class DoxygenDB(QtCore.QObject):
 							referenceId = reference.getAttribute('refid')
 							referenceItem = self.idInfoDict.get(referenceId)
 							if memberItem and referenceItem:
-								refItem = IndexRefItem(memberItem, referenceItem, 'reference')
+								refItem = IndexRefItem(memberId, referenceId, 'reference')
 								memberItem.addRefItem(refItem)
 								referenceItem.addRefItem(refItem)
 
-						referencedbyList = memberDef.getElementsByTagName('referencedby')
-						for reference in referencedbyList:
-							referenceId = reference.getAttribute('refid')
-							referenceItem = self.idInfoDict.get(referenceId)
-							if memberItem and referenceItem:
-								refItem = IndexRefItem(referenceItem, memberItem, 'reference')
-								memberItem.addRefItem(refItem)
-								referenceItem.addRefItem(refItem)
+						# 'referenced by' relationship has no more information than 'reference'
+						# referencedbyList = memberDef.getElementsByTagName('referencedby')
+						# for reference in referencedbyList:
+						# 	referenceId = reference.getAttribute('refid')
+						# 	referenceItem = self.idInfoDict.get(referenceId)
+						# 	if memberItem and referenceItem:
+						# 		refItem = IndexRefItem(referenceId, memberId, 'reference')
+						# 		memberItem.addRefItem(refItem)
+						# 		referenceItem.addRefItem(refItem)
 
 	def _isCompound(self, refid):
 		return refid in self.compoundToIdDict.keys()
@@ -303,6 +304,8 @@ class DoxygenDB(QtCore.QObject):
 			return None
 
 	def open(self, fullPath):
+		if self._dbFolder:
+			self.close()
 		self._dbFolder = os.path.split(fullPath)[0]
 		self._readIndex()
 		self._readRefs()
@@ -380,36 +383,40 @@ class DoxygenDB(QtCore.QObject):
 
 		refEntityList = []
 		refRefList    = []
-		thisEntity = self.searchFromUniqueName(uniqueName)
 		refs = thisItem.getRefItemList()
-
 		for ref in refs:
-			otherItem = self.idInfoDict.get(ref.dstItem.id if ref.srcItem == thisItem else uniqueName)
+			otherId = ref.srcId
+			if ref.srcId == uniqueName:
+				otherId = ref.dstId
+			otherItem = self.idInfoDict.get(otherId)
 			if not otherItem:
 				continue
 			if len(entKindList) > 0 and otherItem.kind not in entKindList:
 				continue
-			otherEntity = self.searchFromUniqueName(otherItem.id)
+			otherEntity = self.searchFromUniqueName(otherId)
 			if not otherEntity:
 				continue
 
 			# match each ref kind
 			for refName in refNameList:
-				isAccepted = False
-
 				refKindName = refName
 				srcItem = thisItem
 				dstItem = otherItem
 				# exchange src and dst when get 'callby' 'useby' ...
-				if refKindName.endswith('by'):
+				if refKindName.endswith('by') or refKindName.endswith('in'):
 					refKindName = refKindName[0:-2]
 					srcItem = otherItem
 					dstItem = thisItem
 
+				# check edge direction
+				if srcItem.id != ref.srcId or dstItem.id != ref.dstId:
+					continue
+
+				isAccepted = False
 				if refKindName == 'call':
 					if  srcItem.kind == IndexItem.KIND_FUNCTION and dstItem.kind == IndexItem.KIND_FUNCTION:
 						isAccepted = True
-				elif refKindName == 'member':
+				elif refKindName == 'member' or refKindName == 'declare' or refKindName == 'define':
 					if  srcItem.kind  in (IndexItem.KIND_CLASS, IndexItem.KIND_STRUCT) and\
 						dstItem.kind in (IndexItem.KIND_CLASS, IndexItem.KIND_STRUCT, IndexItem.KIND_FUNCTION, IndexItem.KIND_VARIABLE, IndexItem.KIND_SIGNAL, IndexItem.KIND_SLOT):
 						isAccepted = True
@@ -424,7 +431,7 @@ class DoxygenDB(QtCore.QObject):
 
 		return refEntityList, refRefList
 
-	def searchRefEntity(self, uniqueName, refKindStr, entKindStr, isUnique = True):
+	def searchRefEntity(self, uniqueName, refKindStr = None, entKindStr = None, isUnique = True):
 		refEntityList, refRefList = self._searchRef(uniqueName, refKindStr, entKindStr, isUnique)
 		return refEntityList, refRefList
 

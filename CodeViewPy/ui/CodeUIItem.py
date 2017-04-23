@@ -22,13 +22,14 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		self.setFlag(QtGui.QGraphicsItem.ItemIsMovable)
 		self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable)
 		self.setFlag(QtGui.QGraphicsItem.ItemIsFocusable)
-		self.setAcceptDrops(True);
+		self.setAcceptDrops(True)
 		self.setAcceptHoverEvents(True)
 		self.uniqueName = uniqueName
 		from db.DBManager import DBManager
 		from UIManager import UIManager
 		scene = UIManager.instance().getScene()
-		entity = DBManager.instance().getDB().searchFromUniqueName(self.uniqueName)
+		dbObj = DBManager.instance().getDB()
+		entity = dbObj.searchFromUniqueName(self.uniqueName)
 		self.name = ''
 		self.displayName = ''
 		self.lines = 0
@@ -58,7 +59,6 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		if kindStr.find('function') != -1 or kindStr.find('method') != -1:
 			self.kind = ITEM_FUNCTION
 			# 找出调用者和被调用者数目
-			dbObj = DBManager.instance().getDB()
 			callerList = dbObj.searchRefEntity(self.uniqueName, 'callby','function, method', True)[0]
 			calleeList = dbObj.searchRefEntity(self.uniqueName, 'call','function, method', True)[0]
 			self.customData['nCaller'] = len(callerList)
@@ -80,17 +80,16 @@ class CodeUIItem(QtGui.QGraphicsItem):
 				self.color = QtGui.QColor(190,228,73)
 			else:
 				# defineList = entity.refs('definein')
-				defineList = dbObj.searchRef('definein')
+				defineList, defineRefList = dbObj.searchRefEntity(uniqueName, 'definein')
 				name = ''
 				hasDefinition = True
 				if not defineList:
 					# defineList = entity.refs('declarein')
-					defineList = dbObj.searchRef('declarein')
+					defineList, defineRefList = dbObj.searchRefEntity(uniqueName, 'declarein')
 					hasDefinition = False
 				self.customData['hasDef'] = hasDefinition
 				if defineList:
-					ref = defineList[0]
-					declareEnt = ref.ent()
+					declareEnt = defineList[0]
 					if declareEnt.kindname().lower().find('class') != -1 or \
 						declareEnt.kindname().lower().find('struct') != -1:
 						name = declareEnt.name()

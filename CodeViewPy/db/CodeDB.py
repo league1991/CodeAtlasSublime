@@ -70,7 +70,7 @@ class CodeDB(QtCore.QObject):
 			return None
 		return self._db.lookup_uniquename(uniqueName)
 
-	def searchRefEntity(self, uniqueName, refKindStr, entKindStr, isUnique = True):
+	def searchRefEntity(self, uniqueName, refKindStr = None, entKindStr = None, isUnique = True):
 		if not self._db:
 			return [],[]
 		ent = self._db.lookup_uniquename(uniqueName)
