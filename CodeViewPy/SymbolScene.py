@@ -279,8 +279,9 @@ class SymbolScene(QtGui.QGraphicsScene):
 		dbObj = DBManager.instance().getDB()
 
 		for uname, symbol in self.symbolDict.items():
-			unameList, refList = dbObj.searchRefEntity(uname, 'call', '*', True)
-			for tarUname in unameList:
+			entityList, refList = dbObj.searchRefEntity(uname, 'call', '*', True)
+			for ent in entityList:
+				tarUname = ent.uniquename()
 				self.callRef[(uname, tarUname)] = RefData(RefData.REF_CALL)
 
 	def pinSymbol(self, isPinned):

@@ -16,17 +16,6 @@ def name2color(name):
 	l = ((hashVal >> 16)& 0xff) / 255.0
 	return QtGui.QColor.fromHslF(h, 0.35+s*0.3, 0.4+l*0.15)
 
-def getFunctionColor(ent):
-	defineList = ent.refs('definein')
-	name = 'global'
-	if not defineList:
-		defineList = ent.refs('declarein')
-	if defineList:
-		ref = defineList[0]
-		declareEnt = ref.ent()
-		name = declareEnt.name()
-	return name2color(name)
-
 class CodeUIItem(QtGui.QGraphicsItem):
 	def __init__(self, uniqueName, parent = None, scene = None):
 		super(CodeUIItem, self).__init__(parent, scene)
@@ -90,11 +79,13 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			if not entity:
 				self.color = QtGui.QColor(190,228,73)
 			else:
-				defineList = entity.refs('definein')
+				# defineList = entity.refs('definein')
+				defineList = dbObj.searchRef('definein')
 				name = ''
 				hasDefinition = True
 				if not defineList:
-					defineList = entity.refs('declarein')
+					# defineList = entity.refs('declarein')
+					defineList = dbObj.searchRef('declarein')
 					hasDefinition = False
 				self.customData['hasDef'] = hasDefinition
 				if defineList:

@@ -1,11 +1,9 @@
-import mainwindow
 import sys
-from PyQt4 import QtCore, QtGui, uic
-from codescene import CodeScene
+from PyQt4 import QtGui
 from UIManager import UIManager
 
 if __name__ == "__main__":
-	# print('main:', sys.argv)
+	print('argv:', sys.argv)
 	app = QtGui.QApplication(sys.argv)
 
 	from db.DBManager import DBManager

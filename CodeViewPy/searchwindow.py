@@ -54,7 +54,8 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 			bestEntList = []
 			bestEntDist = []
 			for ent in entList:
-				refs = ent.refs()
+				# refs = ent.refs()
+				refs = db.searchRef(ent.uniquename())
 				if not refs:
 					continue
 				fileNameSet = set()

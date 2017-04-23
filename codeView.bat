@@ -1,2 +1,3 @@
+:: echo %1 %2
 cd ./CodeViewPy
-main
+python main.py %1 %2

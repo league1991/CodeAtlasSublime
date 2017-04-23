@@ -1,11 +1,14 @@
-import db.CodeDB as CodeDB
+# -*- coding: utf-8 -*-
 
 class DBManager(object):
 	dbMgr = None
 	atlasPort = 12346
 	sublimePort = 12345
 	def __init__(self):
-		self.db = CodeDB.CodeDB()
+		import db.CodeDB as CodeDB
+		import db.DoxygenDB as DoxygenDB
+		#self.db = CodeDB.CodeDB()
+		self.db = DoxygenDB.DoxygenDB()
 		from SocketThread import SocketThread
 		self.socket = SocketThread(('127.0.0.1', self.atlasPort),('127.0.0.1', self.sublimePort))
 

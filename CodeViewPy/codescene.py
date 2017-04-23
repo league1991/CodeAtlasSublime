@@ -1380,23 +1380,38 @@ class CodeScene(QtGui.QGraphicsScene):
 	def showInEditor(self):
 		from ui.CodeUIItem import CodeUIItem
 		from ui.CodeUIEdgeItem import CodeUIEdgeItem
+		from db.DBManager import DBManager
 		itemList = self.selectedItems()
 		if not itemList:
 			return
  
 		item = itemList[0]
 		if isinstance(item, CodeUIItem):
-			entity = item.getEntity()
-			if not entity:
+			# entity = item.getEntity()
+			# if not entity:
+			# 	return
+			db = DBManager.instance().getDB()
+			uname = item.getUniqueName()
+			if not db:
 				return
 
-			refs = entity.refs('definein')
+			# refs = entity.refs('definein')
+			# if not refs:
+			# 	refs = entity.refs('declarein')
+			# if not refs:
+			# 	refs = entity.refs('callby')
+			# if not refs:
+			# 	refs = entity.refs('useby')
+			# if not refs:
+			# 	return
+
+			refs = db.searchRef(uname, 'definein')
 			if not refs:
-				refs = entity.refs('declarein')
+				refs = db.searchRef(uname, 'declarein')
 			if not refs:
-				refs = entity.refs('callby')
+				refs = db.searchRef(uname, 'callby')
 			if not refs:
-				refs = entity.refs('useby')
+				refs = db.searchRef(uname, 'useby')
 			if not refs:
 				return
 
@@ -1467,13 +1482,13 @@ class CodeScene(QtGui.QGraphicsScene):
 			if not isinstance(item, CodeUIItem):
 				continue
 			uniqueName = item.getUniqueName()
-			entNameList, refList = dbObj.searchRefEntity(uniqueName, refStr, entStr)
+			entList, refList = dbObj.searchRefEntity(uniqueName, refStr, entStr)
 
 			# add to candidate
 			candidateList = []
-			for ithEnt, entName in enumerate(entNameList):
+			for ithEnt, entObj in enumerate(entList):
+				entName = entObj.uniquename()
 				refObj = refList[ithEnt]
-				entObj = refObj.ent()
 				# get lines
 				metricRes = entObj.metric(('CountLine',))
 				metricLine = metricRes.get('CountLine',1)

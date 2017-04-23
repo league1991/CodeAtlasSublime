@@ -78,7 +78,7 @@ class CodeDB(QtCore.QObject):
 			return [],[]
 
 		refList = ent.refs(refKindStr, entKindStr, isUnique)
-		entList = [refObj.ent().uniquename() for refObj in refList]
+		entList = [refObj.ent() for refObj in refList]
 		return entList, refList
 
 	def searchRefObj(self, srcUName, tarUName):
@@ -94,7 +94,7 @@ class CodeDB(QtCore.QObject):
 				return ref
 		return None
 
-	def searchRef(self, uniqueName, refKindStr, entKindStr, isUnique = True):
+	def searchRef(self, uniqueName, refKindStr = None, entKindStr = None, isUnique = True):
 		if not self._db:
 			return []
 		ent = self._db.lookup_uniquename(uniqueName)
