@@ -79,6 +79,22 @@ class IndexRefItem(object):
 		self.dstId = dstId
 		self.kind = IndexRefItem.kindDict.get(refKindStr, 0)
 
+class XmlDocItem(object):
+	CACHE_NONE = 0
+	CACHE_REF  = 1
+	def __init__(self, doc):
+		self.doc = doc
+		self.cacheStatus = 0
+
+	def getDoc(self):
+		return self.doc
+
+	def getCacheStatus(self, status):
+		return (self.cacheStatus & status) > 0
+
+	def setCacheStatus(self, status):
+		self.cacheStatus = self.cacheStatus | status
+
 # Used by public APIs of DoxygenDB
 class Entity(object):
 	def __init__(self, id, name, longName, kindName, metric):
@@ -134,15 +150,19 @@ class DoxygenDB(QtCore.QObject):
 		self.idToCompoundDict = {}	# dict for   member objects, member   id -> compound id
 		self.compoundToIdDict = {}	# dict for compound objects, compound id -> [refid, refid, ...]
 		self.idInfoDict = {}		# info for both compound and member object, id -> IndexItem
-		self.xmlCache = {}			# xml file name -> xml document
+		self.xmlCache = {}			# xml file name -> XmlDocItem
 		self.xmlElementCache = {}	# dict for xml element, id -> xmlElement
 
 	def _getXmlDocument(self, fileName):
+		return self._getXmlDocumentItem(fileName).getDoc()
+
+	def _getXmlDocumentItem(self, fileName):
 		filePath = '%s/%s.xml' % (self._dbFolder, fileName)
 		xmlDoc = self.xmlCache.get(filePath)
 		if xmlDoc:
 			return xmlDoc
-		xmlDoc = minidom.parse(filePath)
+		doc = minidom.parse(filePath)
+		xmlDoc = XmlDocItem(doc)
 		self.xmlCache[filePath] = xmlDoc
 		return xmlDoc
 
@@ -181,56 +201,67 @@ class DoxygenDB(QtCore.QObject):
 			# build compound -> member dict
 			self.compoundToIdDict[compoundRefId] = refIdList
 
+	def _readRef(self, compoundId):
+		doc = self._getXmlDocument(compoundId)
+		if not doc:
+			return
+
+		xmlDocItem = self._getXmlDocumentItem(compoundId)
+		if xmlDocItem.getCacheStatus(XmlDocItem.CACHE_REF):
+			return
+
+		# build references
+		compoundDefList = doc.getElementsByTagName("compounddef")
+		for compoundDef in compoundDefList:
+			compoundId = compoundDef.getAttribute('id')
+			compoundItem = self.idInfoDict.get(compoundId)
+
+			# find members
+			listOfAllMembersList = compoundDef.getElementsByTagName('listofallmembers')
+			for listOfAllMembers in listOfAllMembersList:
+				memberList = listOfAllMembers.getElementsByTagName('member')
+				for member in memberList:
+					memberId = member.getAttribute('refid')
+					memberItem = self.idInfoDict.get(memberId)
+					if memberItem and compoundItem:
+						refItem = IndexRefItem(compoundId, memberId, 'member')
+						memberItem.addRefItem(refItem)
+						compoundItem.addRefItem(refItem)
+
+			# find members' refs
+			sectionDefList = compoundDef.getElementsByTagName('sectiondef')
+			for sectionDef in sectionDefList:
+				memberDefList = sectionDef.getElementsByTagName('memberdef')
+				for memberDef in memberDefList:
+					memberId = memberDef.getAttribute('id')
+					memberItem = self.idInfoDict.get(memberId)
+
+					referenceList = memberDef.getElementsByTagName('references')
+					for reference in referenceList:
+						referenceId = reference.getAttribute('refid')
+						referenceItem = self.idInfoDict.get(referenceId)
+						if memberItem and referenceItem:
+							refItem = IndexRefItem(memberId, referenceId, 'reference')
+							memberItem.addRefItem(refItem)
+							referenceItem.addRefItem(refItem)
+
+					# 'referenced by' relationship has no more information than 'reference'
+					referencedbyList = memberDef.getElementsByTagName('referencedby')
+					for reference in referencedbyList:
+						referenceId = reference.getAttribute('refid')
+						referenceItem = self.idInfoDict.get(referenceId)
+						if memberItem and referenceItem:
+							refItem = IndexRefItem(referenceId, memberId, 'reference')
+							memberItem.addRefItem(refItem)
+							referenceItem.addRefItem(refItem)
+
+		xmlDocItem.setCacheStatus(XmlDocItem.CACHE_REF)
+
 	def _readRefs(self):
 		if not self._dbFolder:
 			return
 		for compoundId, _ in self.compoundToIdDict.items():
-			doc = self._getXmlDocument(compoundId)
-			if not doc:
-				continue
-			compoundDefList = doc.getElementsByTagName("compounddef")
-			for compoundDef in compoundDefList:
-				compoundId = compoundDef.getAttribute('id')
-				compoundItem = self.idInfoDict.get(compoundId)
-
-				# find members
-				listOfAllMembersList = compoundDef.getElementsByTagName('listofallmembers')
-				for listOfAllMembers in listOfAllMembersList:
-					memberList = listOfAllMembers.getElementsByTagName('member')
-					for member in memberList:
-						memberId = member.getAttribute('refid')
-						memberItem = self.idInfoDict.get(memberId)
-						if memberItem and compoundItem:
-							refItem = IndexRefItem(compoundId, memberId, 'member')
-							memberItem.addRefItem(refItem)
-							compoundItem.addRefItem(refItem)
-
-				# find members' refs
-				sectionDefList = compoundDef.getElementsByTagName('sectiondef')
-				for sectionDef in sectionDefList:
-					memberDefList = sectionDef.getElementsByTagName('memberdef')
-					for memberDef in memberDefList:
-						memberId = memberDef.getAttribute('id')
-						memberItem = self.idInfoDict.get(memberId)
-
-						referenceList = memberDef.getElementsByTagName('references')
-						for reference in referenceList:
-							referenceId = reference.getAttribute('refid')
-							referenceItem = self.idInfoDict.get(referenceId)
-							if memberItem and referenceItem:
-								refItem = IndexRefItem(memberId, referenceId, 'reference')
-								memberItem.addRefItem(refItem)
-								referenceItem.addRefItem(refItem)
-
-						# 'referenced by' relationship has no more information than 'reference'
-						# referencedbyList = memberDef.getElementsByTagName('referencedby')
-						# for reference in referencedbyList:
-						# 	referenceId = reference.getAttribute('refid')
-						# 	referenceItem = self.idInfoDict.get(referenceId)
-						# 	if memberItem and referenceItem:
-						# 		refItem = IndexRefItem(referenceId, memberId, 'reference')
-						# 		memberItem.addRefItem(refItem)
-						# 		referenceItem.addRefItem(refItem)
+			self._readRef(compoundId)
 
 	def _isCompound(self, refid):
 		return refid in self.compoundToIdDict.keys()
@@ -263,11 +294,18 @@ class DoxygenDB(QtCore.QObject):
 		return None
 
 	def _parseLocationDict(self, element):
-		file = element.getAttribute('bodyfile')
 		line = int(element.getAttribute('line'))
 		column = int(element.getAttribute('column'))
-		start = int(element.getAttribute('bodystart'))
-		end = int(element.getAttribute('bodyend'))
+
+		file = element.getAttribute('bodyfile')
+		if not file:
+			file = element.getAttribute('file')
+
+		bodyStart = element.getAttribute('bodystart')
+		bodyEnd = element.getAttribute('bodyend')
+
+		start = int(bodyStart) if bodyStart else -1
+		end   = int(bodyEnd)   if bodyEnd   else -1
 		return {'file': file, 'line': line, 'column': column, 'CountLine': end - start+1}
 
 	def _parseEntity(self, element):
@@ -308,7 +346,7 @@ class DoxygenDB(QtCore.QObject):
 			self.close()
 		self._dbFolder = os.path.split(fullPath)[0]
 		self._readIndex()
-		self._readRefs()
+		# self._readRefs()
 
 	def getDBPath(self):
 		return self._dbFolder + '/index.xml'
@@ -381,6 +419,13 @@ class DoxygenDB(QtCore.QObject):
 			for entKindName in entKindNameList:
 				entKindList.append(IndexItem.kindDict.get(entKindName, 0))
 
+		# build reference link
+		compoundId = self.idToCompoundDict.get(uniqueName)
+		if not compoundId:
+			compoundId = uniqueName
+		self._readRef(compoundId)
+
+		# find references
 		refEntityList = []
 		refRefList    = []
 		refs = thisItem.getRefItemList()

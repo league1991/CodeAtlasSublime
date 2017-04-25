@@ -214,7 +214,8 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 	def onTest(self):
 		dbmgr = DBManager.DBManager.instance()
 		# defaultPath = r'C:\Users\me\AppData\Roaming\Sublime Text 3\Packages\CodeAtlas\CodeAtlasSublime.udb'
-		defaultPath = 'I:/Programs/masteringOpenCV/Chapter3_MarkerlessAR/doc/xml/index.xml'
+		# defaultPath = 'I:/Programs/masteringOpenCV/Chapter3_MarkerlessAR/doc/xml/index.xml'
+		defaultPath = 'D:/Code/NewRapidRT/rapidrt/doxygen/xml/index.xml'
 		dbmgr.getDB().open(defaultPath)
 
 		from UIManager import UIManager
