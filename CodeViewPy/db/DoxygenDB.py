@@ -215,45 +215,64 @@ class DoxygenDB(QtCore.QObject):
 		for compoundDef in compoundDefList:
 			compoundId = compoundDef.getAttribute('id')
 			compoundItem = self.idInfoDict.get(compoundId)
+			if not compoundItem:
+				continue
 
-			# find members
-			listOfAllMembersList = compoundDef.getElementsByTagName('listofallmembers')
-			for listOfAllMembers in listOfAllMembersList:
-				memberList = listOfAllMembers.getElementsByTagName('member')
-				for member in memberList:
-					memberId = member.getAttribute('refid')
-					memberItem = self.idInfoDict.get(memberId)
-					if memberItem and compoundItem:
-						refItem = IndexRefItem(compoundId, memberId, 'member')
-						memberItem.addRefItem(refItem)
+			for compoundChild in compoundDef.childNodes:
+				# find base classes
+				if compoundChild.nodeName == 'basecompoundref':
+					baseCompoundId = compoundChild.getAttribute('refid')
+					baseCompoundItem = self.idInfoDict.get(baseCompoundId)
+					if baseCompoundItem:
+						refItem = IndexRefItem(baseCompoundId, compoundId, 'derive')
+						baseCompoundItem.addRefItem(refItem)
 						compoundItem.addRefItem(refItem)
 
-			# find members' refs
-			sectionDefList = compoundDef.getElementsByTagName('sectiondef')
-			for sectionDef in sectionDefList:
-				memberDefList = sectionDef.getElementsByTagName('memberdef')
-				for memberDef in memberDefList:
-					memberId = memberDef.getAttribute('id')
-					memberItem = self.idInfoDict.get(memberId)
+				# find derived classes
+				if compoundChild.nodeName == 'derivedcompoundref':
+					derivedCompoundId = compoundChild.getAttribute('refid')
+					derivedCompoundItem = self.idInfoDict.get(derivedCompoundId)
+					if derivedCompoundItem:
+						refItem = IndexRefItem(compoundId, derivedCompoundId, 'derive')
+						derivedCompoundItem.addRefItem(refItem)
+						compoundItem.addRefItem(refItem)
 
-					referenceList = memberDef.getElementsByTagName('references')
-					for reference in referenceList:
-						referenceId = reference.getAttribute('refid')
-						referenceItem = self.idInfoDict.get(referenceId)
-						if memberItem and referenceItem:
-							refItem = IndexRefItem(memberId, referenceId, 'reference')
+				# find members
+				if compoundChild.nodeName == 'listofallmembers':
+					memberList = compoundChild.getElementsByTagName('member')
+					for member in memberList:
+						memberId = member.getAttribute('refid')
+						memberItem = self.idInfoDict.get(memberId)
+						if memberItem and compoundItem:
+							refItem = IndexRefItem(compoundId, memberId, 'member')
 							memberItem.addRefItem(refItem)
-							referenceItem.addRefItem(refItem)
+							compoundItem.addRefItem(refItem)
 
-					# 'referenced by' relationship has no more information than 'reference'
-					referencedbyList = memberDef.getElementsByTagName('referencedby')
-					for reference in referencedbyList:
-						referenceId = reference.getAttribute('refid')
-						referenceItem = self.idInfoDict.get(referenceId)
-						if memberItem and referenceItem:
-							refItem = IndexRefItem(referenceId, memberId, 'reference')
-							memberItem.addRefItem(refItem)
-							referenceItem.addRefItem(refItem)
+				# find members' refs
+				if compoundChild.nodeName == 'sectiondef':
+					memberDefList = compoundChild.getElementsByTagName('memberdef')
+					for memberDef in memberDefList:
+						memberId = memberDef.getAttribute('id')
+						memberItem = self.idInfoDict.get(memberId)
+
+						referenceList = memberDef.getElementsByTagName('references')
+						for reference in referenceList:
+							referenceId = reference.getAttribute('refid')
+							referenceItem = self.idInfoDict.get(referenceId)
+							if memberItem and referenceItem:
+								refItem = IndexRefItem(memberId, referenceId, 'reference')
+								memberItem.addRefItem(refItem)
+								referenceItem.addRefItem(refItem)
+
+						# 'referenced by' relationship has no more information than 'reference'
+						referencedbyList = memberDef.getElementsByTagName('referencedby')
+						for reference in referencedbyList:
+							referenceId = reference.getAttribute('refid')
+							referenceItem = self.idInfoDict.get(referenceId)
+							if memberItem and referenceItem:
+								refItem = IndexRefItem(referenceId, memberId, 'reference')
+								memberItem.addRefItem(refItem)
+								referenceItem.addRefItem(refItem)
 
 		xmlDocItem.setCacheStatus(XmlDocItem.CACHE_REF)
 
@@ -306,7 +325,7 @@ class DoxygenDB(QtCore.QObject):
 
 		start = int(bodyStart) if bodyStart else -1
 		end   = int(bodyEnd)   if bodyEnd   else -1
-		return {'file': file, 'line': line, 'column': column, 'CountLine': end - start+1}
+		return {'file': file, 'line': line, 'column': column, 'CountLine': max(end - start+1, 0)}
 
 	def _parseEntity(self, element):
 		if not element:
@@ -452,6 +471,10 @@ class DoxygenDB(QtCore.QObject):
 					refKindName = refKindName[0:-2]
 					srcItem = otherItem
 					dstItem = thisItem
+				if refKindName == 'base':
+					refKindName = 'derive'
+					srcItem = otherItem
+					dstItem = thisItem
 
 				# check edge direction
 				if srcItem.id != ref.srcId or dstItem.id != ref.dstId:
@@ -462,12 +485,16 @@ class DoxygenDB(QtCore.QObject):
 					if  srcItem.kind == IndexItem.KIND_FUNCTION and dstItem.kind == IndexItem.KIND_FUNCTION:
 						isAccepted = True
 				elif refKindName == 'member' or refKindName == 'declare' or refKindName == 'define':
-					if  srcItem.kind  in (IndexItem.KIND_CLASS, IndexItem.KIND_STRUCT) and\
+					if  srcItem.kind in (IndexItem.KIND_CLASS, IndexItem.KIND_STRUCT) and\
 						dstItem.kind in (IndexItem.KIND_CLASS, IndexItem.KIND_STRUCT, IndexItem.KIND_FUNCTION, IndexItem.KIND_VARIABLE, IndexItem.KIND_SIGNAL, IndexItem.KIND_SLOT):
 						isAccepted = True
 				elif refKindName == 'use':
 					if  srcItem.kind in (IndexItem.KIND_FUNCTION,) and\
 						dstItem.kind in (IndexItem.KIND_VARIABLE,):
+						isAccepted = True
+				elif refKindName == 'derive':
+					if  srcItem.kind in (IndexItem.KIND_CLASS, IndexItem.KIND_STRUCT) and\
+						dstItem.kind in (IndexItem.KIND_CLASS, IndexItem.KIND_STRUCT):
 						isAccepted = True
 
 				if isAccepted:
