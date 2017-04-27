@@ -69,15 +69,34 @@ class IndexItem(object):
 		return self.refs
 
 class IndexRefItem(object):
-	kindDict = {
-		'unknown': 0,
-		'member' : 1,
-		}
+	KIND_UNKNOWN = 0
+	KIND_MEMBER  = 1
+	KIND_CALL    = 2
+	KIND_DERIVE  = 3
+	KIND_USE	 = 4
+	KIND_OVERRIDE= 5
 
+	# Dict for (kind, isReverse)
+	kindDict = {
+		'call'			: (KIND_CALL, 		False),
+		'callby'		: (KIND_CALL, 		True),
+		'base'			: (KIND_DERIVE, 	True),
+		'derive'		: (KIND_DERIVE, 	False),
+		'use'			: (KIND_USE, 		False),
+		'useby'			: (KIND_USE, 		True),
+		'member'		: (KIND_MEMBER, 	False),
+		'declare'		: (KIND_MEMBER, 	False),
+		'define'		: (KIND_MEMBER, 	False),
+		'declarein'		: (KIND_MEMBER, 	True),
+		'definein' 		: (KIND_MEMBER, 	True),
+		'override'		: (KIND_OVERRIDE,	True),
+		'overrides'		: (KIND_OVERRIDE,	True),
+		'overriddenby'	: (KIND_OVERRIDE,	False),
+	}
 	def __init__(self, srcId, dstId, refKindStr):
 		self.srcId = srcId
 		self.dstId = dstId
-		self.kind = IndexRefItem.kindDict.get(refKindStr, 0)
+		self.kind = IndexRefItem.kindDict.get(refKindStr, (IndexRefItem.KIND_UNKNOWN, False))[0]
 
 class XmlDocItem(object):
 	CACHE_NONE = 0
@@ -122,8 +141,8 @@ class Entity(object):
 		return {k: self.metricDict.get(k) for k in keys}
 
 class Reference(object):
-	def __init__(self, kindString, entity):
-		self.kind = kindString
+	def __init__(self, kind, entity):
+		self.kind = kind
 		self.entityId = entity.id
 		self.entity = entity
 		self.entityLocationDict = entity.metric()
@@ -255,25 +274,40 @@ class DoxygenDB(QtCore.QObject):
 						memberId = memberDef.getAttribute('id')
 						memberItem = self.idInfoDict.get(memberId)
 
-						referenceList = memberDef.getElementsByTagName('references')
-						for reference in referenceList:
-							referenceId = reference.getAttribute('refid')
-							referenceItem = self.idInfoDict.get(referenceId)
-							if memberItem and referenceItem:
-								refItem = IndexRefItem(memberId, referenceId, 'reference')
-								memberItem.addRefItem(refItem)
-								referenceItem.addRefItem(refItem)
+						for memberChild in memberDef.childNodes:
+							if memberChild.nodeName == 'references':
+								referenceId = memberChild.getAttribute('refid')
+								referenceItem = self.idInfoDict.get(referenceId)
+								if memberItem and referenceItem:
+									refItem = IndexRefItem(memberId, referenceId, 'reference')
+									memberItem.addRefItem(refItem)
+									referenceItem.addRefItem(refItem)
 
-						# 'referenced by' relationship has no more information than 'reference'
-						referencedbyList = memberDef.getElementsByTagName('referencedby')
-						for reference in referencedbyList:
-							referenceId = reference.getAttribute('refid')
-							referenceItem = self.idInfoDict.get(referenceId)
-							if memberItem and referenceItem:
-								refItem = IndexRefItem(referenceId, memberId, 'reference')
-								memberItem.addRefItem(refItem)
-								referenceItem.addRefItem(refItem)
+							# 'referenced by' relationship has no more information than 'reference'
+							if memberChild.nodeName == 'referencedby':
+								referenceId = memberChild.getAttribute('refid')
+								referenceItem = self.idInfoDict.get(referenceId)
+								if memberItem and referenceItem:
+									refItem = IndexRefItem(referenceId, memberId, 'reference')
+									memberItem.addRefItem(refItem)
+									referenceItem.addRefItem(refItem)
 
+							# find override methods
+							if memberChild.nodeName == 'reimplementedby':
+								overrideId = memberChild.getAttribute('refid')
+								overrideItem = self.idInfoDict.get(overrideId)
+								if overrideItem:
+									refItem = IndexRefItem(memberId, overrideId, 'overrides')
+									overrideItem.addRefItem(refItem)
+									memberItem.addRefItem(refItem)
+
+							if memberChild.nodeName == 'reimplements':
+								interfaceId = memberChild.getAttribute('refid')
+								interfaceItem = self.idInfoDict.get(interfaceId)
+								if interfaceItem:
+									refItem = IndexRefItem(interfaceId, memberId, 'overrides')
+									interfaceItem.addRefItem(refItem)
+									memberItem.addRefItem(refItem)
 		xmlDocItem.setCacheStatus(XmlDocItem.CACHE_REF)
 
 	def _readRefs(self):
@@ -396,10 +430,9 @@ class DoxygenDB(QtCore.QObject):
 		kind = IndexItem.kindDict.get(kindstring.lower())
 		nameLower = name.lower()
 		for id, info in self.idInfoDict.items():
+			if kind != None and info.kind != kind:
+				continue
 			if nameLower in info.name.lower():
-				if kind != None and info.kind != kind:
-					continue
-
 				xmlElement = self._getXmlElement(id)
 				if not xmlElement:
 					continue
@@ -423,11 +456,13 @@ class DoxygenDB(QtCore.QObject):
 			return [], []
 
 		# parse refKindStr
-		refNameList = []
+		refKindList = []
 		if refKindStr:
 			refKindStr = refKindStr.lower()
 			pattern = re.compile('[a-z]+')
 			refNameList =pattern.findall(refKindStr)
+			for refName in refNameList:
+				refKindList.append(IndexRefItem.kindDict.get(refName, (IndexRefItem.KIND_UNKNOWN, False)))
 
 		# parse entKindStr
 		entKindList = []
@@ -462,44 +497,39 @@ class DoxygenDB(QtCore.QObject):
 				continue
 
 			# match each ref kind
-			for refName in refNameList:
-				refKindName = refName
+			for refKind, isExchange in refKindList:
 				srcItem = thisItem
 				dstItem = otherItem
-				# exchange src and dst when get 'callby' 'useby' ...
-				if refKindName.endswith('by') or refKindName.endswith('in'):
-					refKindName = refKindName[0:-2]
+				if isExchange:
 					srcItem = otherItem
-					dstItem = thisItem
-				if refKindName == 'base':
-					refKindName = 'derive'
-					srcItem = otherItem
-					dstItem = thisItem
+					dstItem = thisItem\
 
 				# check edge direction
 				if srcItem.id != ref.srcId or dstItem.id != ref.dstId:
 					continue
 
 				isAccepted = False
-				if refKindName == 'call':
+				if refKind == IndexRefItem.KIND_CALL:
 					if  srcItem.kind == IndexItem.KIND_FUNCTION and dstItem.kind == IndexItem.KIND_FUNCTION:
 						isAccepted = True
-				elif refKindName == 'member' or refKindName == 'declare' or refKindName == 'define':
+				elif refKind == IndexRefItem.KIND_MEMBER:
 					if  srcItem.kind in (IndexItem.KIND_CLASS, IndexItem.KIND_STRUCT) and\
 						dstItem.kind in (IndexItem.KIND_CLASS, IndexItem.KIND_STRUCT, IndexItem.KIND_FUNCTION, IndexItem.KIND_VARIABLE, IndexItem.KIND_SIGNAL, IndexItem.KIND_SLOT):
 						isAccepted = True
-				elif refKindName == 'use':
+				elif refKind == IndexRefItem.KIND_USE:
 					if  srcItem.kind in (IndexItem.KIND_FUNCTION,) and\
 						dstItem.kind in (IndexItem.KIND_VARIABLE,):
 						isAccepted = True
-				elif refKindName == 'derive':
+				elif refKind == IndexRefItem.KIND_DERIVE and ref.kind == IndexRefItem.KIND_DERIVE:
 					if  srcItem.kind in (IndexItem.KIND_CLASS, IndexItem.KIND_STRUCT) and\
 						dstItem.kind in (IndexItem.KIND_CLASS, IndexItem.KIND_STRUCT):
 						isAccepted = True
+				elif refKind == IndexRefItem.KIND_OVERRIDE and ref.kind == IndexRefItem.KIND_OVERRIDE:
+					isAccepted = True
 
 				if isAccepted:
 					refEntityList.append(otherEntity)
-					refRefList.append(Reference(refName, otherEntity))
+					refRefList.append(Reference(refKind, otherEntity))
 
 		return refEntityList, refRefList
 
@@ -537,11 +567,12 @@ def printSymbolDict(sym, indent = 0):
 
 if __name__ == "__main__":
 	db = DoxygenDB()
-	db.open('I:/Programs/masteringOpenCV/Chapter3_MarkerlessAR/doc/xml/index.xml')
+	# db.open('I:/Programs/masteringOpenCV/Chapter3_MarkerlessAR/doc/xml/index.xml')
+	db.open('I:/Programs/mitsuba/doxygenData/xml/index.xml')
 	# element = db._getXmlElement('main_8cpp_1aff21477595f55398a44d72df24d4d6c5')
-	classA = db.search('ARDrawingContext', 'class')[0]
-	functionA = db.search('drawCoordinateAxis', 'function')[0]
-	varA = db.search('m_windowName', 'variable')[0]
+	#classA = db.search('ARDrawingContext', 'class')[0]
+	#functionA = db.search('drawCoordinateAxis', 'function')[0]
+	#varA = db.search('m_windowName', 'variable')[0]
 
 	refList, entList = db._searchRef(classA.uniquename(), 'member', 'variable', True)
 	# db.open('D:/Code/NewRapidRT/rapidrt/doxygen/xml/index.xml')
