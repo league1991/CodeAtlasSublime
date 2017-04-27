@@ -269,45 +269,46 @@ class DoxygenDB(QtCore.QObject):
 
 				# find members' refs
 				if compoundChild.nodeName == 'sectiondef':
-					memberDefList = compoundChild.getElementsByTagName('memberdef')
-					for memberDef in memberDefList:
-						memberId = memberDef.getAttribute('id')
-						memberItem = self.idInfoDict.get(memberId)
+					for sectionChild in compoundChild.childNodes:
+						if sectionChild.nodeName == 'memberdef':
+							memberDef = sectionChild
+							memberId = memberDef.getAttribute('id')
+							memberItem = self.idInfoDict.get(memberId)
 
-						for memberChild in memberDef.childNodes:
-							if memberChild.nodeName == 'references':
-								referenceId = memberChild.getAttribute('refid')
-								referenceItem = self.idInfoDict.get(referenceId)
-								if memberItem and referenceItem:
-									refItem = IndexRefItem(memberId, referenceId, 'reference')
-									memberItem.addRefItem(refItem)
-									referenceItem.addRefItem(refItem)
+							for memberChild in memberDef.childNodes:
+								if memberChild.nodeName == 'references':
+									referenceId = memberChild.getAttribute('refid')
+									referenceItem = self.idInfoDict.get(referenceId)
+									if memberItem and referenceItem:
+										refItem = IndexRefItem(memberId, referenceId, 'reference')
+										memberItem.addRefItem(refItem)
+										referenceItem.addRefItem(refItem)
 
-							# 'referenced by' relationship has no more information than 'reference'
-							if memberChild.nodeName == 'referencedby':
-								referenceId = memberChild.getAttribute('refid')
-								referenceItem = self.idInfoDict.get(referenceId)
-								if memberItem and referenceItem:
-									refItem = IndexRefItem(referenceId, memberId, 'reference')
-									memberItem.addRefItem(refItem)
-									referenceItem.addRefItem(refItem)
+								# 'referenced by' relationship has no more information than 'reference'
+								if memberChild.nodeName == 'referencedby':
+									referenceId = memberChild.getAttribute('refid')
+									referenceItem = self.idInfoDict.get(referenceId)
+									if memberItem and referenceItem:
+										refItem = IndexRefItem(referenceId, memberId, 'reference')
+										memberItem.addRefItem(refItem)
+										referenceItem.addRefItem(refItem)
 
-							# find override methods
-							if memberChild.nodeName == 'reimplementedby':
-								overrideId = memberChild.getAttribute('refid')
-								overrideItem = self.idInfoDict.get(overrideId)
-								if overrideItem:
-									refItem = IndexRefItem(memberId, overrideId, 'overrides')
-									overrideItem.addRefItem(refItem)
-									memberItem.addRefItem(refItem)
+								# find override methods
+								if memberChild.nodeName == 'reimplementedby':
+									overrideId = memberChild.getAttribute('refid')
+									overrideItem = self.idInfoDict.get(overrideId)
+									if overrideItem:
+										refItem = IndexRefItem(memberId, overrideId, 'overrides')
+										overrideItem.addRefItem(refItem)
+										memberItem.addRefItem(refItem)
 
-							if memberChild.nodeName == 'reimplements':
-								interfaceId = memberChild.getAttribute('refid')
-								interfaceItem = self.idInfoDict.get(interfaceId)
-								if interfaceItem:
-									refItem = IndexRefItem(interfaceId, memberId, 'overrides')
-									interfaceItem.addRefItem(refItem)
-									memberItem.addRefItem(refItem)
+								if memberChild.nodeName == 'reimplements':
+									interfaceId = memberChild.getAttribute('refid')
+									interfaceItem = self.idInfoDict.get(interfaceId)
+									if interfaceItem:
+										refItem = IndexRefItem(interfaceId, memberId, 'overrides')
+										interfaceItem.addRefItem(refItem)
+										memberItem.addRefItem(refItem)
 		xmlDocItem.setCacheStatus(XmlDocItem.CACHE_REF)
 
 	def _readRefs(self):
