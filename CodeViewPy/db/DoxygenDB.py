@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from PyQt4 import QtCore, Qt
-from xml.dom import minidom
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
 import re
 import os
 
@@ -182,7 +185,7 @@ class DoxygenDB(QtCore.QObject):
 		xmlDoc = self.xmlCache.get(filePath)
 		if xmlDoc:
 			return xmlDoc
-		doc = minidom.parse(filePath)
+		doc = ET.parse(filePath)
 		xmlDoc = XmlDocItem(doc)
 		self.xmlCache[filePath] = xmlDoc
 		return xmlDoc
@@ -192,31 +195,31 @@ class DoxygenDB(QtCore.QObject):
 			return
 		doc = self._getXmlDocument('index')
 
-		compoundList = doc.getElementsByTagName("compound")
+		compoundList = doc.findall("compound")
 		for compound in compoundList:
-			compoundRefId = compound.getAttribute('refid')
+			compoundRefId = compound.attrib.get('refid','')
 
 			# record name attr
-			for compoundChild in compound.childNodes:
-				if compoundChild.nodeName == 'name':
+			for compoundChild in compound.getchildren():
+				if compoundChild.tag == 'name':
 					self.idInfoDict[compoundRefId] = \
-						IndexItem(compoundChild.childNodes[0].data, compound.getAttribute('kind'), compoundRefId)
+						IndexItem(compoundChild.text, compound.attrib.get('kind'), compoundRefId)
 					break
 
 			# list members
-			memberList = compound.getElementsByTagName("member")
+			memberList = compound.findall("member")
 			refIdList = []
 			for member in memberList:
 				# build member -> compound dict
-				memberRefId = member.getAttribute('refid')
+				memberRefId = member.attrib.get('refid')
 				self.idToCompoundDict[memberRefId] = compoundRefId
 				refIdList.append(memberRefId)
 
 				#recode name attr
-				for memberChild in member.childNodes:
-					if memberChild.nodeName == 'name':
+				for memberChild in member.getchildren():
+					if memberChild.tag == 'name':
 						self.idInfoDict[memberRefId] = \
-							IndexItem(memberChild.childNodes[0].data, member.getAttribute('kind'), memberRefId)
+							IndexItem(memberChild.text, member.attrib.get('kind'), memberRefId)
 						break
 
 			# build compound -> member dict
@@ -232,17 +235,17 @@ class DoxygenDB(QtCore.QObject):
 			return
 
 		# build references
-		compoundDefList = doc.getElementsByTagName("compounddef")
+		compoundDefList = doc.findall("compounddef")
 		for compoundDef in compoundDefList:
-			compoundId = compoundDef.getAttribute('id')
+			compoundId = compoundDef.attrib.get('id')
 			compoundItem = self.idInfoDict.get(compoundId)
 			if not compoundItem:
 				continue
 
-			for compoundChild in compoundDef.childNodes:
+			for compoundChild in compoundDef.getchildren():
 				# find base classes
-				if compoundChild.nodeName == 'basecompoundref':
-					baseCompoundId = compoundChild.getAttribute('refid')
+				if compoundChild.tag == 'basecompoundref':
+					baseCompoundId = compoundChild.attrib.get('refid')
 					baseCompoundItem = self.idInfoDict.get(baseCompoundId)
 					if baseCompoundItem:
 						refItem = IndexRefItem(baseCompoundId, compoundId, 'derive')
@@ -250,8 +253,8 @@ class DoxygenDB(QtCore.QObject):
 						compoundItem.addRefItem(refItem)
 
 				# find derived classes
-				if compoundChild.nodeName == 'derivedcompoundref':
-					derivedCompoundId = compoundChild.getAttribute('refid')
+				if compoundChild.tag == 'derivedcompoundref':
+					derivedCompoundId = compoundChild.attrib.get('refid')
 					derivedCompoundItem = self.idInfoDict.get(derivedCompoundId)
 					if derivedCompoundItem:
 						refItem = IndexRefItem(compoundId, derivedCompoundId, 'derive')
@@ -259,10 +262,10 @@ class DoxygenDB(QtCore.QObject):
 						compoundItem.addRefItem(refItem)
 
 				# find members
-				if compoundChild.nodeName == 'listofallmembers':
-					memberList = compoundChild.getElementsByTagName('member')
+				if compoundChild.tag == 'listofallmembers':
+					memberList = compoundChild.findall('member')
 					for member in memberList:
-						memberId = member.getAttribute('refid')
+						memberId = member.attrib.get('refid')
 						memberItem = self.idInfoDict.get(memberId)
 						if memberItem and compoundItem:
 							refItem = IndexRefItem(compoundId, memberId, 'member')
@@ -270,24 +273,24 @@ class DoxygenDB(QtCore.QObject):
 							compoundItem.addRefItem(refItem)
 
 				# find members' refs
-				if compoundChild.nodeName == 'sectiondef':
-					for sectionChild in compoundChild.childNodes:
-						if sectionChild.nodeName == 'memberdef':
+				if compoundChild.tag == 'sectiondef':
+					for sectionChild in compoundChild.getchildren():
+						if sectionChild.tag == 'memberdef':
 							memberDef = sectionChild
-							memberId = memberDef.getAttribute('id')
+							memberId = memberDef.attrib.get('id')
 							memberItem = self.idInfoDict.get(memberId)
 
-							for memberChild in memberDef.childNodes:
-								if memberChild.nodeName == 'references':
-									referenceId = memberChild.getAttribute('refid')
+							for memberChild in memberDef.getchildren():
+								if memberChild.tag == 'references':
+									referenceId = memberChild.attrib.get('refid')
 									referenceItem = self.idInfoDict.get(referenceId)
 									if memberItem and referenceItem:
 										refItem = IndexRefItem(memberId, referenceId, 'unknown')
 										memberItem.addRefItem(refItem)
 										referenceItem.addRefItem(refItem)
 
-								if memberChild.nodeName == 'referencedby':
-									referenceId = memberChild.getAttribute('refid')
+								if memberChild.tag == 'referencedby':
+									referenceId = memberChild.attrib.get('refid')
 									referenceItem = self.idInfoDict.get(referenceId)
 									if memberItem and referenceItem:
 										refItem = IndexRefItem(referenceId, memberId, 'unknown')
@@ -295,16 +298,16 @@ class DoxygenDB(QtCore.QObject):
 										referenceItem.addRefItem(refItem)
 
 								# find override methods
-								if memberChild.nodeName == 'reimplementedby':
-									overrideId = memberChild.getAttribute('refid')
+								if memberChild.tag == 'reimplementedby':
+									overrideId = memberChild.attrib.get('refid')
 									overrideItem = self.idInfoDict.get(overrideId)
 									if overrideItem:
 										refItem = IndexRefItem(memberId, overrideId, 'overrides')
 										overrideItem.addRefItem(refItem)
 										memberItem.addRefItem(refItem)
 
-								if memberChild.nodeName == 'reimplements':
-									interfaceId = memberChild.getAttribute('refid')
+								if memberChild.tag == 'reimplements':
+									interfaceId = memberChild.attrib.get('refid')
 									interfaceItem = self.idInfoDict.get(interfaceId)
 									if interfaceItem:
 										refItem = IndexRefItem(interfaceId, memberId, 'overrides')
@@ -334,30 +337,30 @@ class DoxygenDB(QtCore.QObject):
 		if refid in self.idToCompoundDict:
 			fileName = self.idToCompoundDict.get(refid)
 			doc = self._getXmlDocument(fileName)
-			memberList = doc.getElementsByTagName('memberdef')
+			memberList = doc.findall('./compounddef/sectiondef/memberdef')
 			for member in memberList:
-				if member.getAttribute('id') == refid:
+				if member.attrib.get('id') == refid:
 					self.xmlElementCache[refid] = member
 					return member
 		elif refid in self.compoundToIdDict:
 			doc = self._getXmlDocument(refid)
-			compoundList = doc.getElementsByTagName('compounddef')
+			compoundList = doc.findall('compounddef')
 			for compound in compoundList:
-				if compound.getAttribute('id') == refid:
+				if compound.attrib.get('id') == refid:
 					self.xmlElementCache[refid] = compound
 					return compound
 		return None
 
 	def _parseLocationDict(self, element):
-		line = int(element.getAttribute('line'))
-		column = int(element.getAttribute('column'))
+		line = int(element.attrib.get('line'))
+		column = int(element.attrib.get('column'))
 
-		file = element.getAttribute('bodyfile')
+		file = element.attrib.get('bodyfile')
 		if not file:
-			file = element.getAttribute('file')
+			file = element.attrib.get('file')
 
-		bodyStart = element.getAttribute('bodystart')
-		bodyEnd = element.getAttribute('bodyend')
+		bodyStart = element.attrib.get('bodystart')
+		bodyEnd = element.attrib.get('bodyend')
 
 		start = int(bodyStart) if bodyStart else -1
 		end   = int(bodyEnd)   if bodyEnd   else -1
@@ -366,36 +369,36 @@ class DoxygenDB(QtCore.QObject):
 	def _parseEntity(self, element):
 		if not element:
 			return None
-		if element.nodeName == 'compounddef':
+		if element.tag == 'compounddef':
 			name = ''
 			longName = ''
-			kind = element.getAttribute('kind')
+			kind = element.attrib.get('kind')
 			metric = None
-			id = element.getAttribute('id')
-			for elementChild in element.childNodes:
-				if elementChild.nodeName == 'compoundname':
-					name = elementChild.childNodes[0].data
+			id = element.attrib.get('id')
+			for elementChild in element.getchildren():
+				if elementChild.tag == 'compoundname':
+					name = elementChild.text
 					longName = name
-				elif elementChild.nodeName == 'location':
+				elif elementChild.tag == 'location':
 					metric = self._parseLocationDict(elementChild)
 			return Entity(id, name, longName, kind, metric)
-		elif element.tagName == 'memberdef':
+		elif element.tag == 'memberdef':
 			name = ''
 			longName = ''
-			kind = element.getAttribute('kind')
-			virt = element.getAttribute('virt')
+			kind = element.attrib.get('kind')
+			virt = element.attrib.get('virt')
 			if virt == 'virtual':
 				kind = 'virtual ' + kind
 			elif virt == 'pure-virtual':
 				kind = 'pure virtual ' + kind
 			metric = None
-			id = element.getAttribute('id')
-			for elementChild in element.childNodes:
-				if elementChild.nodeName == 'name':
-					name = elementChild.childNodes[0].data
-				elif elementChild.nodeName == 'definition':
-					longName = elementChild.childNodes[0].data
-				elif elementChild.nodeName == 'location':
+			id = element.attrib.get('id')
+			for elementChild in element.getchildren():
+				if elementChild.tag == 'name':
+					name = elementChild.text
+				elif elementChild.tag == 'definition':
+					longName = elementChild.text
+				elif elementChild.tag == 'location':
 					metric = self._parseLocationDict(elementChild)
 			return Entity(id, name, longName, kind, metric)
 		else:
