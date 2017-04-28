@@ -78,6 +78,8 @@ class IndexRefItem(object):
 
 	# Dict for (kind, isReverse)
 	kindDict = {
+		'reference'		: (KIND_UNKNOWN,	False),
+		'unknown'		: (KIND_UNKNOWN,	False),
 		'call'			: (KIND_CALL, 		False),
 		'callby'		: (KIND_CALL, 		True),
 		'base'			: (KIND_DERIVE, 	True),
@@ -280,16 +282,15 @@ class DoxygenDB(QtCore.QObject):
 									referenceId = memberChild.getAttribute('refid')
 									referenceItem = self.idInfoDict.get(referenceId)
 									if memberItem and referenceItem:
-										refItem = IndexRefItem(memberId, referenceId, 'reference')
+										refItem = IndexRefItem(memberId, referenceId, 'unknown')
 										memberItem.addRefItem(refItem)
 										referenceItem.addRefItem(refItem)
 
-								# 'referenced by' relationship has no more information than 'reference'
 								if memberChild.nodeName == 'referencedby':
 									referenceId = memberChild.getAttribute('refid')
 									referenceItem = self.idInfoDict.get(referenceId)
 									if memberItem and referenceItem:
-										refItem = IndexRefItem(referenceId, memberId, 'reference')
+										refItem = IndexRefItem(referenceId, memberId, 'unknown')
 										memberItem.addRefItem(refItem)
 										referenceItem.addRefItem(refItem)
 
@@ -382,6 +383,11 @@ class DoxygenDB(QtCore.QObject):
 			name = ''
 			longName = ''
 			kind = element.getAttribute('kind')
+			virt = element.getAttribute('virt')
+			if virt == 'virtual':
+				kind = 'virtual ' + kind
+			elif virt == 'pure-virtual':
+				kind = 'pure virtual ' + kind
 			metric = None
 			id = element.getAttribute('id')
 			for elementChild in element.childNodes:
@@ -510,14 +516,14 @@ class DoxygenDB(QtCore.QObject):
 					continue
 
 				isAccepted = False
-				if refKind == IndexRefItem.KIND_CALL:
+				if refKind == IndexRefItem.KIND_CALL and ref.kind == IndexRefItem.KIND_UNKNOWN:
 					if  srcItem.kind == IndexItem.KIND_FUNCTION and dstItem.kind == IndexItem.KIND_FUNCTION:
 						isAccepted = True
-				elif refKind == IndexRefItem.KIND_MEMBER:
+				elif refKind == IndexRefItem.KIND_MEMBER and ref.kind == IndexRefItem.KIND_MEMBER:
 					if  srcItem.kind in (IndexItem.KIND_CLASS, IndexItem.KIND_STRUCT) and\
 						dstItem.kind in (IndexItem.KIND_CLASS, IndexItem.KIND_STRUCT, IndexItem.KIND_FUNCTION, IndexItem.KIND_VARIABLE, IndexItem.KIND_SIGNAL, IndexItem.KIND_SLOT):
 						isAccepted = True
-				elif refKind == IndexRefItem.KIND_USE:
+				elif refKind == IndexRefItem.KIND_USE and ref.kind == IndexRefItem.KIND_UNKNOWN:
 					if  srcItem.kind in (IndexItem.KIND_FUNCTION,) and\
 						dstItem.kind in (IndexItem.KIND_VARIABLE,):
 						isAccepted = True

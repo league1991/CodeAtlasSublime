@@ -79,13 +79,13 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			if not entity:
 				self.color = QtGui.QColor(190,228,73)
 			else:
-				# defineList = entity.refs('definein')
 				defineList, defineRefList = dbObj.searchRefEntity(uniqueName, 'definein')
 				name = ''
 				hasDefinition = True
 				if not defineList:
-					# defineList = entity.refs('declarein')
 					defineList, defineRefList = dbObj.searchRefEntity(uniqueName, 'declarein')
+					hasDefinition = False
+				if 'pure' in self.kindName:
 					hasDefinition = False
 				self.customData['hasDef'] = hasDefinition
 				if defineList:
@@ -245,7 +245,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 			painter.setBrush(clr)
 			self.drawShape(painter)
 
-			if self.lines == 0 and self.kind == ITEM_FUNCTION:
+			if self.kind == ITEM_FUNCTION and (self.lines == 0 or self.customData.get('hasDef') == False):
 				painter.setBrush(QtGui.QColor(50,50,50,255))
 				painter.setPen(QtCore.Qt.NoPen)
 				painter.drawEllipse(QtCore.QPointF(0,0),2.5,2.5)
