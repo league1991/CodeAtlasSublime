@@ -6,6 +6,7 @@ except ImportError:
     import xml.etree.ElementTree as ET
 import re
 import os
+import traceback
 
 # Used internally by DoxygenDB
 class IndexItem(object):
@@ -78,6 +79,8 @@ class IndexRefItem(object):
 	KIND_DERIVE  = 3
 	KIND_USE	 = 4
 	KIND_OVERRIDE= 5
+	KIND_DECLARE = 6
+	KIND_DEFINE  = 7
 
 	# Dict for (kind, isReverse)
 	kindDict = {
@@ -90,18 +93,21 @@ class IndexRefItem(object):
 		'use'			: (KIND_USE, 		False),
 		'useby'			: (KIND_USE, 		True),
 		'member'		: (KIND_MEMBER, 	False),
-		'declare'		: (KIND_MEMBER, 	False),
-		'define'		: (KIND_MEMBER, 	False),
-		'declarein'		: (KIND_MEMBER, 	True),
-		'definein' 		: (KIND_MEMBER, 	True),
+		'declare'		: (KIND_DECLARE, 	False),
+		'define'		: (KIND_DEFINE, 	False),
+		'declarein'		: (KIND_DECLARE, 	True),
+		'definein' 		: (KIND_DEFINE, 	True),
 		'override'		: (KIND_OVERRIDE,	True),
 		'overrides'		: (KIND_OVERRIDE,	True),
 		'overriddenby'	: (KIND_OVERRIDE,	False),
 	}
-	def __init__(self, srcId, dstId, refKindStr):
+	def __init__(self, srcId, dstId, refKindStr, file = '', line = 0, column = 0):
 		self.srcId = srcId
 		self.dstId = dstId
 		self.kind = IndexRefItem.kindDict.get(refKindStr, (IndexRefItem.KIND_UNKNOWN, False))[0]
+		self.file = file
+		self.line = line
+		self.column = column
 
 class XmlDocItem(object):
 	CACHE_NONE = 0
@@ -146,21 +152,22 @@ class Entity(object):
 		return {k: self.metricDict.get(k) for k in keys}
 
 class Reference(object):
-	def __init__(self, kind, entity):
+	def __init__(self, kind, entity, file, line, column):
 		self.kind = kind
 		self.entityId = entity.id
 		self.entity = entity
-		self.entityLocationDict = entity.metric()
+		self.fileName = file
+		self.lineNum = line
+		self.columnNum = column
 
 	def file(self):
-		fileName = self.entityLocationDict.get('file','')
-		return Entity('', fileName, fileName, 'file', {})
+		return Entity('', self.fileName, self.fileName, 'file', {})
 
 	def line(self):
-		return self.entityLocationDict.get('line', -1)
+		return self.lineNum
 
 	def column(self):
-		return self.entityLocationDict.get('column', -1)
+		return self.columnNum
 
 	def ent(self):
 		return None
@@ -185,10 +192,48 @@ class DoxygenDB(QtCore.QObject):
 		xmlDoc = self.xmlCache.get(filePath)
 		if xmlDoc:
 			return xmlDoc
-		doc = ET.parse(filePath)
+		try:
+			doc = ET.parse(filePath)
+		except:
+			traceback.print_exc()
+			return XmlDocItem(None)
 		xmlDoc = XmlDocItem(doc)
 		self.xmlCache[filePath] = xmlDoc
 		return xmlDoc
+
+	def _getCompoundPath(self, compoundId):
+		if not compoundId:
+			return ''
+		doc = self._getXmlDocument(compoundId)
+		if not doc:
+			return ''
+		locationEle = doc.find('./compounddef/location')
+		if locationEle is None:
+			return ''
+		return locationEle.attrib.get('file','')
+
+	# Scan the given file, and find all references
+	def _getCodeRefs(self, fileId, startLine, endLine):
+		if not fileId or endLine < startLine or startLine < 0:
+			return {}
+		doc = self._getXmlDocument(fileId)
+		if not doc:
+			return {}
+		programList = doc.find('./compounddef/programlisting')
+		if programList is None:
+			return {}
+		refDict = {}
+		for lineEle in list(programList):
+			lineNumber = int(lineEle.attrib.get('lineno',startLine))
+			if lineNumber < startLine or lineNumber > endLine:
+				continue
+			for ref in lineEle.iterfind('./highlight/ref'):
+				refId = ref.attrib.get('refid','')
+				if refId in refDict:
+					refDict[refId].append(lineNumber)
+				else:
+					refDict[refId] = [lineNumber]
+		return refDict
 
 	def _readIndex(self):
 		if not self._dbFolder:
@@ -225,6 +270,88 @@ class DoxygenDB(QtCore.QObject):
 			# build compound -> member dict
 			self.compoundToIdDict[compoundRefId] = refIdList
 
+	def _parseRefLocation(self, refElement):
+		fileCompoundId = refElement.attrib.get('compoundref','')
+		filePath = self._getCompoundPath(fileCompoundId)
+		startLine = int(refElement.attrib.get('startline', 0))
+		return filePath, startLine
+		
+	def _readMemberRef(self, memberDef):
+		if memberDef.tag != 'memberdef':
+			return
+		
+		memberId = memberDef.attrib.get('id')
+		memberItem = self.idInfoDict.get(memberId)
+		if not memberItem:
+			return
+
+		# ref location dict for functions
+		memberRefDict = {}
+		memberFilePath = ''
+
+		for memberChild in memberDef.getchildren():
+			if memberChild.tag == 'references':
+				referenceId = memberChild.attrib.get('refid')
+				if referenceId == 'namespacecv_1ac0cbd833056c6ec3639c4398496b76e8':
+					pass
+
+				# build the reference dict first
+				if not memberRefDict:
+					refElement = self._getXmlElement(referenceId)
+					if refElement != None:
+						refElement = refElement.find('./referencedby[@refid=\'%s\']' % memberId)
+					if refElement != None:
+						fileCompoundId = refElement.get('compoundref')
+						memberFilePath = self._getCompoundPath(fileCompoundId)
+						startLine = int(refElement.get('startline', 0))
+						endLine = int(refElement.get('endline', 0))
+						memberRefDict = self._getCodeRefs(fileCompoundId, startLine, endLine)
+
+				referenceItem = self.idInfoDict.get(referenceId)
+				if referenceItem:
+					filePath, startLine = self._parseRefLocation(memberChild)
+					if referenceId in memberRefDict:
+						startLine = memberRefDict[referenceId][0]
+						filePath  = memberFilePath
+					refItem = IndexRefItem(memberId, referenceId, 'unknown', filePath, startLine)
+					memberItem.addRefItem(refItem)
+					referenceItem.addRefItem(refItem)
+
+			if memberChild.tag == 'referencedby':
+				referenceId = memberChild.attrib.get('refid')
+				referenceItem = self.idInfoDict.get(referenceId)
+				if referenceItem:
+					filePath, startLine = self._parseRefLocation(memberChild)
+					# find the actual position in caller's function body
+					if referenceItem.kind in (IndexItem.KIND_FUNCTION, IndexItem.KIND_SLOT):
+						fileCompoundId = memberChild.get('compoundref','')
+						endLine   = int(memberChild.get('endline', 0))
+						memberRefByDict = self._getCodeRefs(fileCompoundId, startLine, endLine)
+						if memberId in memberRefByDict:
+							startLine = memberRefByDict[memberId][0]
+					refItem = IndexRefItem(referenceId, memberId, 'unknown', filePath, startLine)
+					memberItem.addRefItem(refItem)
+					referenceItem.addRefItem(refItem)
+
+			# find override methods
+			if memberChild.tag == 'reimplementedby':
+				overrideId = memberChild.attrib.get('refid')
+				overrideItem = self.idInfoDict.get(overrideId)
+				if overrideItem:
+					filePath, startLine = self._parseRefLocation(memberChild)
+					refItem = IndexRefItem(memberId, overrideId, 'overrides', filePath, startLine)
+					overrideItem.addRefItem(refItem)
+					memberItem.addRefItem(refItem)
+
+			if memberChild.tag == 'reimplements':
+				interfaceId = memberChild.attrib.get('refid')
+				interfaceItem = self.idInfoDict.get(interfaceId)
+				if interfaceItem:
+					filePath, startLine = self._parseRefLocation(memberChild)
+					refItem = IndexRefItem(interfaceId, memberId, 'overrides', filePath, startLine)
+					interfaceItem.addRefItem(refItem)
+					memberItem.addRefItem(refItem)
+
 	def _readRef(self, compoundId):
 		doc = self._getXmlDocument(compoundId)
 		if not doc:
@@ -248,7 +375,8 @@ class DoxygenDB(QtCore.QObject):
 					baseCompoundId = compoundChild.attrib.get('refid')
 					baseCompoundItem = self.idInfoDict.get(baseCompoundId)
 					if baseCompoundItem:
-						refItem = IndexRefItem(baseCompoundId, compoundId, 'derive')
+						filePath, startLine = self._parseRefLocation(compoundChild)
+						refItem = IndexRefItem(baseCompoundId, compoundId, 'derive', filePath, startLine)
 						baseCompoundItem.addRefItem(refItem)
 						compoundItem.addRefItem(refItem)
 
@@ -257,62 +385,41 @@ class DoxygenDB(QtCore.QObject):
 					derivedCompoundId = compoundChild.attrib.get('refid')
 					derivedCompoundItem = self.idInfoDict.get(derivedCompoundId)
 					if derivedCompoundItem:
-						refItem = IndexRefItem(compoundId, derivedCompoundId, 'derive')
+						filePath, startLine = self._parseRefLocation(compoundChild)
+						refItem = IndexRefItem(compoundId, derivedCompoundId, 'derive', filePath, startLine)
 						derivedCompoundItem.addRefItem(refItem)
 						compoundItem.addRefItem(refItem)
 
 				# find members
-				if compoundChild.tag == 'listofallmembers':
-					memberList = compoundChild.findall('member')
-					for member in memberList:
-						memberId = member.attrib.get('refid')
-						memberItem = self.idInfoDict.get(memberId)
-						if memberItem and compoundItem:
-							refItem = IndexRefItem(compoundId, memberId, 'member')
-							memberItem.addRefItem(refItem)
-							compoundItem.addRefItem(refItem)
+				# if compoundChild.tag == 'listofallmembers':
+				# 	memberList = compoundChild.findall('member')
+				# 	for member in memberList:
+				# 		memberId = member.attrib.get('refid')
+				# 		memberItem = self.idInfoDict.get(memberId)
+				# 		if memberItem and compoundItem:
+				# 			filePath, startLine = self._parseRefLocation(member)
+				# 			refItem = IndexRefItem(compoundId, memberId, 'member', filePath, startLine)
+				# 			memberItem.addRefItem(refItem)
+				# 			compoundItem.addRefItem(refItem)
 
 				# find members' refs
 				if compoundChild.tag == 'sectiondef':
 					for sectionChild in compoundChild.getchildren():
 						if sectionChild.tag == 'memberdef':
-							memberDef = sectionChild
-							memberId = memberDef.attrib.get('id')
+							self._readMemberRef(sectionChild)
+
+							member = sectionChild
+							memberId = member.get('id')
 							memberItem = self.idInfoDict.get(memberId)
+							if memberItem and compoundItem:
+								memberLocation = member.find('./location')
+								locationDict = self._parseLocationDict(memberLocation)
+								filePath = locationDict.get('file','')
+								startLine = locationDict.get('line',0)
+								refItem = IndexRefItem(compoundId, memberId, 'member', filePath, startLine)
+								memberItem.addRefItem(refItem)
+								compoundItem.addRefItem(refItem)
 
-							for memberChild in memberDef.getchildren():
-								if memberChild.tag == 'references':
-									referenceId = memberChild.attrib.get('refid')
-									referenceItem = self.idInfoDict.get(referenceId)
-									if memberItem and referenceItem:
-										refItem = IndexRefItem(memberId, referenceId, 'unknown')
-										memberItem.addRefItem(refItem)
-										referenceItem.addRefItem(refItem)
-
-								if memberChild.tag == 'referencedby':
-									referenceId = memberChild.attrib.get('refid')
-									referenceItem = self.idInfoDict.get(referenceId)
-									if memberItem and referenceItem:
-										refItem = IndexRefItem(referenceId, memberId, 'unknown')
-										memberItem.addRefItem(refItem)
-										referenceItem.addRefItem(refItem)
-
-								# find override methods
-								if memberChild.tag == 'reimplementedby':
-									overrideId = memberChild.attrib.get('refid')
-									overrideItem = self.idInfoDict.get(overrideId)
-									if overrideItem:
-										refItem = IndexRefItem(memberId, overrideId, 'overrides')
-										overrideItem.addRefItem(refItem)
-										memberItem.addRefItem(refItem)
-
-								if memberChild.tag == 'reimplements':
-									interfaceId = memberChild.attrib.get('refid')
-									interfaceItem = self.idInfoDict.get(interfaceId)
-									if interfaceItem:
-										refItem = IndexRefItem(interfaceId, memberId, 'overrides')
-										interfaceItem.addRefItem(refItem)
-										memberItem.addRefItem(refItem)
 		xmlDocItem.setCacheStatus(XmlDocItem.CACHE_REF)
 
 	def _readRefs(self):
@@ -337,34 +444,32 @@ class DoxygenDB(QtCore.QObject):
 		if refid in self.idToCompoundDict:
 			fileName = self.idToCompoundDict.get(refid)
 			doc = self._getXmlDocument(fileName)
-			memberList = doc.findall('./compounddef/sectiondef/memberdef')
+			memberList = doc.findall('./compounddef/sectiondef/memberdef[@id=\'%s\']' % refid)
 			for member in memberList:
-				if member.attrib.get('id') == refid:
-					self.xmlElementCache[refid] = member
-					return member
+				self.xmlElementCache[refid] = member
+				return member
 		elif refid in self.compoundToIdDict:
 			doc = self._getXmlDocument(refid)
-			compoundList = doc.findall('compounddef')
+			compoundList = doc.findall('compounddef[@id=\'%s\']' % refid)
 			for compound in compoundList:
-				if compound.attrib.get('id') == refid:
-					self.xmlElementCache[refid] = compound
-					return compound
+				self.xmlElementCache[refid] = compound
+				return compound
 		return None
 
 	def _parseLocationDict(self, element):
-		line = int(element.attrib.get('line'))
-		column = int(element.attrib.get('column'))
+		declLine   = int(element.attrib.get('line',-1))
+		declColumn = int(element.attrib.get('column',-1))
+		declFile   = element.attrib.get('file','')
 
-		file = element.attrib.get('bodyfile')
-		if not file:
-			file = element.attrib.get('file')
+		bodyStart  = int(element.attrib.get('bodystart',-1))
+		bodyEnd    = int(element.attrib.get('bodyend',-1))
+		bodyFile   = element.attrib.get('bodyfile','')
 
-		bodyStart = element.attrib.get('bodystart')
-		bodyEnd = element.attrib.get('bodyend')
+		if bodyEnd < 0:
+			bodyEnd = bodyStart
 
-		start = int(bodyStart) if bodyStart else -1
-		end   = int(bodyEnd)   if bodyEnd   else -1
-		return {'file': file, 'line': line, 'column': column, 'CountLine': max(end - start+1, 0)}
+		return {'file': bodyFile, 'line': bodyStart, 'column': 0, 'CountLine': bodyEnd - bodyStart,
+				'declLine': declLine, 'declColumn': declColumn, 'declFile': declFile}
 
 	def _parseEntity(self, element):
 		if not element:
@@ -493,6 +598,7 @@ class DoxygenDB(QtCore.QObject):
 		refEntityList = []
 		refRefList    = []
 		refs = thisItem.getRefItemList()
+		thisEntity = self.searchFromUniqueName(uniqueName)
 		for ref in refs:
 			otherId = ref.srcId
 			if ref.srcId == uniqueName:
@@ -510,22 +616,33 @@ class DoxygenDB(QtCore.QObject):
 			for refKind, isExchange in refKindList:
 				srcItem = thisItem
 				dstItem = otherItem
+				dstMetric = otherEntity.metric()
 				if isExchange:
 					srcItem = otherItem
-					dstItem = thisItem\
+					dstItem = thisItem
+					dstMetric = thisEntity.metric()
 
 				# check edge direction
 				if srcItem.id != ref.srcId or dstItem.id != ref.dstId:
 					continue
 
 				isAccepted = False
+				file = ref.file
+				line = ref.line
+				column = ref.column
 				if refKind == IndexRefItem.KIND_CALL and ref.kind == IndexRefItem.KIND_UNKNOWN:
 					if  srcItem.kind == IndexItem.KIND_FUNCTION and dstItem.kind == IndexItem.KIND_FUNCTION:
 						isAccepted = True
-				elif refKind == IndexRefItem.KIND_MEMBER and ref.kind == IndexRefItem.KIND_MEMBER:
-					if  srcItem.kind in (IndexItem.KIND_CLASS, IndexItem.KIND_STRUCT) and\
-						dstItem.kind in (IndexItem.KIND_CLASS, IndexItem.KIND_STRUCT, IndexItem.KIND_FUNCTION, IndexItem.KIND_VARIABLE, IndexItem.KIND_SIGNAL, IndexItem.KIND_SLOT):
-						isAccepted = True
+				elif refKind in (IndexRefItem.KIND_DEFINE, ) and ref.kind == IndexRefItem.KIND_MEMBER:
+					isAccepted = True
+					file = dstMetric.get('file','')
+					line = dstMetric.get('line', 0)
+					column = dstMetric.get('column', 0)
+				elif refKind in (IndexRefItem.KIND_MEMBER, IndexRefItem.KIND_DECLARE) and ref.kind == IndexRefItem.KIND_MEMBER:
+					isAccepted = True
+					file = dstMetric.get('declFile','')
+					line = dstMetric.get('declLine', 0)
+					column = dstMetric.get('declColumn', 0)
 				elif refKind == IndexRefItem.KIND_USE and ref.kind == IndexRefItem.KIND_UNKNOWN:
 					if  srcItem.kind in (IndexItem.KIND_FUNCTION,) and\
 						dstItem.kind in (IndexItem.KIND_VARIABLE,):
@@ -539,7 +656,7 @@ class DoxygenDB(QtCore.QObject):
 
 				if isAccepted:
 					refEntityList.append(otherEntity)
-					refRefList.append(Reference(refKind, otherEntity))
+					refRefList.append(Reference(refKind, otherEntity, file, line, column))
 
 		return refEntityList, refRefList
 

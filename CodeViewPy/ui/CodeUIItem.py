@@ -85,8 +85,8 @@ class CodeUIItem(QtGui.QGraphicsItem):
 				if not defineList:
 					defineList, defineRefList = dbObj.searchRefEntity(uniqueName, 'declarein')
 					hasDefinition = False
-				if 'pure' in self.kindName:
-					hasDefinition = False
+				# if 'pure' in self.kindName:
+				# 	hasDefinition = False
 				self.customData['hasDef'] = hasDefinition
 				if defineList:
 					declareEnt = defineList[0]
