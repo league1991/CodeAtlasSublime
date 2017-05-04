@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 from PyQt4 import QtCore, Qt
+
 try:
-    import xml.etree.cElementTree as ET
+	import xml.etree.cElementTree as ET
 except ImportError:
-    import xml.etree.ElementTree as ET
+	import xml.etree.ElementTree as ET
 import re
 import os
 import traceback
+
 
 # Used internally by DoxygenDB
 class IndexItem(object):
@@ -52,7 +54,7 @@ class IndexItem(object):
 		'friend':KIND_FRIEND,			'dcop':KIND_DCOP,				'slot':KIND_SLOT,
 		# extra keywords
 		'method':KIND_FUNCTION
-		}
+	}
 
 	def __init__(self, name, kindStr, id):
 		self.id   = id
@@ -71,6 +73,7 @@ class IndexItem(object):
 
 	def getRefItemList(self):
 		return self.refs
+
 
 class IndexRefItem(object):
 	KIND_UNKNOWN = 0
@@ -176,13 +179,47 @@ class DoxygenDB(QtCore.QObject):
 	reopenSignal = QtCore.pyqtSignal()
 	def __init__(self):
 		super(DoxygenDB, self).__init__()
-		self._dbFolder = ''
 		self.reopenSignal.connect(self.reopen, Qt.Qt.QueuedConnection)
+		self._doxyFileFolder = ''
+		self._dbFolder = ''
+		self.metaDict = {}			# dict for meta data, (key, [value1, value2, value3])
 		self.idToCompoundDict = {}	# dict for   member objects, member   id -> compound id
 		self.compoundToIdDict = {}	# dict for compound objects, compound id -> [refid, refid, ...]
 		self.idInfoDict = {}		# info for both compound and member object, id -> IndexItem
 		self.xmlCache = {}			# xml file name -> XmlDocItem
 		self.xmlElementCache = {}	# dict for xml element, id -> xmlElement
+
+	def _readDoxyfile(self, filePath):
+		file = open(filePath)
+		if not file:
+			return
+
+		currentKey = ''
+		currentValue = []
+		while True:
+			line = file.readline()
+			if not line:
+				break
+			line = line.strip()
+			if not line:
+				continue
+			if line.startswith('#'):
+				continue
+			lineList = line.split('=')
+			if len(lineList) == 2:
+				if currentKey:
+					self.metaDict[currentKey] = currentValue
+				currentKey = lineList[0].strip()
+				value = lineList[1].strip('\\')
+				value = value.strip()
+				currentValue = [value]
+			elif len(lineList) == 1:
+				# a value
+				value = lineList[0].strip('\\')
+				value = value.strip()
+				currentValue.append(value)
+			else:
+				pass
 
 	def _getXmlDocument(self, fileName):
 		return self._getXmlDocumentItem(fileName).getDoc()
@@ -210,7 +247,7 @@ class DoxygenDB(QtCore.QObject):
 		locationEle = doc.find('./compounddef/location')
 		if locationEle is None:
 			return ''
-		return locationEle.attrib.get('file','')
+		return self._doxyFileFolder + '/' +locationEle.attrib.get('file' ,'')
 
 	# Scan the given file, and find all references
 	def _getCodeRefs(self, fileId, startLine, endLine):
@@ -224,11 +261,11 @@ class DoxygenDB(QtCore.QObject):
 			return {}
 		refDict = {}
 		for lineEle in list(programList):
-			lineNumber = int(lineEle.attrib.get('lineno',startLine))
+			lineNumber = int(lineEle.attrib.get('lineno' ,startLine))
 			if lineNumber < startLine or lineNumber > endLine:
 				continue
 			for ref in lineEle.iterfind('./highlight/ref'):
-				refId = ref.attrib.get('refid','')
+				refId = ref.attrib.get('refid' ,'')
 				if refId in refDict:
 					refDict[refId].append(lineNumber)
 				else:
@@ -242,7 +279,7 @@ class DoxygenDB(QtCore.QObject):
 
 		compoundList = doc.findall("compound")
 		for compound in compoundList:
-			compoundRefId = compound.attrib.get('refid','')
+			compoundRefId = compound.attrib.get('refid' ,'')
 
 			# record name attr
 			for compoundChild in compound.getchildren():
@@ -260,7 +297,7 @@ class DoxygenDB(QtCore.QObject):
 				self.idToCompoundDict[memberRefId] = compoundRefId
 				refIdList.append(memberRefId)
 
-				#recode name attr
+				# recode name attr
 				for memberChild in member.getchildren():
 					if memberChild.tag == 'name':
 						self.idInfoDict[memberRefId] = \
@@ -271,7 +308,7 @@ class DoxygenDB(QtCore.QObject):
 			self.compoundToIdDict[compoundRefId] = refIdList
 
 	def _parseRefLocation(self, refElement):
-		fileCompoundId = refElement.attrib.get('compoundref','')
+		fileCompoundId = refElement.attrib.get('compoundref' ,'')
 		filePath = self._getCompoundPath(fileCompoundId)
 		startLine = int(refElement.attrib.get('startline', 0))
 		return filePath, startLine
@@ -324,7 +361,7 @@ class DoxygenDB(QtCore.QObject):
 					filePath, startLine = self._parseRefLocation(memberChild)
 					# find the actual position in caller's function body
 					if referenceItem.kind in (IndexItem.KIND_FUNCTION, IndexItem.KIND_SLOT):
-						fileCompoundId = memberChild.get('compoundref','')
+						fileCompoundId = memberChild.get('compoundref' ,'')
 						endLine   = int(memberChild.get('endline', 0))
 						memberRefByDict = self._getCodeRefs(fileCompoundId, startLine, endLine)
 						if memberId in memberRefByDict:
@@ -414,8 +451,8 @@ class DoxygenDB(QtCore.QObject):
 							if memberItem and compoundItem:
 								memberLocation = member.find('./location')
 								locationDict = self._parseLocationDict(memberLocation)
-								filePath = locationDict.get('file','')
-								startLine = locationDict.get('line',0)
+								filePath = locationDict.get('file' ,'')
+								startLine = locationDict.get('line' ,0)
 								refItem = IndexRefItem(compoundId, memberId, 'member', filePath, startLine)
 								memberItem.addRefItem(refItem)
 								compoundItem.addRefItem(refItem)
@@ -457,13 +494,13 @@ class DoxygenDB(QtCore.QObject):
 		return None
 
 	def _parseLocationDict(self, element):
-		declLine   = int(element.attrib.get('line',-1))
-		declColumn = int(element.attrib.get('column',-1))
-		declFile   = element.attrib.get('file','')
+		declLine   = int(element.attrib.get('line' ,-1))
+		declColumn = int(element.attrib.get('column' ,-1))
+		declFile   = self._doxyFileFolder + '/' + element.attrib.get('file' ,'')
 
-		bodyStart  = int(element.attrib.get('bodystart',-1))
-		bodyEnd    = int(element.attrib.get('bodyend',-1))
-		bodyFile   = element.attrib.get('bodyfile','')
+		bodyStart  = int(element.attrib.get('bodystart' ,-1))
+		bodyEnd    = int(element.attrib.get('bodyend' ,-1))
+		bodyFile   = self._doxyFileFolder + '/' + element.attrib.get('bodyfile' ,'')
 
 		if bodyEnd < 0:
 			bodyEnd = bodyStart
@@ -512,7 +549,11 @@ class DoxygenDB(QtCore.QObject):
 	def open(self, fullPath):
 		if self._dbFolder:
 			self.close()
-		self._dbFolder = os.path.split(fullPath)[0]
+		self._doxyFileFolder = os.path.split(fullPath)[0]
+		self._readDoxyfile(fullPath)
+		self._dbFolder = self.metaDict.get('OUTPUT_DIRECTORY', fullPath)[0]
+		self._dbFolder = self._dbFolder.replace('\\','/')
+		self._dbFolder += '/xml'
 		self._readIndex()
 		# self._readRefs()
 
@@ -520,6 +561,7 @@ class DoxygenDB(QtCore.QObject):
 		return self._dbFolder + '/index.xml'
 
 	def close(self):
+		self._doxyFileFolder = ''
 		self._dbFolder = ''
 		self.idToCompoundDict = {}
 		self.compoundToIdDict = {}
@@ -552,7 +594,7 @@ class DoxygenDB(QtCore.QObject):
 				if not xmlElement:
 					continue
 				entity = self._parseEntity(xmlElement)
-				#entity = Entity(id, info.name, info.kind)
+				# entity = Entity(id, info.name, info.kind)
 				res.append(entity)
 		return res
 
@@ -596,7 +638,7 @@ class DoxygenDB(QtCore.QObject):
 
 		# find references
 		refEntityList = []
-		refRefList    = []
+		refRefList = []
 		refs = thisItem.getRefItemList()
 		thisEntity = self.searchFromUniqueName(uniqueName)
 		for ref in refs:
@@ -633,14 +675,14 @@ class DoxygenDB(QtCore.QObject):
 				if refKind == IndexRefItem.KIND_CALL and ref.kind == IndexRefItem.KIND_UNKNOWN:
 					if  srcItem.kind == IndexItem.KIND_FUNCTION and dstItem.kind == IndexItem.KIND_FUNCTION:
 						isAccepted = True
-				elif refKind in (IndexRefItem.KIND_DEFINE, ) and ref.kind == IndexRefItem.KIND_MEMBER:
+				elif refKind in (IndexRefItem.KIND_DEFINE,) and ref.kind == IndexRefItem.KIND_MEMBER:
 					isAccepted = True
-					file = dstMetric.get('file','')
+					file = dstMetric.get('file', '')
 					line = dstMetric.get('line', 0)
 					column = dstMetric.get('column', 0)
 				elif refKind in (IndexRefItem.KIND_MEMBER, IndexRefItem.KIND_DECLARE) and ref.kind == IndexRefItem.KIND_MEMBER:
 					isAccepted = True
-					file = dstMetric.get('declFile','')
+					file = dstMetric.get('declFile', '')
 					line = dstMetric.get('declLine', 0)
 					column = dstMetric.get('declColumn', 0)
 				elif refKind == IndexRefItem.KIND_USE and ref.kind == IndexRefItem.KIND_UNKNOWN:
@@ -660,7 +702,7 @@ class DoxygenDB(QtCore.QObject):
 
 		return refEntityList, refRefList
 
-	def searchRefEntity(self, uniqueName, refKindStr = None, entKindStr = None, isUnique = True):
+	def searchRefEntity(self, uniqueName, refKindStr=None, entKindStr=None, isUnique=True):
 		refEntityList, refRefList = self._searchRef(uniqueName, refKindStr, entKindStr, isUnique)
 		return refEntityList, refRefList
 
@@ -671,12 +713,12 @@ class DoxygenDB(QtCore.QObject):
 				return refRefList[i]
 		return None
 
-	def searchRef(self, uniqueName, refKindStr = None, entKindStr = None, isUnique = True):
+	def searchRef(self, uniqueName, refKindStr=None, entKindStr=None, isUnique=True):
 		refEntityList, refRefList = self._searchRef(uniqueName, refKindStr, entKindStr, isUnique)
 		return refRefList
-	
+
 	def searchCallPaths(self, srcUniqueName, tarUniqueName):
-		return [],[]
+		return [], []
 
 	def listFiles(self):
 		return
@@ -688,14 +730,15 @@ class DoxygenDB(QtCore.QObject):
 		return
 
 
-def printSymbolDict(sym, indent = 0):
+def printSymbolDict(sym, indent=0):
 	for uname, childSym in sym.childrenDict.items():
-		printSymbolDict(childSym, indent+1)
+		printSymbolDict(childSym, indent + 1)
+
 
 if __name__ == "__main__":
 	db = DoxygenDB()
 	# db.open('I:/Programs/masteringOpenCV/Chapter3_MarkerlessAR/doc/xml/index.xml')
-	db.open('I:/Programs/mitsuba/doxygenData/xml/index.xml')
+	db.open('D:/Code/NewRapidRT/rapidrt/Doxyfile')
 	# element = db._getXmlElement('main_8cpp_1aff21477595f55398a44d72df24d4d6c5')
 	#classA = db.search('ARDrawingContext', 'class')[0]
 	#functionA = db.search('drawCoordinateAxis', 'function')[0]
