@@ -60,7 +60,7 @@ class CodeDB(QtCore.QObject):
 		# mainUI.symbolDock.widget().updateForbiddenSymbol()
 		# mainUI.schemeDock.widget().updateScheme()
 
-	def search(self, name, kindstring = None):
+	def search(self, name, kindstring = ''):
 		if not self._db:
 			return []
 		res = self._db.lookup(name, kindstring)
@@ -71,7 +71,7 @@ class CodeDB(QtCore.QObject):
 			return None
 		return self._db.lookup_uniquename(uniqueName)
 
-	def searchRefEntity(self, uniqueName, refKindStr = None, entKindStr = None, isUnique = True):
+	def searchRefEntity(self, uniqueName, refKindStr = '', entKindStr = '', isUnique = True):
 		if not self._db:
 			return [],[]
 		ent = self._db.lookup_uniquename(uniqueName)
@@ -95,7 +95,7 @@ class CodeDB(QtCore.QObject):
 				return ref
 		return None
 
-	def searchRef(self, uniqueName, refKindStr = None, entKindStr = None, isUnique = True):
+	def searchRef(self, uniqueName, refKindStr = '', entKindStr = '', isUnique = True):
 		if not self._db:
 			return []
 		ent = self._db.lookup_uniquename(uniqueName)
