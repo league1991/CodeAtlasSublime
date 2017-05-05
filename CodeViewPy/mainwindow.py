@@ -182,7 +182,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		scene = UIManager.instance().getScene()
 		if scene:
 			scene.acquireLock()
-			dbmgr.getDB().analyze()
+			dbmgr.analysisDB()
 			#dbmgr.getDB().open(r'C:\Users\me\AppData\Roaming\Sublime Text 3\Packages\CodeAtlas\CodeAtlasSublime.udb')
 			scene.releaseLock()
 
@@ -193,7 +193,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		dbPath = dialog.getOpenFileName(self, 'Open Database', curDir.currentPath())
 		if dbPath:
 			dbmgr = DBManager.DBManager.instance()
-			dbmgr.getDB().open(dbPath)
+			dbmgr.openDB(dbPath)
 
 			from UIManager import UIManager
 			symScene = UIManager.instance().getSymbolScene()
@@ -214,10 +214,10 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 	def onTest(self):
 		dbmgr = DBManager.DBManager.instance()
 		# defaultPath = r'C:\Users\me\AppData\Roaming\Sublime Text 3\Packages\CodeAtlas\CodeAtlasSublime.udb'
-		defaultPath = 'I:/Programs/masteringOpenCV/Chapter3_MarkerlessAR/doc/xml/index.xml'
+		# defaultPath = 'I:/Programs/masteringOpenCV/Chapter3_MarkerlessAR/doc/xml/index.xml'
 		# defaultPath = 'I:/Programs/mitsuba/doxygenData/xml/index.xml'
-		# defaultPath = 'D:/Code/NewRapidRT/rapidrt/doxygen/xml/index.xml'
-		dbmgr.getDB().open(defaultPath)
+		defaultPath = 'D:/Code/NewRapidRT/rapidrt/Doxyfile'
+		dbmgr.openDB(defaultPath)
 
 		from UIManager import UIManager
 		symScene = UIManager.instance().getSymbolScene()

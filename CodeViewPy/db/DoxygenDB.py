@@ -552,8 +552,8 @@ class DoxygenDB(QtCore.QObject):
 		self._doxyFileFolder = os.path.split(fullPath)[0]
 		self._readDoxyfile(fullPath)
 		self._dbFolder = self.metaDict.get('OUTPUT_DIRECTORY', fullPath)[0]
+		self._dbFolder += '/' + self.metaDict.get('XML_OUTPUT',['xml'])[0]
 		self._dbFolder = self._dbFolder.replace('\\','/')
-		self._dbFolder += '/xml'
 		self._readIndex()
 		# self._readRefs()
 
@@ -620,6 +620,8 @@ class DoxygenDB(QtCore.QObject):
 			refNameList =pattern.findall(refKindStr)
 			for refName in refNameList:
 				refKindList.append(IndexRefItem.kindDict.get(refName, (IndexRefItem.KIND_UNKNOWN, False)))
+		else:
+			refKindList = list(IndexRefItem.kindDict.values())
 
 		# parse entKindStr
 		entKindList = []

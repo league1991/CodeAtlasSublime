@@ -51,13 +51,14 @@ class CodeDB(QtCore.QObject):
 			print('open finish')
 
 	def onOpen(self):
-		from UIManager import UIManager
-		scene = UIManager.instance().getScene()
-		scene.onOpenDB()
-
-		mainUI = UIManager.instance().getMainUI()
-		mainUI.symbolDock.widget().updateForbiddenSymbol()
-		mainUI.schemeDock.widget().updateScheme()
+		pass
+		# from UIManager import UIManager
+		# scene = UIManager.instance().getScene()
+		# scene.onOpenDB()
+		#
+		# mainUI = UIManager.instance().getMainUI()
+		# mainUI.symbolDock.widget().updateForbiddenSymbol()
+		# mainUI.schemeDock.widget().updateScheme()
 
 	def search(self, name, kindstring = None):
 		if not self._db:
