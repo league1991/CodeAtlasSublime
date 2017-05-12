@@ -229,11 +229,24 @@ class DoxygenDB(QtCore.QObject):
 		xmlDoc = self.xmlCache.get(filePath)
 		if xmlDoc:
 			return xmlDoc
-		try:
-			doc = ET.parse(filePath)
-		except:
-			traceback.print_exc()
+		doc = None
+
+		# try different encoding and configurations
+		encodingArray = ['utf-8', 'iso-8859-5']
+		for docEncoding in encodingArray:
+			try:
+				doc = ET.parse(filePath, parser=ET.XMLParser(encoding=docEncoding))
+				if doc is not None:
+					print('parse %s success. encoding = %s' % (fileName, docEncoding))
+					break
+			except:
+				print('parse %s failed. encoding = %s'% (fileName, docEncoding))
+				# traceback.print_exc()
+				continue
+		if doc is None:
+			print('parse %s failed'% (fileName, ))
 			return XmlDocItem(None)
+
 		xmlDoc = XmlDocItem(doc)
 		self.xmlCache[filePath] = xmlDoc
 		return xmlDoc
@@ -505,7 +518,7 @@ class DoxygenDB(QtCore.QObject):
 		if bodyEnd < 0:
 			bodyEnd = bodyStart
 
-		return {'file': bodyFile, 'line': bodyStart, 'column': 0, 'CountLine': bodyEnd - bodyStart,
+		return {'file': bodyFile, 'line': bodyStart, 'column': 0, 'CountLine': max(bodyEnd - bodyStart, 0),
 				'declLine': declLine, 'declColumn': declColumn, 'declFile': declFile}
 
 	def _parseEntity(self, element):
