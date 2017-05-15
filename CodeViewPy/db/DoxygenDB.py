@@ -352,12 +352,12 @@ class DoxygenDB(QtCore.QObject):
 					interfaceItem.addRefItem(refItem)
 					memberItem.addRefItem(refItem)
 
-	def _readRef(self, compoundId):
-		doc = self._getXmlDocument(compoundId)
+	def _readRef(self, compoundFileId):
+		doc = self._getXmlDocument(compoundFileId)
 		if not doc:
 			return
 
-		xmlDocItem = self._getXmlDocumentItem(compoundId)
+		xmlDocItem = self._getXmlDocumentItem(compoundFileId)
 		if xmlDocItem.getCacheStatus(XmlDocItem.CACHE_REF):
 			return
 
@@ -444,6 +444,8 @@ class DoxygenDB(QtCore.QObject):
 		if refid in self.idToCompoundDict:
 			fileName = self.idToCompoundDict.get(refid)
 			doc = self._getXmlDocument(fileName)
+			if not doc:
+				return None
 			memberList = doc.findall('./compounddef/sectiondef/memberdef[@id=\'%s\']' % refid)
 			for member in memberList:
 				self.xmlElementCache[refid] = member
