@@ -12,6 +12,22 @@ http://www.cnblogs.com/dydx/p/6299927.html
 Here are some introduction videos:
 https://www.youtube.com/watch?v=FScdHyxdNFw&list=PLN16zMWJLkHLgHhTJUIkwp5chgnFz9_NH
 
+Features
+--------
+* Visualize call graph
+* Visualize class hierarchy
+* Visualize class membership
+* Visualize variable usage
+* Quick navigation
+* Save/Load graph bookmarks
+
+Supported languages
+--------
+* Python
+* C/C++
+* Java
+* PHP
+
 Overview
 --------
 * **Square** is a class.
