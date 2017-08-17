@@ -117,7 +117,7 @@ Input your comment for functions/classes/variables in Symbol panel.
 
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/setup/1.png)  
 
-4.Unzip and place the plugin in the package folder. Rename the folder name to "CodeAtlas".
+4.Unzip and place the plugin in the package folder. Please note the folder structure and rename the plugin's root folder to "CodeAtlas".
 
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/setup/2.png)  
 
