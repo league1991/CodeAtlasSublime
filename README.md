@@ -77,7 +77,7 @@ Find Class Member
 Press `Alt+M` to find all class variables and the largest member function. 
 Press `Alt+M` several times to see smaller member functions.
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/member.gif)  
- 
+
 Find Variable Usage
 -------------------
 
@@ -117,7 +117,7 @@ Input your comment for functions/classes/variables in Symbol panel.
 
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/setup/1.png)  
 
-4.Unzip and place the plugin in the package folder. 
+4.Unzip and place the plugin in the package folder. Rename the folder name to "CodeAtlas".
 
 ![](https://github.com/league1991/CodeAtlasSublime/raw/master/ImageCache/setup/2.png)  
 
