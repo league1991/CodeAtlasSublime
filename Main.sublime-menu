@@ -1,12 +1,67 @@
 [
-{
-    "id": "tools",
-    "children": [
-        {
-            "caption": "Test",
-            "id": "test",
-            "command": "test"
-        },
-    ]
-}
+    {
+        "id": "tools",
+        "children":
+        [
+            {
+                "caption": "Code Atlas",
+                "children":
+                [
+                    {
+                        "command": "start_atlas_",
+                        "args": {},
+                        "caption": "Start Atlas"
+                    },
+                    {
+                        "command": "show_in_atlas_",
+                        "args": {},
+                        "caption": "Show in Atlas"
+                    },
+                    {
+                        "command": "analyze_database_",
+                        "args": {},
+                        "caption": "Analyze Database"
+                    },
+                    {
+                        "caption": "-"
+                    },
+                    {
+                        "command": "find_callers_",
+                        "args": {},
+                        "caption": "Find Callers"
+                    },
+                    {
+                        "command": "find_callees_",
+                        "args": {},
+                        "caption": "Find Callees"
+                    },
+                    {
+                        "command": "find_members_",
+                        "args": {},
+                        "caption": "Find Members"
+                    },
+                    {
+                        "command": "find_overrides_",
+                        "args": {},
+                        "caption": "Find Overrides"
+                    },
+                    {
+                        "command": "find_similar_function_",
+                        "args": {},
+                        "caption": "Find Similar Function"
+                    },
+                    {
+                        "command": "find_bases_",
+                        "args": {},
+                        "caption": "Find Bases"
+                    },
+                    {
+                        "command": "delete_nearby_items_",
+                        "args": {},
+                        "caption": "Delete Nearby Items"
+                    },
+                ]
+            }
+        ]
+    }
 ]
