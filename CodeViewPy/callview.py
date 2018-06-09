@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from PyQt4 import QtGui,QtCore,uic,QtOpenGL
+from PyQt5 import QtGui,QtCore,uic,QtOpenGL, QtWidgets
 import time
 import math
 from symbolview import SymbolView
@@ -9,8 +9,8 @@ from db.SymbolAttr import SymbolAttr
 qtCreatorFile = './ui/Call.ui' # Enter file here.
 Ui_CallView, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
-class CallView(QtGui.QScrollArea, Ui_CallView):
+class CallView(QtWidgets.QScrollArea, Ui_CallView):
 	def __init__(self, parent = None):
-		QtGui.QScrollArea.__init__(self)
+		QtWidgets.QScrollArea.__init__(self)
 		Ui_CallView.__init__(self)
 		self.setupUi(self)

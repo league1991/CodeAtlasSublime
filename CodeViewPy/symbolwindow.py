@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-from PyQt4 import QtGui,QtCore,uic
+from PyQt5 import QtGui,QtCore,uic,QtWidgets
 import sys
 
 qtCreatorFile = './ui/Symbol.ui' # Enter file here.
 
 Ui_SymbolWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
-class ForbiddenItem(QtGui.QListWidgetItem):
+class ForbiddenItem(QtWidgets.QListWidgetItem):
 	def __init__(self, uname, name, parent = None):
 		super(ForbiddenItem, self).__init__(name, parent)
 		self.uniqueName = uname
@@ -14,9 +14,9 @@ class ForbiddenItem(QtGui.QListWidgetItem):
 	def getUniqueName(self):
 		return self.uniqueName
 
-class SymbolWindow(QtGui.QScrollArea, Ui_SymbolWindow):
+class SymbolWindow(QtWidgets.QScrollArea, Ui_SymbolWindow):
 	def __init__(self, parent = None):
-		QtGui.QScrollArea.__init__(self)
+		QtWidgets.QScrollArea.__init__(self)
 		Ui_SymbolWindow.__init__(self)
 		self.setupUi(self)
 		self.addForbidden.clicked.connect(self.onAddForbidden)
@@ -75,7 +75,7 @@ class SymbolWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 		scene.updateSelectedComment(text)
 
 if __name__ == "__main__":
-	app = QtGui.QApplication(sys.argv)
+	app = QtWidgets.QApplication(sys.argv)
 	window = SymbolWindow()
 	window.show()
 	sys.exit(app.exec_())

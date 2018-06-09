@@ -5,7 +5,7 @@ import time
 import inspect
 import ctypes
 from json import *
-from PyQt4 import QtCore, Qt
+from PyQt5 import QtCore, Qt
 
 class SocketThread(QtCore.QThread):
 #class SocketThread(threading.Thread):

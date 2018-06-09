@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import time
 import sys
-from PyQt4 import QtCore, QtGui, uic, Qt
+from PyQt5 import QtCore, QtGui, uic, Qt, QtWidgets
 import math
 import random
 from db.SymbolAttr import UIAttr, RefAttr
@@ -51,7 +51,7 @@ class LineCache(object):
 	def paint(self, qPainter, alpha = 50, width = 1):
 		if not self.isVisible:
 			return
-		gradient = QtGui.QLinearGradient(self.startPnt, self.endPnt)
+		gradient = QtWidgets.QLinearGradient(self.startPnt, self.endPnt)
 		self.SRC_COLOR.setAlpha(alpha)
 		self.MID_COLOR.setAlpha(alpha)
 		self.DST_COLOR.setAlpha(alpha)
@@ -66,7 +66,7 @@ class LineCache(object):
 		qPainter.drawPath(self.path)
 		#qPainter.drawLine(self.startPnt, self.endPnt)
 
-class SymbolScene(QtGui.QGraphicsScene):
+class SymbolScene(QtWidgets.QGraphicsScene):
 	def __init__(self, *args):
 		super(SymbolScene, self).__init__(*args)
 		self.symbolRoot = None
@@ -89,7 +89,7 @@ class SymbolScene(QtGui.QGraphicsScene):
 						  SymbolNode.KIND_CLASS:	 10,
 						  SymbolNode.KIND_UNKNOWN:   10}
 
-		self.setItemIndexMethod(QtGui.QGraphicsScene.BspTreeIndex)
+		self.setItemIndexMethod(QtWidgets.QGraphicsScene.BspTreeIndex)
 
 	def getBaseRadius(self):
 		return self.baseRadius

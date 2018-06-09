@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-from PyQt4 import QtGui,QtCore,uic
+from PyQt5 import QtGui,QtCore,uic,QtWidgets
 import sys
 
 qtCreatorFile = './ui/Scheme.ui' # Enter file here.
 
 Ui_SymbolWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
-class SchemeItem(QtGui.QListWidgetItem):
+class SchemeItem(QtWidgets.QListWidgetItem):
 	def __init__(self, name, parent = None):
 		super(SchemeItem, self).__init__(name, parent)
 		self.uniqueName = name
@@ -14,9 +14,9 @@ class SchemeItem(QtGui.QListWidgetItem):
 	def getUniqueName(self):
 		return self.uniqueName
 
-class SchemeWindow(QtGui.QScrollArea, Ui_SymbolWindow):
+class SchemeWindow(QtWidgets.QScrollArea, Ui_SymbolWindow):
 	def __init__(self, parent = None):
-		QtGui.QScrollArea.__init__(self)
+		QtWidgets.QScrollArea.__init__(self)
 		Ui_SymbolWindow.__init__(self)
 		self.setupUi(self)
 		self.addSchemeButton.clicked.connect(self.onAddOrModifyScheme)
@@ -42,10 +42,10 @@ class SchemeWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 		schemeNameList = scene.getSchemeNameList()
 		isAdd = True
 		if schemeName in schemeNameList:
-			button = QtGui.QMessageBox.question(self, "Add Scheme",
+			button = QtWidgets.QMessageBox.question(self, "Add Scheme",
 												"\"%s\" already exists. Replace it?" % schemeName,
-												QtGui.QMessageBox.Ok | QtGui.QMessageBox.No)
-			if button != QtGui.QMessageBox.Ok:
+												QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.No)
+			if button != QtWidgets.QMessageBox.Ok:
 				isAdd = False
 
 		if isAdd:
@@ -55,7 +55,7 @@ class SchemeWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 	def onShowScheme(self):
 		item = self.schemeList.currentItem()
 		if not item:
-			QtGui.QMessageBox.warning(self, "Warning", "Please select an item to show.")
+			QtWidgets.QMessageBox.warning(self, "Warning", "Please select an item to show.")
 			return
 
 		schemeName = item.getUniqueName()
@@ -69,7 +69,7 @@ class SchemeWindow(QtGui.QScrollArea, Ui_SymbolWindow):
 	def onDeleteScheme(self):
 		item = self.schemeList.currentItem()
 		if not item:
-			QtGui.QMessageBox.warning(self, "Warning", "Please select an item to delete.")
+			QtWidgets.QMessageBox.warning(self, "Warning", "Please select an item to delete.")
 			return
 
 		from UIManager import UIManager

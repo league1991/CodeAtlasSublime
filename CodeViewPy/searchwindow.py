@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from PyQt4 import QtGui,QtCore,uic
+from PyQt5 import QtGui,QtCore,uic,QtWidgets
 import sys
 import searchwindow
 import math
@@ -9,7 +9,7 @@ qtCreatorFile = './ui/Search.ui' # Enter file here.
 
 Ui_SearchWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
-class ResultItem(QtGui.QListWidgetItem):
+class ResultItem(QtWidgets.QListWidgetItem):
 	def __init__(self, entity, parent = None):
 		text = entity.longname()
 		super(ResultItem, self).__init__(text, parent)
@@ -18,9 +18,9 @@ class ResultItem(QtGui.QListWidgetItem):
 	def getUniqueName(self):
 		return self.uniqueName
 
-class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
+class SearchWindow(QtWidgets.QScrollArea, Ui_SearchWindow):
 	def __init__(self, parent = None):
-		QtGui.QScrollArea.__init__(self)
+		QtWidgets.QScrollArea.__init__(self)
 		Ui_SearchWindow.__init__(self)
 		self.setupUi(self) 
 		self.searchButton.clicked.connect(self.onSearch)
@@ -117,7 +117,7 @@ class SearchWindow(QtGui.QScrollArea, Ui_SearchWindow):
 		scene.releaseLock()
 
 if __name__ == "__main__":
-	app = QtGui.QApplication(sys.argv)
+	app = QtWidgets.QApplication(sys.argv)
 	window = SearchWindow()
 	window.show()
 	sys.exit(app.exec_())

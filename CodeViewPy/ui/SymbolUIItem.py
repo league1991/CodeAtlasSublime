@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-from PyQt4 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtGui, uic, QtWidgets
 import math
 
-class SymbolUIItem(QtGui.QGraphicsItem):
+class SymbolUIItem(QtWidgets.QGraphicsItem):
 	COLOR_DICT = {}
 	def __init__(self, node, parent = None, scene = None):
 		super(SymbolUIItem, self).__init__(parent, scene)
 		isIgnore = node and node.getKind() == node.KIND_UNKNOWN
-		self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, not isIgnore)
-		self.setFlag(QtGui.QGraphicsItem.ItemIsFocusable, not isIgnore)
+		self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, not isIgnore)
+		self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, not isIgnore)
 		self.setAcceptDrops(True);
 		self.setAcceptHoverEvents(True)
 		self.node = node
@@ -30,8 +30,8 @@ class SymbolUIItem(QtGui.QGraphicsItem):
 				 self.node.KIND_UNKNOWN: QtGui.QColor(195,195,195),
 				 }
 
-		self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable)
-		self.setFlag(QtGui.QGraphicsItem.ItemIsFocusable)
+		self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable)
+		self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable)
 
 	def getNode(self):
 		return self.node
@@ -117,7 +117,7 @@ class SymbolUIItem(QtGui.QGraphicsItem):
 
 	def paint(self, painter, QStyleOptionGraphicsItem, QWidget_widget=None):
 		trans = painter.worldTransform()
-		lod = QtGui.QStyleOptionGraphicsItem().levelOfDetailFromTransform(trans)
+		lod = QtWidgets.QStyleOptionGraphicsItem().levelOfDetailFromTransform(trans)
 
 		midR = (self.radius[0] + self.radius[1]) * 0.5
 		arcLength = midR * (self.theta[1] - self.theta[0])

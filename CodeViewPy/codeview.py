@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
-from PyQt4 import QtGui,QtCore
+from PyQt5 import QtGui,QtCore,QtWidgets
 import math
 import codescene
 import time
 import ui.CodeUIItem as CodeUIItem
 
 
-class CodeView(QtGui.QGraphicsView):
+class CodeView(QtWidgets.QGraphicsView):
 	def __init__(self, *args):
 		super(CodeView, self).__init__(*args)
 		from UIManager import UIManager
 		self.setScene(UIManager.instance().getScene())
-		self.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
-		self.setCacheMode(QtGui.QGraphicsView.CacheNone)
-		#self.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
-		self.setTransformationAnchor(QtGui.QGraphicsView.AnchorUnderMouse)
+		self.setViewportUpdateMode(QtWidgets.QGraphicsView.FullViewportUpdate)
+		self.setCacheMode(QtWidgets.QGraphicsView.CacheNone)
+		#self.setDragMode(QtWidgets.QGraphicsView.RubberBandDrag)
+		self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
 		self.setMouseTracking(True)
 		self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
 		self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
@@ -29,7 +29,8 @@ class CodeView(QtGui.QGraphicsView):
  
 		self.updateTimer = QtCore.QTimer()
 		self.updateTimer.setInterval(70)
-		self.connect(self.updateTimer, QtCore.SIGNAL('timeout()'), self, QtCore.SLOT('updateView()'))
+		# self.connect(self.updateTimer, QtCore.SIGNAL('timeout()'), self, QtCore.SLOT('updateView()'))
+		self.updateTimer.timeout.connect(self.updateView)
 		self.centerPnt = QtCore.QPointF()
 		self.scale(0.6,0.6)
 		self.brushRadius = 8
@@ -115,7 +116,7 @@ class CodeView(QtGui.QGraphicsView):
 		item = self.itemAt(self.mousePressPnt)
 		self.isFrameSelectMode = (not item)
 
-		modifiers = QtGui.QApplication.keyboardModifiers()
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
 		if modifiers == QtCore.Qt.ControlModifier or modifiers == QtCore.Qt.ShiftModifier:
 			if item:
 				item.setSelected(not item.isSelected())
@@ -142,7 +143,7 @@ class CodeView(QtGui.QGraphicsView):
 			self.isFrameSelectMode = False
 			itemList = self.items(topLeftX, topLeftY, width, height)
 
-			modifiers = QtGui.QApplication.keyboardModifiers()
+			modifiers = QtWidgets.QApplication.keyboardModifiers()
 			if modifiers == QtCore.Qt.ShiftModifier:
 				for item in itemList:
 					item.setSelected(False)
@@ -273,5 +274,5 @@ class CodeView(QtGui.QGraphicsView):
 		scene = self.scene()
 		scene.acquireLock()
 		t0 = time.time()
-		QtGui.QGraphicsView.paintEvent(self, QPaintEvent)
+		QtWidgets.QGraphicsView.paintEvent(self, QPaintEvent)
 		scene.releaseLock()

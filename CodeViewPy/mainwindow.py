@@ -4,7 +4,7 @@
 
 import sys
 
-from PyQt4 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtGui, uic, QtWidgets
 
 import codeview
 from callview import CallView
@@ -22,9 +22,9 @@ qtCreatorFile = './ui/mainwindow.ui' # Enter file here.
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
-class MainUI(QtGui.QMainWindow, Ui_MainWindow):
+class MainUI(QtWidgets.QMainWindow, Ui_MainWindow):
 	def __init__(self):
-		QtGui.QMainWindow.__init__(self)
+		QtWidgets.QMainWindow.__init__(self)
 		Ui_MainWindow.__init__(self)
 		self.setupUi(self)
 		self.actionOpen.triggered.connect(self.onOpen)
@@ -61,15 +61,15 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 		self.setCentralWidget(codeview.CodeView())
 		self.symbolView = None
 
-		self.searchDock = QtGui.QDockWidget()
+		self.searchDock = QtWidgets.QDockWidget()
 		self.searchDock.setWidget(SearchWindow())
 		self.searchDock.setWindowTitle('Search')
 
-		self.symbolDock = QtGui.QDockWidget()
+		self.symbolDock = QtWidgets.QDockWidget()
 		self.symbolDock.setWidget(SymbolWindow())
 		self.symbolDock.setWindowTitle('Symbol')
 
-		self.schemeDock = QtGui.QDockWidget()
+		self.schemeDock = QtWidgets.QDockWidget()
 		self.schemeDock.setWidget(SchemeWindow())
 		self.schemeDock.setWindowTitle('Scheme')
 
@@ -187,19 +187,19 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 			scene.releaseLock()
 
 	def onOpen(self):
-		dialog = QtGui.QFileDialog()
+		dialog = QtWidgets.QFileDialog()
 		curDir = QtCore.QDir()
 		curPath = curDir.currentPath()
 		dbPath = dialog.getOpenFileName(self, 'Open Database', curDir.currentPath())
 		if dbPath:
 			dbmgr = DBManager.DBManager.instance()
-			dbmgr.openDB(dbPath)
+			dbmgr.openDB(dbPath[0])
 
 			from UIManager import UIManager
 			symScene = UIManager.instance().getSymbolScene()
 
 	def onOpenPath(self, param):
-		dialog = QtGui.QFileDialog()
+		dialog = QtWidgets.QFileDialog()
 		curDir = QtCore.QDir()
 		curPath = curDir.currentPath()
 		if param and False:
@@ -394,7 +394,7 @@ class MainUI(QtGui.QMainWindow, Ui_MainWindow):
 			scene.findNeighbour((-1.0,-1.0))
 
 if __name__ == "__main__":
-	app = QtGui.QApplication(sys.argv)
+	app = QtWidgets.QApplication(sys.argv)
 	window = MainUI()
 	window.show()
 	sys.exit(app.exec_())

@@ -1,10 +1,10 @@
 import sys
-from PyQt4 import QtGui
+from PyQt5 import QtGui, QtWidgets
 from UIManager import UIManager
 
 if __name__ == "__main__":
 	print('argv:', sys.argv)
-	app = QtGui.QApplication(sys.argv)
+	app = QtWidgets.QApplication(sys.argv)
 
 	from db.DBManager import DBManager
 	if len(sys.argv) > 1:

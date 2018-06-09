@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from PyQt4 import QtCore, Qt
+from PyQt5 import QtCore, Qt
 
 try:
 	import xml.etree.cElementTree as ET

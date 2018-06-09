@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-from PyQt4 import QtCore, QtGui, Qt
+from PyQt5 import QtCore, QtGui, Qt
 import understand
 import subprocess
 from db.SymbolNode import FileData, SymbolNode

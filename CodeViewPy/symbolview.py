@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
-from PyQt4 import QtGui,QtCore,uic,QtOpenGL
+from PyQt5 import QtGui,QtCore,uic,QtOpenGL, QtWidgets
 import time
 import math
 import SymbolScene
 from db.SymbolAttr import SymbolAttr
 
-class SymbolView(QtGui.QGraphicsView):
+class SymbolView(QtWidgets.QGraphicsView):
 	def __init__(self, *args):
 		super(SymbolView, self).__init__(*args)
 		from UIManager import UIManager
 		self.setScene(UIManager.instance().getSymbolScene())
 
 
-		self.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
-		self.setCacheMode(QtGui.QGraphicsView.CacheNone)
-		#self.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
-		self.setTransformationAnchor(QtGui.QGraphicsView.AnchorUnderMouse)
+		self.setViewportUpdateMode(QtWidgets.QGraphicsView.FullViewportUpdate)
+		self.setCacheMode(QtWidgets.QGraphicsView.CacheNone)
+		#self.setDragMode(QtWidgets.QGraphicsView.RubberBandDrag)
+		self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
 		self.setMouseTracking(True)
 		self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 		self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
@@ -81,15 +81,15 @@ class SymbolView(QtGui.QGraphicsView):
 
 			painter.setPen(QtGui.QPen(QtGui.QColor(100,164,230),1.0))
 			painter.setBrush(QtGui.QBrush(QtGui.QColor(100,164,230,100)))
-			painter.setTransform(QtGui.QTransform())
+			painter.setTransform(QtWidgets.QTransform())
 			painter.drawRect(topLeftX, topLeftY, width, height)
 
 
-		painter.setTransform(QtGui.QTransform())
+		painter.setTransform(QtWidgets.QTransform())
 		painter.setFont(QtGui.QFont('tahoma', 8))
 		from db.SymbolAttr import UIAttr
 
-		lod = QtGui.QStyleOptionGraphicsItem().levelOfDetailFromTransform(self.transform())
+		lod = QtWidgets.QStyleOptionGraphicsItem().levelOfDetailFromTransform(self.transform())
 		scene = self.scene()
 		for uname, item in scene.symbolDict.items():
 			uiAttr = item.getAttr(UIAttr.ATTR_UI)
@@ -101,7 +101,7 @@ class SymbolView(QtGui.QGraphicsView):
 
 	def drawBackground(self, painter, rectF):
 		trans = painter.worldTransform()
-		lod = QtGui.QStyleOptionGraphicsItem().levelOfDetailFromTransform(trans)
+		lod = QtWidgets.QStyleOptionGraphicsItem().levelOfDetailFromTransform(trans)
 
 		scene = self.scene()
 		scene.updateNodeVisibility(lod)

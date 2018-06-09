@@ -1,6 +1,6 @@
 import mainwindow
 import sys
-from PyQt4 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtGui, uic
 from codescene import CodeScene
 from SymbolScene import SymbolScene
 
@@ -40,7 +40,7 @@ class UISettings(object):
 		pass
 
 if __name__ == "__main__":
-	app = QtGui.QApplication(sys.argv)
+	app = QtWidgets.QApplication(sys.argv)
 
 	from db.DBManager import DBManager
 	dbObj = DBManager.instance()

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from PyQt4 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtGui, uic, QtWidgets
 import math
 import hashlib
 import re
@@ -16,12 +16,12 @@ def name2color(name):
 	l = ((hashVal >> 16)& 0xff) / 255.0
 	return QtGui.QColor.fromHslF(h, 0.35+s*0.3, 0.4+l*0.15)
 
-class CodeUIItem(QtGui.QGraphicsItem):
+class CodeUIItem(QtWidgets.QGraphicsItem):
 	def __init__(self, uniqueName, parent = None, scene = None):
-		super(CodeUIItem, self).__init__(parent, scene)
-		self.setFlag(QtGui.QGraphicsItem.ItemIsMovable)
-		self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable)
-		self.setFlag(QtGui.QGraphicsItem.ItemIsFocusable)
+		super(CodeUIItem, self).__init__(parent)
+		self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable)
+		self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable)
+		self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable)
 		self.setAcceptDrops(True)
 		self.setAcceptHoverEvents(True)
 		self.uniqueName = uniqueName
@@ -217,7 +217,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 		r = self.getBodyRadius()
  
 		trans = painter.worldTransform()
-		lod = QtGui.QStyleOptionGraphicsItem().levelOfDetailFromTransform(trans)
+		lod = QtWidgets.QStyleOptionGraphicsItem().levelOfDetailFromTransform(trans)
 
 		selectedOrHover = self.isSelected() or self.isHover
 
@@ -252,7 +252,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 
 		if r * lod > 2 or selectedOrHover:
 			painter.scale(1.0/lod, 1.0/lod)
-			painter.setPen(QtGui.QPen()) 
+			painter.setPen(QtGui.QPen())
 			painter.setFont(self.titleFont)
 			if self.kind == ITEM_VARIABLE:
 				rect = QtCore.QRectF(r, self.lineHeight*-0.5, self.fontSize.width(), self.fontSize.height())
@@ -333,7 +333,7 @@ class CodeUIItem(QtGui.QGraphicsItem):
 
 		if event.buttons().__int__() & QtCore.Qt.MidButton or event.buttons().__int__() & QtCore.Qt.RightButton:
 			print('event button:', event.buttons().__int__())
-			drag = QtGui.QDrag(event.widget())
+			drag = QtWidgets.QDrag(event.widget())
 			mime = QtCore.QMimeData()
 			mime.setText(self.uniqueName)
 			drag.setMimeData(mime)

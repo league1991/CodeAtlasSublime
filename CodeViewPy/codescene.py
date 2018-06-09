@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-from PyQt4 import QtCore, QtGui, uic, Qt
+from PyQt5 import QtCore, QtGui, uic, Qt, QtWidgets
 import math
 import random
 import time
@@ -292,6 +292,8 @@ class SceneUpdateThread(QtCore.QThread):
 		if not item:
 			return
 		item = item[0]
+		if not isinstance(item, ui.CodeUIItem.CodeUIItem) and not isinstance(item, ui.CodeUIEdgeItem.CodeUIEdgeItem):
+			return
 		self.updateCallOrderByItem(item)
 
 		if isinstance(item, ui.CodeUIItem.CodeUIItem) and item.isFunction():
@@ -320,6 +322,8 @@ class SceneUpdateThread(QtCore.QThread):
 		xRange = [1e6, -1e6]
 		itemUniqueName = item.getUniqueName()
 		for key, edge in self.scene.edgeDict.items():
+			print(key)
+			print(edge)
 			if key[0] == itemUniqueName and self.scene.itemDict[key[1]].kind == ui.CodeUIItem.ITEM_FUNCTION:
 				edgeList.append(edge)
 				srcPos, tarPos = edge.getNodePos()
@@ -422,7 +426,7 @@ class SceneUpdateThread(QtCore.QThread):
 
 class RecursiveLock(QtCore.QMutex):
 	def __init__(self):
-		super(QtCore.QMutex, self).__init__(QtCore.QMutex.Recursive)
+		super(RecursiveLock, self).__init__(QtCore.QMutex.Recursive)
 
 	def acquire(self):
 		self.lock()
@@ -430,7 +434,7 @@ class RecursiveLock(QtCore.QMutex):
 	def release(self):
 		self.unlock()
 
-class CodeScene(QtGui.QGraphicsScene):
+class CodeScene(QtWidgets.QGraphicsScene):
 	def __init__(self, *args):
 		super(CodeScene, self).__init__(*args)
 		self.itemDict = {}
@@ -449,7 +453,7 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.lruMaxLength = 100
 		self.isLayoutDirty = False
 
-		self.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex)
+		self.setItemIndexMethod(QtWidgets.QGraphicsScene.NoIndex)
 		self.lock = RecursiveLock()
 		self.updateThread = SceneUpdateThread(self, self.lock)
 		self.updateThread.start()
@@ -459,12 +463,13 @@ class CodeScene(QtGui.QGraphicsScene):
 		self.autoFocusToggle = True
 		self.selectTimeStamp = 0
 		for i in range(4):
-			item = QtGui.QGraphicsRectItem(0,0,5,5)
+			item = QtWidgets.QGraphicsRectItem(0,0,5,5)
 			item.setPen(QtGui.QPen(QtGui.QColor(0,0,0,0)))
 			item.setBrush(QtGui.QBrush())
 			self.cornerItem.append(item)
 			self.addItem(item)
-		self.connect(self, QtCore.SIGNAL('selectionChanged()'), self, QtCore.SLOT('onSelectItems()'))
+		# self.connect(self, QtCore.SIGNAL('selectionChanged()'), self, QtCore.SLOT('onSelectItems()'))
+		self.selectionChanged.connect(self.onSelectItems)
 
 	# 添加或修改call graph
 	def addOrReplaceIthScheme(self, ithScheme):
@@ -778,10 +783,12 @@ class CodeScene(QtGui.QGraphicsScene):
 				self.itemLruQueue.remove(itemKey)
 
 	def disconnectSignals(self):
-		self.disconnect(self, QtCore.SIGNAL('selectionChanged()'), self, QtCore.SLOT('onSelectItems()'))
+		#self.disconnect(self, QtCore.SIGNAL('selectionChanged()'), self, QtCore.SLOT('onSelectItems()'))
+		self.selectionChanged.disconnect(self.onSelectItems)
 
 	def connectSignals(self):
-		self.connect(self, QtCore.SIGNAL('selectionChanged()'), self, QtCore.SLOT('onSelectItems()'))
+		#self.connect(self, QtCore.SIGNAL('selectionChanged()'), self, QtCore.SLOT('onSelectItems()'))
+		self.selectionChanged.connect(self.onSelectItems)
 
 	def updateLRU(self, itemKeyList):
 		deleteKeyList = []

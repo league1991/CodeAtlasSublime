@@ -1,11 +1,11 @@
-from PyQt4 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtGui, uic, QtWidgets
 import math
 import time
 
-class CodeUIEdgeItem(QtGui.QGraphicsItem):
+class CodeUIEdgeItem(QtWidgets.QGraphicsItem):
 	def __init__(self, srcUniqueName, tarUniqueName, edgeData = {}, parent = None, scene = None):
-		super(CodeUIEdgeItem, self).__init__(parent, scene)
-		self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable)
+		super(CodeUIEdgeItem, self).__init__(parent)
+		self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable)
 		self.setAcceptHoverEvents(True)
 		self.srcUniqueName = srcUniqueName
 		self.tarUniqueName = tarUniqueName
@@ -85,7 +85,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		if self.pathPnt and (self.pathPnt[0]-srcPos).manhattanLength() < 0.05 and (self.pathPnt[1]-tarPos).manhattanLength() < 0.05:
 			return self.path
 		self.pathPnt = (srcPos, tarPos)
-		path = QtGui.QPainterPath()  
+		path = QtGui.QPainterPath()
 		path.moveTo(srcPos)
 		dx = tarPos.x() - srcPos.x()
 		p1 = srcPos + QtCore.QPointF(dx*0.3, 0)
@@ -94,7 +94,7 @@ class CodeUIEdgeItem(QtGui.QGraphicsItem):
 		self.curve = QtGui.QPainterPath(path)
 		self.path = path
 
-		from PyQt4.QtGui import QPainterPathStroker
+		from PyQt5.QtGui import QPainterPathStroker
 		stroker = QPainterPathStroker()
 		stroker.setWidth(10.0)
 		self.pathShape = stroker.createStroke(self.path)
