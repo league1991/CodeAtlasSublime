@@ -18,10 +18,12 @@ class Start_atlas_Command(WindowCommand):
 		socketThread = DataManager.instance().getSocket(self.window.id())
 
 		# command line window
-		subprocess.Popen('%s\\codeView.bat %s' % (curPath, socketThread.remoteAddress[1]), cwd = curPath, stdout = None)
+		cmd = ["{}/codeView.bat".format(curPath), str(socketThread.remoteAddress[1])]
+		print('cmd: ', cmd)
+		subprocess.Popen(cmd, shell=True, cwd = curPath, stdout = None)
 		
 		# no command line window
-		curPath = curPath + '\\CodeViewPy'
+		curPath = curPath + '/CodeViewPy'
 		cmdStr = 'main %s' % (socketThread.remoteAddress[1], )
 		# subprocess.Popen(cmdStr, cwd = curPath, shell = True )
 
